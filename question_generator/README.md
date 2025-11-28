@@ -11,6 +11,7 @@ Automatically generates categorized questions (Easy, Medium, Complex) with answe
 - **Persistent Storage**: Saves questions to JSON file, preserves existing questions on re-runs
 - **Formula Generation**: Provides SQL and Excel formulas for each question
 - **Step-by-step Calculations**: Includes detailed calculation methods
+- **Correct Answers**: Automatically calculates and includes correct answers based on actual CSV data
 
 ## Setup
 
@@ -104,6 +105,7 @@ Questions are saved in both **JSON** and **CSV** formats:
           "Sum the Actual_Qty column"
         ],
         "answer_format": "integer (total quantity)",
+        "correct_answer": "40035",
         "related_tables": ["production_logs"],
         "related_columns": ["Product", "Actual_Qty"],
         "created_at": "2025-11-27T..."
@@ -125,6 +127,7 @@ The CSV file contains all questions in a flat, tabular format with the following
 - `excel_formula` - Excel formula to answer the question
 - `calculation_steps` - Step-by-step calculation (pipe-separated)
 - `answer_format` - Expected answer format
+- `correct_answer` - **Calculated answer from actual CSV data**
 - `related_tables` - Comma-separated list of related tables
 - `related_columns` - Comma-separated list of related columns
 - `created_at` - Timestamp when question was created
@@ -173,10 +176,27 @@ The generator analyzes all CSV files in `datagenerator/generated_data/`:
 - google-generativeai
 - python-dotenv
 
+## Answer Calculation
+
+The generator automatically calculates correct answers by:
+1. Parsing SQL formulas from generated questions
+2. Executing queries against actual CSV data using pandas
+3. Supporting common SQL operations:
+   - `SUM()`, `COUNT()`, `AVG()`, `MIN()`, `MAX()`
+   - `WHERE` clauses with filters (equality, LIKE, date ranges)
+   - `GROUP BY` aggregations
+   - Date filtering (last 7/30/90 days)
+4. Formatting answers based on expected format (integer, float, percentage, etc.)
+
+Answers are calculated when:
+- New questions are generated
+- Existing questions are loaded (missing answers are calculated automatically)
+
 ## Notes
 
 - Uses same Gemini API key as data generator
 - Questions are generated using AI, so they may vary between runs
 - Each question includes SQL and Excel formulas for flexibility
 - Calculation steps help understand the logic
+- **Correct answers are calculated from actual CSV data**, ensuring accuracy
 
