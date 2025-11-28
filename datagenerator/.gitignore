@@ -6,10 +6,7 @@
 !*.env.example
 !.env.example
 
-# Generated data
-generated_data/
-*.csv
-!sample_data/*.csv
+ 
 
 # Python
 __pycache__/
