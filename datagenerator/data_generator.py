@@ -309,6 +309,13 @@ Return ONLY valid JSON array, no markdown, no explanations."""
             batch_data = self._parse_json_response(response)
             
             if batch_data:
+                # Ensure dates are sequential starting from start_date
+                current_date = start_date
+                for row in batch_data:
+                    if "Date" in row:
+                        row["Date"] = current_date.strftime("%Y-%m-%d")
+                        current_date += timedelta(days=1)
+                
                 all_rows.extend(batch_data)
                 # Update state based on generated data
                 for row in batch_data:
@@ -321,9 +328,22 @@ Return ONLY valid JSON array, no markdown, no explanations."""
                                 self.state["machine_states"][machine]["efficiency"] = (
                                     0.7 * self.state["machine_states"][machine]["efficiency"] + 0.3 * efficiency
                                 )
+                    # Update last production date
+                    if "Date" in row:
+                        row_date = pd.to_datetime(row["Date"], format='mixed', errors='coerce')
+                        if pd.notna(row_date):
+                            if self.state["last_production_date"] is None or row_date > self.state["last_production_date"]:
+                                self.state["last_production_date"] = row_date
+                
                 print(f"✓ Generated {len(batch_data)} rows")
             else:
                 print("⚠ No data generated")
+            
+            # Update start_date for next batch
+            if batch_data and "Date" in batch_data[-1]:
+                last_date = pd.to_datetime(batch_data[-1]["Date"], format='mixed', errors='coerce')
+                if pd.notna(last_date):
+                    start_date = last_date + timedelta(days=1)
             
             # Small delay to avoid rate limits
             time.sleep(1)
@@ -344,6 +364,9 @@ Return ONLY valid JSON array, no markdown, no explanations."""
         # Append to existing or create new
         if existing_df is not None and not existing_df.empty:
             df = pd.concat([existing_df, df], ignore_index=True)
+            # Sort by date to ensure chronological order
+            if "Date" in df.columns:
+                df = df.sort_values("Date").reset_index(drop=True)
         
         df.to_csv(file_path, index=False)
         print(f"Generated {len(df)} production log entries. Saved to {file_path}")
@@ -365,11 +388,41 @@ Return ONLY valid JSON array, no markdown, no explanations."""
             else:
                 raise ValueError("Production data required. Generate production data first.")
         
+        # Ensure proper data types
+        if "Date" in production_df.columns:
+            production_df["Date"] = pd.to_datetime(production_df["Date"], format='mixed', errors='coerce')
+        if "Actual_Qty" in production_df.columns:
+            production_df["Actual_Qty"] = pd.to_numeric(production_df["Actual_Qty"], errors='coerce').fillna(0).astype(int)
+        
+        # Filter out production dates that already have QC entries
+        if existing_df is not None and not existing_df.empty:
+            if "Inspection_Date" in existing_df.columns:
+                existing_df["Inspection_Date"] = pd.to_datetime(existing_df["Inspection_Date"], format='mixed', errors='coerce')
+                # Get production dates that already have QC entries (inspection date - 1 day = production date)
+                existing_qc_dates = set()
+                for qc_date in existing_df["Inspection_Date"].dropna():
+                    prod_date = qc_date - timedelta(days=1)
+                    existing_qc_dates.add(prod_date.strftime("%Y-%m-%d"))
+                
+                # Filter production to exclude dates that already have QC
+                if existing_qc_dates:
+                    production_df["Date_Str"] = production_df["Date"].dt.strftime("%Y-%m-%d")
+                    production_df = production_df[~production_df["Date_Str"].isin(existing_qc_dates)]
+                    production_df = production_df.drop(columns=["Date_Str"])
+                    if production_df.empty:
+                        print("  All production dates already have QC entries. No new QC data to generate.")
+                        return existing_df
+        
         all_rows = []
         batch_size = 50
         
-        # Sample from production data to create QC entries
-        sampled_production = production_df.sample(min(num_rows, len(production_df)), replace=True)
+        # Sample from production data to create QC entries (only from dates without existing QC)
+        available_production = production_df if not production_df.empty else None
+        if available_production is None or len(available_production) == 0:
+            print("  No new production data available for QC generation.")
+            return existing_df if existing_df is not None else pd.DataFrame()
+        
+        sampled_production = available_production.sample(min(num_rows, len(available_production)), replace=True)
         total_batches = (len(sampled_production) + batch_size - 1) // batch_size
         
         for batch_num, batch_start in enumerate(range(0, len(sampled_production), batch_size), 1):
@@ -377,21 +430,39 @@ Return ONLY valid JSON array, no markdown, no explanations."""
             batch_prod = sampled_production.iloc[batch_start:batch_end]
             print(f"  Generating QC batch {batch_num}/{total_batches} ({len(batch_prod)} rows)...", end=" ", flush=True)
             
+            # Prepare production context for linking
+            prod_context = []
+            for idx, prod_row in batch_prod.iterrows():
+                line_machine = prod_row.get("Line_Machine", "")
+                line = line_machine.split("/")[0] if "/" in line_machine else line_machine
+                prod_qty = int(prod_row.get("Actual_Qty", 0))
+                # Inspection quantity should be 20-30% of production
+                inspected_qty = max(50, min(200, int(prod_qty * 0.25)))
+                prod_context.append({
+                    "line": line,
+                    "product": prod_row.get("Product", ""),
+                    "production_qty": prod_qty,
+                    "suggested_inspected_qty": inspected_qty
+                })
+            
             prompt = f"""Generate {len(batch_prod)} quality control inspection entries as JSON array.
 Each entry should be a JSON object with these exact fields:
-- Inspection_Date (YYYY-MM-DD, same or day after production date)
+- Inspection_Date (YYYY-MM-DD, will be set from production date)
 - Batch_ID (unique identifier like BATCH-001, BATCH-002, etc.)
-- Product (from production data: {batch_prod['Product'].unique().tolist() if 'Product' in batch_prod.columns else PRODUCTS})
-- Line (one of: {', '.join(LINES)})
-- Inspected_Qty (integer, typically 50-200)
+- Product (will be set from production data)
+- Line (will be extracted from production Line_Machine)
+- Inspected_Qty (integer, typically 20-30% of production quantity, range 50-200)
 - Passed_Qty (integer, should be <= Inspected_Qty, typically 85-98% pass rate)
 - Failed_Qty (integer, Inspected_Qty - Passed_Qty)
 - Defect_Type (one of: {', '.join(DEFECT_TYPES)}, or "None" if Passed_Qty == Inspected_Qty)
 - Rework_Count (integer, 0-20, typically 30-50% of Failed_Qty)
 - Inspector_Name (one of: {', '.join(OPERATORS[:3])})
 
+Production context for linking:
+{json.dumps(prod_context, indent=2)}
+
 Context:
-- Products with higher production volumes should have proportionally more inspections
+- Inspected_Qty should be proportional to production Actual_Qty (20-30% of production)
 - Some products/lines have higher defect rates (create realistic patterns)
 - Defect types should correlate: Dimensional issues often lead to Assembly Errors
 - Rework counts should be realistic (not all failures are reworkable)
@@ -402,18 +473,38 @@ Return ONLY valid JSON array, no markdown."""
             batch_data = self._parse_json_response(response)
             
             if batch_data:
-                # Link to production dates
+                # Link to production data - extract Line, Product, Date, and link quantities
                 for i, row in enumerate(batch_data):
-                    if i < len(batch_prod) and "Date" in batch_prod.columns:
-                        prod_date = batch_prod.iloc[i]["Date"]
-                        if isinstance(prod_date, str):
-                            prod_date = pd.to_datetime(prod_date, format='mixed', errors='coerce')
-                        elif not isinstance(prod_date, pd.Timestamp):
-                            prod_date = pd.to_datetime(prod_date, format='mixed', errors='coerce')
-                        if pd.notna(prod_date):
-                            row["Inspection_Date"] = (prod_date + timedelta(days=1)).strftime("%Y-%m-%d")
-                        if "Product" in batch_prod.columns:
-                            row["Product"] = batch_prod.iloc[i]["Product"]
+                    if i < len(batch_prod):
+                        prod_row = batch_prod.iloc[i]
+                        
+                        # Link date (inspection happens 1 day after production)
+                        if "Date" in prod_row:
+                            prod_date = prod_row["Date"]
+                            if isinstance(prod_date, str):
+                                prod_date = pd.to_datetime(prod_date, format='mixed', errors='coerce')
+                            elif not isinstance(prod_date, pd.Timestamp):
+                                prod_date = pd.to_datetime(prod_date, format='mixed', errors='coerce')
+                            if pd.notna(prod_date):
+                                row["Inspection_Date"] = (prod_date + timedelta(days=1)).strftime("%Y-%m-%d")
+                        
+                        # Link product
+                        if "Product" in prod_row:
+                            row["Product"] = prod_row["Product"]
+                        
+                        # Extract and link Line from Line_Machine
+                        if "Line_Machine" in prod_row:
+                            line_machine = prod_row["Line_Machine"]
+                            line = line_machine.split("/")[0] if "/" in line_machine else line_machine
+                            row["Line"] = line
+                        
+                        # Link inspection quantity to production (20-30% of production)
+                        if "Actual_Qty" in prod_row:
+                            prod_qty = int(prod_row["Actual_Qty"])
+                            if "Inspected_Qty" not in row or row.get("Inspected_Qty", 0) == 0:
+                                row["Inspected_Qty"] = max(50, min(200, int(prod_qty * 0.25)))
+                            # Ensure inspected doesn't exceed production
+                            row["Inspected_Qty"] = min(row.get("Inspected_Qty", 100), prod_qty)
                 
                 all_rows.extend(batch_data)
                 print(f"✓ Generated {len(batch_data)} rows")
@@ -456,6 +547,52 @@ Return ONLY valid JSON array, no markdown."""
             if production_file.exists():
                 production_df = pd.read_csv(production_file)
         
+        # Ensure proper data types
+        if production_df is not None and not production_df.empty:
+            if "Date" in production_df.columns:
+                production_df["Date"] = pd.to_datetime(production_df["Date"], format='mixed', errors='coerce')
+            if "Downtime_Minutes" in production_df.columns:
+                production_df["Downtime_Minutes"] = pd.to_numeric(production_df["Downtime_Minutes"], errors='coerce').fillna(0)
+            if "Line_Machine" in production_df.columns:
+                # Extract machines from Line_Machine
+                production_df["Machine"] = production_df["Line_Machine"].apply(
+                    lambda x: x.split("/")[-1] if "/" in str(x) else str(x)
+                )
+        
+        # Find production dates with significant downtime (potential breakdowns)
+        breakdown_candidates = []
+        if production_df is not None and not production_df.empty:
+            high_downtime = production_df[production_df["Downtime_Minutes"] > 60].copy()
+            if not high_downtime.empty:
+                # Get existing breakdown dates to avoid duplicates
+                existing_breakdown_dates = set()
+                if existing_df is not None and not existing_df.empty:
+                    if "Breakdown_Date" in existing_df.columns:
+                        existing_df["Breakdown_Date"] = pd.to_datetime(existing_df["Breakdown_Date"], format='mixed', errors='coerce')
+                        for bd_date in existing_df["Breakdown_Date"].dropna():
+                            existing_breakdown_dates.add(bd_date.strftime("%Y-%m-%d"))
+                
+                for idx, row in high_downtime.iterrows():
+                    machine = row.get("Machine", "")
+                    prod_date_str = row["Date"].strftime("%Y-%m-%d") if pd.notna(row["Date"]) else None
+                    # Only add if this breakdown date doesn't already exist
+                    if machine and prod_date_str and prod_date_str not in existing_breakdown_dates:
+                        breakdown_candidates.append({
+                            "date": prod_date_str,
+                            "machine": machine,
+                            "downtime_minutes": int(row.get("Downtime_Minutes", 0))
+                        })
+        
+        # Get production date range for alignment
+        prod_date_range = None
+        if production_df is not None and not production_df.empty and "Date" in production_df.columns:
+            prod_dates = production_df["Date"].dropna()
+            if not prod_dates.empty:
+                prod_date_range = {
+                    "min": prod_dates.min().strftime("%Y-%m-%d"),
+                    "max": prod_dates.max().strftime("%Y-%m-%d")
+                }
+        
         all_rows = []
         batch_size = 30
         total_batches = (num_rows + batch_size - 1) // batch_size
@@ -472,7 +609,7 @@ Return ONLY valid JSON array, no markdown."""
             
             prompt = f"""Generate {current_batch_size} maintenance log entries as JSON array.
 Each entry should be a JSON object with these exact fields:
-- Maintenance_Date (YYYY-MM-DD)
+- Maintenance_Date (YYYY-MM-DD, must be within production date range: {prod_date_range})
 - Machine (one of: {', '.join(MACHINES)})
 - Maintenance_Type (one of: "Preventive", "Breakdown", "Routine Check", "Repair")
 - Breakdown_Date (YYYY-MM-DD, same as Maintenance_Date if Maintenance_Type is "Breakdown", null otherwise)
@@ -483,11 +620,12 @@ Each entry should be a JSON object with these exact fields:
 - Cost_Rupees (integer, 500-50000, higher for breakdowns)
 
 Context:
+- Production date range: {prod_date_range}
+- Breakdown candidates from production downtime: {breakdown_candidates[:5] if breakdown_candidates else 'None'}
 - Machines with lower efficiency should have more breakdowns
 - Machines that recently broke down should have preventive maintenance scheduled
-- Create realistic patterns: some machines break down more frequently
-- Preventive maintenance should reduce future breakdowns
-- Breakdown dates should correlate with production downtime
+- Breakdown dates should align with production dates that had high downtime (Downtime_Minutes > 60)
+- All dates must be within the production date range
 
 Current machine states: {machine_states_str}
 
@@ -497,6 +635,33 @@ Return ONLY valid JSON array, no markdown."""
             batch_data = self._parse_json_response(response)
             
             if batch_data:
+                # Link breakdown dates to production downtime dates
+                for row in batch_data:
+                    if row.get("Maintenance_Type") == "Breakdown" and breakdown_candidates:
+                        # Try to match breakdown to a production downtime event
+                        machine = row.get("Machine", "")
+                        if machine:
+                            matching_breakdowns = [b for b in breakdown_candidates if b["machine"] == machine]
+                            if matching_breakdowns:
+                                # Use the first matching breakdown date
+                                breakdown = matching_breakdowns[0]
+                                row["Breakdown_Date"] = breakdown["date"]
+                                row["Maintenance_Date"] = breakdown["date"]
+                                # Convert downtime minutes to hours
+                                row["Downtime_Hours"] = round(breakdown["downtime_minutes"] / 60.0, 1)
+                                breakdown_candidates.remove(breakdown)  # Use each breakdown once
+                    
+                    # Ensure dates are within production range
+                    if prod_date_range and "Maintenance_Date" in row:
+                        maint_date = pd.to_datetime(row["Maintenance_Date"], format='mixed', errors='coerce')
+                        min_date = pd.to_datetime(prod_date_range["min"])
+                        max_date = pd.to_datetime(prod_date_range["max"])
+                        if pd.notna(maint_date):
+                            if maint_date < min_date:
+                                row["Maintenance_Date"] = prod_date_range["min"]
+                            elif maint_date > max_date:
+                                row["Maintenance_Date"] = prod_date_range["max"]
+                
                 all_rows.extend(batch_data)
                 # Update state
                 for row in batch_data:
@@ -549,33 +714,132 @@ Return ONLY valid JSON array, no markdown."""
             if production_file.exists():
                 production_df = pd.read_csv(production_file)
         
+        # Ensure proper data types and prepare production data for linking
+        prod_date_range = None
+        daily_production = {}
+        product_material_map = {
+            "Widget-A": ["Steel-101", "Plastic-PVC"],
+            "Widget-B": ["Steel-101", "Aluminum-AL"],
+            "Widget-C": ["Plastic-PVC", "Rubber-RB"],
+            "Component-X": ["Steel-101", "Copper-CU"],
+            "Component-Y": ["Aluminum-AL", "Plastic-PVC"],
+            "Assembly-Z": ["Steel-101", "Plastic-PVC", "Rubber-RB"]
+        }
+        
+        if production_df is not None and not production_df.empty:
+            if "Date" in production_df.columns:
+                production_df["Date"] = pd.to_datetime(production_df["Date"], format='mixed', errors='coerce')
+            if "Actual_Qty" in production_df.columns:
+                production_df["Actual_Qty"] = pd.to_numeric(production_df["Actual_Qty"], errors='coerce').fillna(0).astype(int)
+            
+            # Calculate daily production totals by product
+            prod_dates = production_df["Date"].dropna()
+            if not prod_dates.empty:
+                prod_date_range = {
+                    "min": prod_dates.min().strftime("%Y-%m-%d"),
+                    "max": prod_dates.max().strftime("%Y-%m-%d")
+                }
+            
+            # Group by date and product to calculate daily consumption
+            for date, group in production_df.groupby("Date"):
+                if pd.notna(date):
+                    date_str = date.strftime("%Y-%m-%d")
+                    daily_production[date_str] = {}
+                    for product, qty in group.groupby("Product")["Actual_Qty"].sum().items():
+                        daily_production[date_str][product] = int(qty)
+        
         all_rows = []
         batch_size = 50
         total_batches = (num_rows + batch_size - 1) // batch_size
         
+        # Sample dates from production for inventory entries
+        inventory_dates = []
+        if daily_production:
+            # Get existing inventory dates/material combinations to avoid duplicates
+            existing_inventory_keys = set()
+            if existing_df is not None and not existing_df.empty:
+                if "Date" in existing_df.columns and "Material_Code" in existing_df.columns:
+                    existing_df["Date"] = pd.to_datetime(existing_df["Date"], format='mixed', errors='coerce')
+                    for idx, row in existing_df.iterrows():
+                        if pd.notna(row["Date"]) and pd.notna(row.get("Material_Code")):
+                            key = f"{row['Date'].strftime('%Y-%m-%d')}_{row['Material_Code']}"
+                            existing_inventory_keys.add(key)
+            
+            # Use production dates, sampling evenly, but filter out existing date/material combos
+            date_list = sorted(daily_production.keys())
+            available_dates = []
+            for date in date_list:
+                # Check if any materials for this date are already in inventory
+                materials_for_date = set()
+                prod_data = daily_production.get(date, {})
+                for product in prod_data.keys():
+                    materials_for_date.update(product_material_map.get(product, []))
+                
+                # Add date if at least one material combination doesn't exist
+                for material in materials_for_date:
+                    key = f"{date}_{material}"
+                    if key not in existing_inventory_keys:
+                        available_dates.append(date)
+                        break  # Only need one material to be missing
+            
+            if not available_dates:
+                print("  All production dates already have inventory entries. No new inventory data to generate.")
+                return existing_df if existing_df is not None else pd.DataFrame()
+            
+            step = max(1, len(available_dates) // num_rows) if num_rows > 0 else 1
+            inventory_dates = available_dates[::step][:num_rows]
+            # Fill remaining with dates from available list
+            while len(inventory_dates) < num_rows and available_dates:
+                remaining = num_rows - len(inventory_dates)
+                inventory_dates.extend(available_dates[:remaining])
+        
         for batch_num, batch_start in enumerate(range(0, num_rows, batch_size), 1):
             batch_end = min(batch_start + batch_size, num_rows)
             current_batch_size = batch_end - batch_start
+            batch_dates = inventory_dates[batch_start:batch_end] if inventory_dates else []
             print(f"  Generating inventory batch {batch_num}/{total_batches} ({current_batch_size} rows)...", end=" ", flush=True)
+            
+            # Prepare context for this batch
+            batch_context = []
+            for date in batch_dates:
+                prod_data = daily_production.get(date, {})
+                total_production = sum(prod_data.values())
+                batch_context.append({
+                    "date": date,
+                    "products": prod_data,
+                    "total_production": total_production,
+                    "suggested_consumption": max(100, min(2000, int(total_production * 2)))  # Rough estimate: 2kg per unit
+                })
             
             prompt = f"""Generate {current_batch_size} inventory/material consumption entries as JSON array.
 Each entry should be a JSON object with these exact fields:
-- Date (YYYY-MM-DD)
+- Date (YYYY-MM-DD, will be set from production dates)
 - Material_Code (one of: {', '.join(RAW_MATERIALS)})
 - Material_Name (descriptive name like "Steel Sheet 101", "PVC Granules", etc.)
 - Opening_Stock_Kg (integer, 1000-10000)
-- Consumption_Kg (integer, 100-2000, should correlate with production volume)
-- Received_Kg (integer, 0-5000, periodic replenishments)
+- Consumption_Kg (integer, should correlate with production volume - higher production = higher consumption)
+- Received_Kg (integer, 0-5000, periodic replenishments, higher when Opening_Stock is low)
 - Closing_Stock_Kg (integer, calculated as Opening_Stock_Kg - Consumption_Kg + Received_Kg)
 - Wastage_Kg (integer, 0-100, typically 1-5% of Consumption_Kg)
 - Supplier (one of: "Supplier-A", "Supplier-B", "Supplier-C", "Local Vendor")
 - Unit_Cost_Rupees (float, 50-500 per kg)
 
+Production context for linking:
+{json.dumps(batch_context[:5], indent=2) if batch_context else 'No production data'}
+
+Product-Material mapping:
+- Widget-A, Component-X, Assembly-Z use Steel-101
+- Widget-A, Widget-C, Component-Y use Plastic-PVC
+- Widget-B, Component-Y use Aluminum-AL
+- Widget-C, Assembly-Z use Rubber-RB
+- Component-X uses Copper-CU
+
 Context:
-- Higher production should correlate with higher material consumption
-- Create realistic stock levels (low stock triggers orders)
+- Consumption_Kg should correlate with production Actual_Qty (roughly 1-3 kg per unit produced)
+- Higher production days should have higher material consumption
+- Create realistic stock levels (low stock triggers orders - Received_Kg > 0)
 - Wastage should be realistic (some materials have higher wastage)
-- Material consumption should vary by product type
+- Dates must be within production date range: {prod_date_range}
 
 Return ONLY valid JSON array, no markdown."""
 
@@ -583,8 +847,59 @@ Return ONLY valid JSON array, no markdown."""
             batch_data = self._parse_json_response(response)
             
             if batch_data:
-                all_rows.extend(batch_data)
-                print(f"✓ Generated {len(batch_data)} rows")
+                # Link dates and calculate consumption from production
+                filtered_batch_data = []
+                for i, row in enumerate(batch_data):
+                    if i < len(batch_dates):
+                        date = batch_dates[i]
+                        material_code = row.get("Material_Code", "")
+                        
+                        # Check if this date/material combination already exists
+                        key = f"{date}_{material_code}"
+                        if key in existing_inventory_keys:
+                            continue  # Skip duplicate
+                        
+                        row["Date"] = date
+                        
+                        # Calculate consumption based on production
+                        prod_data = daily_production.get(date, {})
+                        total_production = sum(prod_data.values())
+                        
+                        # Determine which materials are needed based on products produced
+                        materials_needed = set()
+                        for product, qty in prod_data.items():
+                            materials_needed.update(product_material_map.get(product, [RAW_MATERIALS[0]]))
+                        
+                        # If material matches products produced, calculate consumption
+                        if material_code in materials_needed and total_production > 0:
+                            # Consumption roughly 1-3 kg per unit, depending on material
+                            consumption_multiplier = {
+                                "Steel-101": 2.5,
+                                "Plastic-PVC": 1.5,
+                                "Aluminum-AL": 1.8,
+                                "Rubber-RB": 1.2,
+                                "Copper-CU": 2.0
+                            }.get(material_code, 2.0)
+                            
+                            # Calculate consumption for this material based on products that use it
+                            material_consumption = 0
+                            for product, qty in prod_data.items():
+                                if material_code in product_material_map.get(product, []):
+                                    material_consumption += int(qty * consumption_multiplier)
+                            
+                            if material_consumption > 0:
+                                row["Consumption_Kg"] = material_consumption
+                        
+                        # Ensure closing stock is calculated correctly
+                        opening = row.get("Opening_Stock_Kg", 0)
+                        consumption = row.get("Consumption_Kg", 0)
+                        received = row.get("Received_Kg", 0)
+                        row["Closing_Stock_Kg"] = opening - consumption + received
+                        
+                        filtered_batch_data.append(row)
+                
+                all_rows.extend(filtered_batch_data)
+                print(f"✓ Generated {len(filtered_batch_data)} rows (filtered {len(batch_data) - len(filtered_batch_data)} duplicates)")
             else:
                 print("⚠ No data generated")
             
