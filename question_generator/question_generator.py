@@ -396,13 +396,319 @@ Return ONLY valid JSON array, no markdown, no explanations."""
             return []
 
 
+class AnswerCalculator:
+    """Calculates correct answers from SQL formulas using pandas."""
+    
+    def __init__(self, dataframes: Dict[str, pd.DataFrame]):
+        self.dataframes = dataframes
+        # Map table names to dataframes
+        self.table_map = {
+            "production_logs": dataframes.get("production_logs"),
+            "quality_control": dataframes.get("quality_control"),
+            "maintenance_logs": dataframes.get("maintenance_logs"),
+            "inventory_logs": dataframes.get("inventory_logs"),
+        }
+    
+    def calculate_answer(self, question: Dict) -> Optional[str]:
+        """Calculate answer from SQL formula."""
+        sql_formula = question.get("sql_formula", "")
+        if not sql_formula:
+            return None
+        
+        try:
+            # Parse and execute SQL-like query
+            result = self._execute_sql_like_query(sql_formula)
+            return self._format_answer(result, question.get("answer_format", ""))
+        except Exception as e:
+            return f"Error calculating answer: {str(e)}"
+    
+    def _execute_sql_like_query(self, sql: str) -> any:
+        """Execute SQL-like query using pandas."""
+        sql_upper = sql.upper().strip()
+        
+        # Handle SELECT SUM queries
+        if "SELECT SUM(" in sql_upper:
+            return self._execute_sum_query(sql)
+        elif "SELECT COUNT(" in sql_upper or "SELECT COUNT(*)" in sql_upper:
+            return self._execute_count_query(sql)
+        elif "SELECT AVG(" in sql_upper:
+            return self._execute_avg_query(sql)
+        elif "SELECT MIN(" in sql_upper:
+            return self._execute_min_query(sql)
+        elif "SELECT MAX(" in sql_upper:
+            return self._execute_max_query(sql)
+        elif "GROUP BY" in sql_upper:
+            return self._execute_groupby_query(sql)
+        else:
+            # Try to parse basic SELECT queries
+            return self._execute_basic_query(sql)
+    
+    def _get_table_name(self, sql: str) -> Optional[str]:
+        """Extract table name from SQL."""
+        sql_upper = sql.upper()
+        for table_name in self.table_map.keys():
+            if table_name.upper() in sql_upper:
+                return table_name
+        return None
+    
+    def _parse_where_clause(self, sql: str, df: pd.DataFrame) -> pd.DataFrame:
+        """Parse WHERE clause and filter dataframe."""
+        sql_upper = sql.upper()
+        where_pos = sql_upper.find("WHERE")
+        if where_pos == -1:
+            return df
+        
+        where_clause = sql[where_pos + 5:].strip()
+        # Remove GROUP BY, ORDER BY, LIMIT if present
+        for keyword in ["GROUP BY", "ORDER BY", "LIMIT"]:
+            if keyword in where_clause.upper():
+                where_clause = where_clause[:where_clause.upper().find(keyword)].strip()
+        
+        # Parse common WHERE conditions
+        filtered_df = df.copy()
+        
+        # Split by AND to handle multiple conditions
+        conditions = [c.strip() for c in where_clause.split("AND")]
+        
+        for condition in conditions:
+            condition_upper = condition.upper()
+            
+            # Handle date filters
+            if "DATE(" in condition_upper or "TODAY()" in condition_upper or "NOW()" in condition_upper or "DATE" in condition_upper:
+                if ">=" in condition:
+                    parts = condition.split(">=")
+                    if len(parts) == 2:
+                        col_part = parts[0].strip()
+                        col = col_part.split()[-1] if " " in col_part else col_part
+                        if col in filtered_df.columns:
+                            # Calculate date threshold
+                            date_part = parts[1].strip()
+                            if "-30" in date_part or "30 DAYS" in date_part.upper() or "'-30 DAYS'" in date_part.upper():
+                                threshold = pd.Timestamp.now() - pd.Timedelta(days=30)
+                                filtered_df = filtered_df[filtered_df[col] >= threshold]
+                            elif "-7" in date_part or "7 DAYS" in date_part.upper() or "'-7 DAYS'" in date_part.upper():
+                                threshold = pd.Timestamp.now() - pd.Timedelta(days=7)
+                                filtered_df = filtered_df[filtered_df[col] >= threshold]
+                            elif "-90" in date_part or "90 DAYS" in date_part.upper():
+                                threshold = pd.Timestamp.now() - pd.Timedelta(days=90)
+                                filtered_df = filtered_df[filtered_df[col] >= threshold]
+                elif "<=" in condition:
+                    parts = condition.split("<=")
+                    if len(parts) == 2:
+                        col_part = parts[0].strip()
+                        col = col_part.split()[-1] if " " in col_part else col_part
+                        if col in filtered_df.columns:
+                            threshold = pd.Timestamp.now()
+                            filtered_df = filtered_df[filtered_df[col] <= threshold]
+            
+            # Handle LIKE conditions
+            elif "LIKE" in condition_upper:
+                parts = condition_upper.split("LIKE")
+                if len(parts) == 2:
+                    col_part = parts[0].strip()
+                    col = col_part.split()[-1] if " " in col_part else col_part
+                    pattern_part = parts[1].strip()
+                    # Extract pattern, removing quotes and wildcards
+                    pattern = pattern_part.strip("'\"%").replace("%", "")
+                    if col in filtered_df.columns:
+                        filtered_df = filtered_df[filtered_df[col].astype(str).str.contains(pattern, case=False, na=False)]
+            
+            # Handle equality conditions (=)
+            elif "=" in condition and "LIKE" not in condition_upper:
+                parts = condition.split("=")
+                if len(parts) == 2:
+                    col_part = parts[0].strip()
+                    col = col_part.split()[-1] if " " in col_part else col_part
+                    value = parts[1].strip().strip("'\"")
+                    if col in filtered_df.columns:
+                        # Try numeric comparison first
+                        try:
+                            num_value = float(value)
+                            filtered_df = filtered_df[filtered_df[col] == num_value]
+                        except ValueError:
+                            # String comparison
+                            filtered_df = filtered_df[filtered_df[col].astype(str) == value]
+            
+            # Handle IN conditions
+            elif "IN (" in condition_upper:
+                parts = condition_upper.split("IN (")
+                if len(parts) == 2:
+                    col_part = parts[0].strip()
+                    col = col_part.split()[-1] if " " in col_part else col_part
+                    values_part = parts[1].split(")")[0]
+                    values = [v.strip().strip("'\"") for v in values_part.split(",")]
+                    if col in filtered_df.columns:
+                        filtered_df = filtered_df[filtered_df[col].astype(str).isin(values)]
+        
+        return filtered_df
+    
+    def _execute_sum_query(self, sql: str) -> float:
+        """Execute SUM query."""
+        table_name = self._get_table_name(sql)
+        if not table_name or table_name not in self.table_map:
+            return 0
+        
+        df = self.table_map[table_name]
+        df = self._parse_where_clause(sql, df)
+        
+        # Extract column name from SUM(column)
+        sum_match = sql.upper().find("SUM(")
+        if sum_match != -1:
+            col_start = sum_match + 4
+            col_end = sql.find(")", col_start)
+            col_name = sql[col_start:col_end].strip()
+            if col_name in df.columns:
+                return float(df[col_name].sum())
+        return 0
+    
+    def _execute_count_query(self, sql: str) -> int:
+        """Execute COUNT query."""
+        table_name = self._get_table_name(sql)
+        if not table_name or table_name not in self.table_map:
+            return 0
+        
+        df = self.table_map[table_name]
+        df = self._parse_where_clause(sql, df)
+        return len(df)
+    
+    def _execute_avg_query(self, sql: str) -> float:
+        """Execute AVG query."""
+        table_name = self._get_table_name(sql)
+        if not table_name or table_name not in self.table_map:
+            return 0
+        
+        df = self.table_map[table_name]
+        df = self._parse_where_clause(sql, df)
+        
+        avg_match = sql.upper().find("AVG(")
+        if avg_match != -1:
+            col_start = avg_match + 4
+            col_end = sql.find(")", col_start)
+            col_name = sql[col_start:col_end].strip()
+            if col_name in df.columns:
+                return float(df[col_name].mean())
+        return 0
+    
+    def _execute_min_query(self, sql: str) -> float:
+        """Execute MIN query."""
+        table_name = self._get_table_name(sql)
+        if not table_name or table_name not in self.table_map:
+            return 0
+        
+        df = self.table_map[table_name]
+        df = self._parse_where_clause(sql, df)
+        
+        min_match = sql.upper().find("MIN(")
+        if min_match != -1:
+            col_start = min_match + 4
+            col_end = sql.find(")", col_start)
+            col_name = sql[col_start:col_end].strip()
+            if col_name in df.columns:
+                return float(df[col_name].min())
+        return 0
+    
+    def _execute_max_query(self, sql: str) -> float:
+        """Execute MAX query."""
+        table_name = self._get_table_name(sql)
+        if not table_name or table_name not in self.table_map:
+            return 0
+        
+        df = self.table_map[table_name]
+        df = self._parse_where_clause(sql, df)
+        
+        max_match = sql.upper().find("MAX(")
+        if max_match != -1:
+            col_start = max_match + 4
+            col_end = sql.find(")", col_start)
+            col_name = sql[col_start:col_end].strip()
+            if col_name in df.columns:
+                return float(df[col_name].max())
+        return 0
+    
+    def _execute_groupby_query(self, sql: str) -> str:
+        """Execute GROUP BY query."""
+        table_name = self._get_table_name(sql)
+        if not table_name or table_name not in self.table_map:
+            return "No data"
+        
+        df = self.table_map[table_name]
+        df = self._parse_where_clause(sql, df)
+        
+        # Extract GROUP BY column
+        groupby_match = sql.upper().find("GROUP BY")
+        if groupby_match != -1:
+            groupby_col = sql[groupby_match + 9:].strip().split()[0]
+            if groupby_col in df.columns:
+                # Extract aggregation function
+                if "SUM(" in sql.upper():
+                    agg_col_match = sql.upper().find("SUM(")
+                    agg_col_start = agg_col_match + 4
+                    agg_col_end = sql.find(")", agg_col_start)
+                    agg_col = sql[agg_col_start:agg_col_end].strip()
+                    if agg_col in df.columns:
+                        result = df.groupby(groupby_col)[agg_col].sum()
+                        return result.to_dict().__str__()
+                elif "AVG(" in sql.upper():
+                    agg_col_match = sql.upper().find("AVG(")
+                    agg_col_start = agg_col_match + 4
+                    agg_col_end = sql.find(")", agg_col_start)
+                    agg_col = sql[agg_col_start:agg_col_end].strip()
+                    if agg_col in df.columns:
+                        result = df.groupby(groupby_col)[agg_col].mean()
+                        return result.to_dict().__str__()
+                elif "COUNT(" in sql.upper():
+                    result = df.groupby(groupby_col).size()
+                    return result.to_dict().__str__()
+        
+        return "Unable to parse GROUP BY query"
+    
+    def _execute_basic_query(self, sql: str) -> str:
+        """Execute basic SELECT query."""
+        table_name = self._get_table_name(sql)
+        if not table_name or table_name not in self.table_map:
+            return "Table not found"
+        
+        df = self.table_map[table_name]
+        df = self._parse_where_clause(sql, df)
+        
+        if len(df) == 0:
+            return "No matching records"
+        
+        return f"Found {len(df)} records"
+    
+    def _format_answer(self, result: any, answer_format: str) -> str:
+        """Format answer based on expected format."""
+        if result is None:
+            return "N/A"
+        
+        if isinstance(result, (int, float)):
+            if "percentage" in answer_format.lower() or "%" in answer_format:
+                return f"{result:.2f}%"
+            elif "integer" in answer_format.lower():
+                return str(int(result))
+            else:
+                return f"{result:.2f}" if isinstance(result, float) else str(result)
+        elif isinstance(result, dict):
+            # Format dictionary results
+            formatted = []
+            for key, value in result.items():
+                if isinstance(value, float):
+                    formatted.append(f"{key}: {value:.2f}")
+                else:
+                    formatted.append(f"{key}: {value}")
+            return " | ".join(formatted)
+        else:
+            return str(result)
+
+
 class QuestionManager:
     """Manages question storage and duplicate detection."""
     
-    def __init__(self, questions_file: Path):
+    def __init__(self, questions_file: Path, answer_calculator: Optional[AnswerCalculator] = None):
         self.questions_file = questions_file
         self.questions_csv_file = questions_file.with_suffix('.csv')
         self.questions = self.load_questions()
+        self.answer_calculator = answer_calculator
     
     def load_questions(self) -> Dict[str, List[Dict]]:
         """Load existing questions from file."""
@@ -451,6 +757,7 @@ class QuestionManager:
                     "excel_formula": q.get("excel_formula", ""),
                     "calculation_steps": " | ".join(q.get("calculation_steps", [])),
                     "answer_format": q.get("answer_format", ""),
+                    "correct_answer": q.get("correct_answer", ""),
                     "related_tables": ", ".join(q.get("related_tables", [])),
                     "related_columns": ", ".join(q.get("related_columns", [])),
                     "created_at": q.get("created_at", "")
@@ -462,8 +769,8 @@ class QuestionManager:
             # Reorder columns for better readability
             column_order = [
                 "id", "category", "question", "sql_formula", "excel_formula",
-                "calculation_steps", "answer_format", "related_tables",
-                "related_columns", "created_at"
+                "calculation_steps", "answer_format", "correct_answer",
+                "related_tables", "related_columns", "created_at"
             ]
             df = df[[col for col in column_order if col in df.columns]]
             df.to_csv(self.questions_csv_file, index=False, encoding='utf-8')
@@ -480,7 +787,7 @@ class QuestionManager:
         return existing
     
     def add_questions(self, new_questions: List[Dict], category: str):
-        """Add new questions, filtering duplicates."""
+        """Add new questions, filtering duplicates and calculating answers."""
         existing_texts = self.get_existing_question_texts()
         added_count = 0
         
@@ -490,12 +797,34 @@ class QuestionManager:
                 q["category"] = category
                 q["id"] = f"{category}_{len(self.questions[category]) + 1}"
                 q["created_at"] = datetime.now().isoformat()
+                
+                # Calculate correct answer if calculator is available
+                if self.answer_calculator:
+                    correct_answer = self.answer_calculator.calculate_answer(q)
+                    q["correct_answer"] = correct_answer
+                
                 self.questions[category].append(q)
                 existing_texts.add(q_text)
                 added_count += 1
         
         print(f"  Added {added_count} new {category} questions (filtered {len(new_questions) - added_count} duplicates)")
         return added_count
+    
+    def calculate_missing_answers(self):
+        """Calculate answers for questions that don't have them yet."""
+        if not self.answer_calculator:
+            return
+        
+        total_calculated = 0
+        for category, questions in self.questions.items():
+            for q in questions:
+                if "correct_answer" not in q or not q.get("correct_answer"):
+                    correct_answer = self.answer_calculator.calculate_answer(q)
+                    q["correct_answer"] = correct_answer
+                    total_calculated += 1
+        
+        if total_calculated > 0:
+            print(f"\n✓ Calculated {total_calculated} missing answers")
     
     def get_question_counts(self) -> Dict[str, int]:
         """Get current question counts by category."""
@@ -511,7 +840,6 @@ def main():
     # Initialize components
     analyzer = DataAnalyzer(DATA_DIR)
     question_gen = QuestionGenerator()
-    question_mgr = QuestionManager(QUESTIONS_FILE)
     
     # Load and analyze data
     dataframes = analyzer.load_all_data()
@@ -522,6 +850,10 @@ def main():
     schema = analyzer.analyze_schema()
     relationships = analyzer.detect_relationships()
     data_summary = analyzer.get_data_summary()
+    
+    # Initialize answer calculator with loaded dataframes
+    answer_calculator = AnswerCalculator(dataframes)
+    question_mgr = QuestionManager(QUESTIONS_FILE, answer_calculator)
     
     print("\n" + "=" * 60)
     print("Current Question Status:")
@@ -558,6 +890,12 @@ def main():
                     print(f"  Warning: No questions generated for batch")
         else:
             print(f"\n{category}: Already has {current_count} questions (target: {QUESTIONS_PER_CATEGORY})")
+    
+    # Calculate answers for any questions that don't have them
+    print("\n" + "=" * 60)
+    print("Calculating answers for questions...")
+    print("=" * 60)
+    question_mgr.calculate_missing_answers()
     
     # Final save
     question_mgr.save_questions()
