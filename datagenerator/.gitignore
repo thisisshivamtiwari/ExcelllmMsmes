@@ -1,9 +1,15 @@
-# Environment variables
+# Environment variables (but allow .env.example)
 .env
+.env.local
+.env.*.local
+*.env
+!*.env.example
+!.env.example
 
 # Generated data
 generated_data/
 *.csv
+!sample_data/*.csv
 
 # Python
 __pycache__/
