@@ -1,0 +1,2487 @@
+{
+  "metadata": {
+    "last_updated": "2025-11-28T12:34:58.744326",
+    "total_questions": 104,
+    "questions_by_category": {
+      "Easy": 34,
+      "Medium": 35,
+      "Complex": 35
+    }
+  },
+  "questions": {
+    "Easy": [
+      {
+        "question": "What is the average downtime in minutes per shift across all production lines?",
+        "category": "Easy",
+        "sql_formula": "SELECT Shift, AVG(Downtime_Minutes) FROM production_logs GROUP BY Shift",
+        "excel_formula": "=AVERAGEIF(production_logs[Shift],\"Morning\", production_logs[Downtime_Minutes]) & \", \" & AVERAGEIF(production_logs[Shift],\"Afternoon\", production_logs[Downtime_Minutes]) & \", \" & AVERAGEIF(production_logs[Shift],\"Night\", production_logs[Downtime_Minutes])",
+        "calculation_steps": [
+          "Group the production_logs table by Shift",
+          "Calculate the average Downtime_Minutes for each shift."
+        ],
+        "answer_format": "Averages for Morning, Afternoon and Night shifts (minutes)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Shift",
+          "Downtime_Minutes"
+        ],
+        "id": "Easy_1",
+        "created_at": "2025-11-28T12:31:56.067562",
+        "correct_answer": "{'Afternoon': 12.783269961977187, 'Morning': 14.745387453874539, 'Night': 9.643410852713178}"
+      },
+      {
+        "question": "What is the total cost of maintenance for Machine-M1 in 2026?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Cost_Rupees) FROM maintenance_logs WHERE Machine = 'Machine-M1' AND strftime('%Y', Maintenance_Date) = '2026'",
+        "excel_formula": "=SUMIFS(maintenance_logs[Cost_Rupees], maintenance_logs[Machine], \"Machine-M1\", maintenance_logs[Maintenance_Date], \">=2026-01-01\", maintenance_logs[Maintenance_Date], \"<=2026-12-31\")",
+        "calculation_steps": [
+          "Filter maintenance_logs for Machine = 'Machine-M1'",
+          "Filter for dates in 2026",
+          "Sum the Cost_Rupees column"
+        ],
+        "answer_format": "integer (total cost in Rupees)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Cost_Rupees",
+          "Maintenance_Date"
+        ],
+        "id": "Easy_2",
+        "created_at": "2025-11-28T12:31:56.074469",
+        "correct_answer": "504180"
+      },
+      {
+        "question": "Which material has the highest average consumption per day in July 2026?",
+        "category": "Easy",
+        "sql_formula": "SELECT Material_Name FROM inventory_logs WHERE strftime('%Y-%m', Date) = '2026-07' GROUP BY Material_Name ORDER BY AVG(Consumption_Kg) DESC LIMIT 1",
+        "excel_formula": "INDEX(inventory_logs[Material_Name], MATCH(MAX(AVERAGEIFS(inventory_logs[Consumption_Kg], inventory_logs[Date], \">=2026-07-01\", inventory_logs[Date], \"<=2026-07-31\")), AVERAGEIFS(inventory_logs[Consumption_Kg], inventory_logs[Date], \">=2026-07-01\", inventory_logs[Date], \"<=2026-07-31\"), 0))",
+        "calculation_steps": [
+          "Filter inventory_logs for dates in July 2026",
+          "Group the data by Material_Name",
+          "Calculate the average Consumption_Kg for each material.",
+          "Order the results in descending order based on average Consumption_Kg",
+          "Select the top Material_Name"
+        ],
+        "answer_format": "Material Name (string)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Consumption_Kg",
+          "Date"
+        ],
+        "id": "Easy_3",
+        "created_at": "2025-11-28T12:31:56.077549",
+        "correct_answer": "{'Aluminum Alloy Ingots': 384.45454545454544, 'Aluminum Ingot': 371.1803278688525, 'Aluminum Ingot (Alloy 6061)': 350.0, 'Aluminum Ingots': 1145.0, 'Copper Wire': 390.52, 'Copper Wire (1mm)': 400.0, 'PVC Granules': 552.8953488372093, 'PVC Granules (Industrial Grade)': 1800.0, 'PVC Granules - Grey': 800.0, 'PVC Granules, Extrusion Grade': 800.0, 'Rubber Compund': 583.1666666666666, 'Steel Sheet 101': 795.3734939759037, 'Steel Sheet 101 (Galvanized)': 1200.0, 'Steel Sheet 101 - 2mm': 1500.0, 'Steel Sheet 101, Grade A': 1500.0, 'Synthetic Rubber': 312.63157894736844, 'Synthetic Rubber Blend': 335.6666666666667, 'Synthetic Rubber Compound': 234.28571428571428, 'Synthetic Rubber Roll': 295.5, 'Synthetic Rubber, High Tensile': 300.0}"
+      },
+      {
+        "question": "What is the total number of components reworked in Line-2?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Rework_Count) FROM quality_control WHERE Line = 'Line-2'",
+        "excel_formula": "=SUMIF(quality_control[Line], \"Line-2\", quality_control[Rework_Count])",
+        "calculation_steps": [
+          "Filter quality_control for Line = 'Line-2'",
+          "Sum the Rework_Count column"
+        ],
+        "answer_format": "integer (total rework count)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Line",
+          "Rework_Count"
+        ],
+        "id": "Easy_4",
+        "created_at": "2025-11-28T12:31:56.078420",
+        "correct_answer": "333"
+      },
+      {
+        "question": "How many breakdown maintenances were performed on Machine-M2 in Q3 2026?",
+        "category": "Easy",
+        "sql_formula": "SELECT COUNT(*) FROM maintenance_logs WHERE Machine = 'Machine-M2' AND Maintenance_Type = 'Breakdown' AND strftime('%m', Maintenance_Date) BETWEEN '07' AND '09' AND strftime('%Y', Maintenance_Date) = '2026'",
+        "excel_formula": "=COUNTIFS(maintenance_logs[Machine], \"Machine-M2\", maintenance_logs[Maintenance_Type], \"Breakdown\", maintenance_logs[Maintenance_Date], \">=2026-07-01\", maintenance_logs[Maintenance_Date], \"<=2026-09-30\")",
+        "calculation_steps": [
+          "Filter maintenance_logs for Machine = 'Machine-M2'",
+          "Filter for Maintenance_Type = 'Breakdown'",
+          "Filter for dates between July 1, 2026 and September 30, 2026",
+          "Count the number of rows"
+        ],
+        "answer_format": "integer (number of breakdowns)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Maintenance_Type",
+          "Maintenance_Date"
+        ],
+        "id": "Easy_5",
+        "created_at": "2025-11-28T12:31:56.079230",
+        "correct_answer": "8"
+      },
+      {
+        "question": "What is the total target quantity for all products on Line-1/Machine-M1?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Target_Qty) FROM production_logs WHERE Line_Machine = 'Line-1/Machine-M1'",
+        "excel_formula": "=SUMIF(production_logs[Line_Machine], \"Line-1/Machine-M1\", production_logs[Target_Qty])",
+        "calculation_steps": [
+          "Filter production_logs for Line_Machine = 'Line-1/Machine-M1'",
+          "Sum the Target_Qty column"
+        ],
+        "answer_format": "integer (total target quantity)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Line_Machine",
+          "Target_Qty"
+        ],
+        "id": "Easy_6",
+        "created_at": "2025-11-28T12:31:56.080217",
+        "correct_answer": "46640"
+      },
+      {
+        "question": "Who is the inspector that inspected the most units?",
+        "category": "Easy",
+        "sql_formula": "SELECT Inspector_Name FROM quality_control GROUP BY Inspector_Name ORDER BY SUM(Inspected_Qty) DESC LIMIT 1",
+        "excel_formula": "INDEX(quality_control[Inspector_Name], MATCH(MAX(SUMIF(quality_control[Inspector_Name], UNIQUE(quality_control[Inspector_Name]), quality_control[Inspected_Qty])), SUMIF(quality_control[Inspector_Name], UNIQUE(quality_control[Inspector_Name]), quality_control[Inspected_Qty]), 0))",
+        "calculation_steps": [
+          "Group quality_control by Inspector_Name.",
+          "Sum Inspected_Qty for each inspector.",
+          "Order the results in descending order.",
+          "Select the top Inspector_Name."
+        ],
+        "answer_format": "Inspector Name (string)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Inspector_Name",
+          "Inspected_Qty"
+        ],
+        "id": "Easy_7",
+        "created_at": "2025-11-28T12:31:56.080738",
+        "correct_answer": "{'Amit Patel': 19709, 'Priya Sharma': 20271, 'Rajesh Kumar': 21473}"
+      },
+      {
+        "question": "What is the average unit cost of Steel-101?",
+        "category": "Easy",
+        "sql_formula": "SELECT AVG(Unit_Cost_Rupees) FROM inventory_logs WHERE Material_Code = 'Steel-101'",
+        "excel_formula": "=AVERAGEIF(inventory_logs[Material_Code], \"Steel-101\", inventory_logs[Unit_Cost_Rupees])",
+        "calculation_steps": [
+          "Filter inventory_logs for Material_Code = 'Steel-101'",
+          "Calculate the average of Unit_Cost_Rupees"
+        ],
+        "answer_format": "decimal (average unit cost)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Code",
+          "Unit_Cost_Rupees"
+        ],
+        "id": "Easy_8",
+        "created_at": "2025-11-28T12:31:56.081645",
+        "correct_answer": "236.02"
+      },
+      {
+        "question": "What is the minimum closing stock of PVC Granules?",
+        "category": "Easy",
+        "sql_formula": "SELECT MIN(Closing_Stock_Kg) FROM inventory_logs WHERE Material_Name LIKE '%PVC Granules%'",
+        "excel_formula": "=MINIF(inventory_logs[Material_Name], \"*PVC Granules*\", inventory_logs[Closing_Stock_Kg])",
+        "calculation_steps": [
+          "Filter inventory_logs for Material_Name containing 'PVC Granules'",
+          "Find the minimum of Closing_Stock_Kg"
+        ],
+        "answer_format": "integer (minimum closing stock in Kg)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Closing_Stock_Kg"
+        ],
+        "id": "Easy_9",
+        "created_at": "2025-11-28T12:31:56.082378",
+        "correct_answer": "272"
+      },
+      {
+        "question": "What is the most frequent Defect_Type?",
+        "category": "Easy",
+        "sql_formula": "SELECT Defect_Type FROM quality_control GROUP BY Defect_Type ORDER BY COUNT(*) DESC LIMIT 1",
+        "excel_formula": "INDEX(quality_control[Defect_Type], MODE(MATCH(quality_control[Defect_Type], UNIQUE(quality_control[Defect_Type]),0)))",
+        "calculation_steps": [
+          "Group quality_control by Defect_Type",
+          "Count the occurrences of each Defect_Type",
+          "Order the results in descending order",
+          "Select the top Defect_Type"
+        ],
+        "answer_format": "Defect Type (string)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Defect_Type"
+        ],
+        "id": "Easy_10",
+        "created_at": "2025-11-28T12:31:56.083099",
+        "correct_answer": "{'Assembly Error': 99, 'Dimensional': 139, 'Material Defect': 92, 'Packaging Issue': 57, 'Surface Finish': 140}"
+      },
+      {
+        "question": "What is the total downtime in minutes for Machine-M1 across all production lines this month?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Downtime_Minutes) FROM production_logs WHERE Line_Machine LIKE '%Machine-M1%' AND Date >= DATE('now', 'start of month')",
+        "excel_formula": "=SUMIFS(production_logs[Downtime_Minutes], production_logs[Line_Machine], \"*Machine-M1*\", production_logs[Date], \">=\"&EOMONTH(TODAY(),-1)+1)",
+        "calculation_steps": [
+          "Filter production_logs for Line_Machine containing 'Machine-M1'",
+          "Filter for dates this month",
+          "Sum the Downtime_Minutes column"
+        ],
+        "answer_format": "integer (total minutes)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Line_Machine",
+          "Downtime_Minutes",
+          "Date"
+        ],
+        "id": "Easy_11",
+        "created_at": "2025-11-28T12:32:11.167454",
+        "correct_answer": "9846"
+      },
+      {
+        "question": "How many breakdown maintenance events occurred in the last quarter?",
+        "category": "Easy",
+        "sql_formula": "SELECT COUNT(*) FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' AND Breakdown_Date >= DATE('now', '-3 months')",
+        "excel_formula": "=COUNTIFS(maintenance_logs[Maintenance_Type],\"Breakdown\",maintenance_logs[Breakdown_Date],\">=\"&TODAY()-90)",
+        "calculation_steps": [
+          "Filter maintenance_logs for Maintenance_Type = 'Breakdown'",
+          "Filter for dates in the last 3 months",
+          "Count the number of rows"
+        ],
+        "answer_format": "integer (number of events)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Maintenance_Type",
+          "Breakdown_Date"
+        ],
+        "id": "Easy_12",
+        "created_at": "2025-11-28T12:32:11.171968",
+        "correct_answer": "46"
+      },
+      {
+        "question": "What is the average 'Actual Quantity' produced per shift?",
+        "category": "Easy",
+        "sql_formula": "SELECT Shift, AVG(Actual_Qty) FROM production_logs GROUP BY Shift",
+        "excel_formula": "=AVERAGEIF(production_logs[Shift],\"Morning\",production_logs[Actual_Qty]) + AVERAGEIF(production_logs[Shift],\"Afternoon\",production_logs[Actual_Qty]) + AVERAGEIF(production_logs[Shift],\"Night\",production_logs[Actual_Qty])",
+        "calculation_steps": [
+          "Group production_logs by Shift",
+          "Calculate the average Actual_Qty for each shift"
+        ],
+        "answer_format": "table (Shift, Average Quantity)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Shift",
+          "Actual_Qty"
+        ],
+        "id": "Easy_13",
+        "created_at": "2025-11-28T12:32:11.184845",
+        "correct_answer": "{'Afternoon': 281.10266159695817, 'Morning': 266.1291512915129, 'Night': 239.2674418604651}"
+      },
+      {
+        "question": "What is the total wastage in kilograms for 'Steel Sheet 101' this year?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Wastage_Kg) FROM inventory_logs WHERE Material_Name LIKE '%Steel Sheet 101%' AND Date BETWEEN DATE('now', 'start of year') AND DATE('now', 'localtime')",
+        "excel_formula": "=SUMIFS(inventory_logs[Wastage_Kg], inventory_logs[Material_Name], \"*Steel Sheet 101*\", inventory_logs[Date], \">=\"&DATE(YEAR(TODAY()),1,1), inventory_logs[Date], \"<=\"&TODAY())",
+        "calculation_steps": [
+          "Filter inventory_logs for Material_Name containing 'Steel Sheet 101'",
+          "Filter for dates this year",
+          "Sum the Wastage_Kg column"
+        ],
+        "answer_format": "decimal (total kilograms)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Wastage_Kg",
+          "Date"
+        ],
+        "id": "Easy_14",
+        "created_at": "2025-11-28T12:32:11.186656",
+        "correct_answer": "5869.00"
+      },
+      {
+        "question": "Which inspector had the highest number of reworked items?",
+        "category": "Easy",
+        "sql_formula": "SELECT Inspector_Name FROM quality_control GROUP BY Inspector_Name ORDER BY SUM(Rework_Count) DESC LIMIT 1",
+        "excel_formula": "LARGE(SUMIF(quality_control[Inspector_Name],UNIQUE(quality_control[Inspector_Name]),quality_control[Rework_Count]),1)",
+        "calculation_steps": [
+          "Group quality_control by Inspector_Name",
+          "Sum the Rework_Count for each inspector",
+          "Order by the sum in descending order",
+          "Select the first Inspector_Name"
+        ],
+        "answer_format": "text (inspector name)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Inspector_Name",
+          "Rework_Count"
+        ],
+        "id": "Easy_15",
+        "created_at": "2025-11-28T12:32:11.186946",
+        "correct_answer": "{'Amit Patel': 333, 'Priya Sharma': 333, 'Rajesh Kumar': 306}"
+      },
+      {
+        "question": "What is the average cost of repair maintenance?",
+        "category": "Easy",
+        "sql_formula": "SELECT AVG(Cost_Rupees) FROM maintenance_logs WHERE Maintenance_Type = 'Repair'",
+        "excel_formula": "=AVERAGEIF(maintenance_logs[Maintenance_Type],\"Repair\",maintenance_logs[Cost_Rupees])",
+        "calculation_steps": [
+          "Filter maintenance_logs for Maintenance_Type = 'Repair'",
+          "Calculate the average Cost_Rupees"
+        ],
+        "answer_format": "decimal (average cost in Rupees)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Maintenance_Type",
+          "Cost_Rupees"
+        ],
+        "id": "Easy_16",
+        "created_at": "2025-11-28T12:32:11.187575",
+        "correct_answer": "8545.45"
+      },
+      {
+        "question": "What is the total quantity of 'Component-X' that failed inspection last month?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Failed_Qty) FROM quality_control WHERE Product = 'Component-X' AND Inspection_Date >= DATE('now', 'start of month', '-1 month') AND Inspection_Date < DATE('now', 'start of month')",
+        "excel_formula": "=SUMIFS(quality_control[Failed_Qty], quality_control[Product], \"Component-X\", quality_control[Inspection_Date], \">=\"&EOMONTH(TODAY(),-2)+1, quality_control[Inspection_Date], \"<=\"&EOMONTH(TODAY(),-1))",
+        "calculation_steps": [
+          "Filter quality_control for Product = 'Component-X'",
+          "Filter for dates last month",
+          "Sum the Failed_Qty column"
+        ],
+        "answer_format": "integer (total quantity)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Failed_Qty",
+          "Inspection_Date"
+        ],
+        "id": "Easy_17",
+        "created_at": "2025-11-28T12:32:11.188498",
+        "correct_answer": "384"
+      },
+      {
+        "question": "How many preventive maintenance activities were performed on Machine-M2 this year?",
+        "category": "Easy",
+        "sql_formula": "SELECT COUNT(*) FROM maintenance_logs WHERE Machine = 'Machine-M2' AND Maintenance_Type = 'Preventive' AND Maintenance_Date BETWEEN DATE('now', 'start of year') AND DATE('now', 'localtime')",
+        "excel_formula": "=COUNTIFS(maintenance_logs[Machine],\"Machine-M2\",maintenance_logs[Maintenance_Type],\"Preventive\",maintenance_logs[Maintenance_Date],\">=\"&DATE(YEAR(TODAY()),1,1),maintenance_logs[Maintenance_Date],\"<=\"&TODAY())",
+        "calculation_steps": [
+          "Filter maintenance_logs for Machine = 'Machine-M2'",
+          "Filter for Maintenance_Type = 'Preventive'",
+          "Filter for dates this year",
+          "Count the number of rows"
+        ],
+        "answer_format": "integer (number of activities)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Maintenance_Type",
+          "Maintenance_Date"
+        ],
+        "id": "Easy_18",
+        "created_at": "2025-11-28T12:32:11.189041",
+        "correct_answer": "15"
+      },
+      {
+        "question": "What is the minimum opening stock in Kg for PVC Granules, Extrusion Grade?",
+        "category": "Easy",
+        "sql_formula": "SELECT MIN(Opening_Stock_Kg) FROM inventory_logs WHERE Material_Name = 'PVC Granules, Extrusion Grade'",
+        "excel_formula": "=MINIFS(inventory_logs[Opening_Stock_Kg], inventory_logs[Material_Name], \"PVC Granules, Extrusion Grade\")",
+        "calculation_steps": [
+          "Filter inventory_logs for Material_Name = 'PVC Granules, Extrusion Grade'",
+          "Find the minimum value in the Opening_Stock_Kg column"
+        ],
+        "answer_format": "integer (minimum kilograms)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Opening_Stock_Kg"
+        ],
+        "id": "Easy_19",
+        "created_at": "2025-11-28T12:32:11.189949",
+        "correct_answer": "2000"
+      },
+      {
+        "question": "What is the average downtime hours for breakdowns caused by 'Motor overheating and failure to start'?",
+        "category": "Easy",
+        "sql_formula": "SELECT AVG(Downtime_Hours) FROM maintenance_logs WHERE Issue_Description = 'Motor overheating and failure to start' AND Maintenance_Type = 'Breakdown'",
+        "excel_formula": "=AVERAGEIFS(maintenance_logs[Downtime_Hours],maintenance_logs[Issue_Description],\"Motor overheating and failure to start\", maintenance_logs[Maintenance_Type], \"Breakdown\")",
+        "calculation_steps": [
+          "Filter maintenance_logs for Issue_Description = 'Motor overheating and failure to start'",
+          "Filter maintenance_logs for Maintenance_Type = 'Breakdown'",
+          "Calculate the average Downtime_Hours"
+        ],
+        "answer_format": "decimal (average hours)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Issue_Description",
+          "Downtime_Hours",
+          "Maintenance_Type"
+        ],
+        "id": "Easy_20",
+        "created_at": "2025-11-28T12:32:11.190491",
+        "correct_answer": "6.50"
+      },
+      {
+        "question": "What is the total downtime in minutes for Machine-M1 in the last month?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Downtime_Minutes) FROM production_logs WHERE Line_Machine LIKE '%Machine-M1%' AND Date >= DATE('now', '-1 month')",
+        "excel_formula": "=SUMIFS(production_logs[Downtime_Minutes], production_logs[Line_Machine], \"*Machine-M1*\", production_logs[Date], \">=\"&TODAY()-30)",
+        "calculation_steps": [
+          "Filter production_logs for Line_Machine containing 'Machine-M1'",
+          "Filter for dates within the last month",
+          "Sum the Downtime_Minutes column"
+        ],
+        "answer_format": "integer (total minutes)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Line_Machine",
+          "Downtime_Minutes",
+          "Date"
+        ],
+        "id": "Easy_21",
+        "created_at": "2025-11-28T12:32:24.328525",
+        "correct_answer": "9846"
+      },
+      {
+        "question": "What is the average rework count for Component-X?",
+        "category": "Easy",
+        "sql_formula": "SELECT AVG(Rework_Count) FROM quality_control WHERE Product = 'Component-X'",
+        "excel_formula": "=AVERAGEIF(quality_control[Product], \"Component-X\", quality_control[Rework_Count])",
+        "calculation_steps": [
+          "Filter quality_control for Product = 'Component-X'",
+          "Calculate the average of the Rework_Count column"
+        ],
+        "answer_format": "float (average rework count)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Rework_Count"
+        ],
+        "id": "Easy_22",
+        "created_at": "2025-11-28T12:32:24.332763",
+        "correct_answer": "1.58"
+      },
+      {
+        "question": "How much of Steel Sheet 101 - 2mm was consumed in July 2026?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Consumption_Kg) FROM inventory_logs WHERE Material_Name = 'Steel Sheet 101 - 2mm' AND Date BETWEEN '2026-07-01' AND '2026-07-31'",
+        "excel_formula": "=SUMIFS(inventory_logs[Consumption_Kg], inventory_logs[Material_Name], \"Steel Sheet 101 - 2mm\", inventory_logs[Date], \">=\"&DATE(2026,7,1), inventory_logs[Date], \"<=\"&DATE(2026,7,31))",
+        "calculation_steps": [
+          "Filter inventory_logs for Material_Name = 'Steel Sheet 101 - 2mm'",
+          "Filter for dates between July 1, 2026, and July 31, 2026",
+          "Sum the Consumption_Kg column"
+        ],
+        "answer_format": "integer (total kilograms)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Consumption_Kg",
+          "Date"
+        ],
+        "id": "Easy_23",
+        "created_at": "2025-11-28T12:32:24.336694",
+        "correct_answer": "1500"
+      },
+      {
+        "question": "What is the minimum unit cost of Plastic-PVC?",
+        "category": "Easy",
+        "sql_formula": "SELECT MIN(Unit_Cost_Rupees) FROM inventory_logs WHERE Material_Code = 'Plastic-PVC'",
+        "excel_formula": "=MINIFS(inventory_logs[Unit_Cost_Rupees], inventory_logs[Material_Code], \"Plastic-PVC\")",
+        "calculation_steps": [
+          "Filter inventory_logs for Material_Code = 'Plastic-PVC'",
+          "Find the minimum value in the Unit_Cost_Rupees column"
+        ],
+        "answer_format": "integer (minimum cost in Rupees)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Code",
+          "Unit_Cost_Rupees"
+        ],
+        "id": "Easy_24",
+        "created_at": "2025-11-28T12:32:24.337472",
+        "correct_answer": "75"
+      },
+      {
+        "question": "How many breakdown maintenance logs are there for Machine-M2?",
+        "category": "Easy",
+        "sql_formula": "SELECT COUNT(*) FROM maintenance_logs WHERE Machine = 'Machine-M2' AND Maintenance_Type = 'Breakdown'",
+        "excel_formula": "=COUNTIFS(maintenance_logs[Machine], \"Machine-M2\", maintenance_logs[Maintenance_Type], \"Breakdown\")",
+        "calculation_steps": [
+          "Filter maintenance_logs for Machine = 'Machine-M2'",
+          "Filter for Maintenance_Type = 'Breakdown'",
+          "Count the number of rows"
+        ],
+        "answer_format": "integer (number of logs)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Maintenance_Type"
+        ],
+        "id": "Easy_25",
+        "created_at": "2025-11-28T12:32:24.338053",
+        "correct_answer": "8"
+      },
+      {
+        "question": "What is the average target quantity for all products?",
+        "category": "Easy",
+        "sql_formula": "SELECT AVG(Target_Qty) FROM production_logs",
+        "excel_formula": "=AVERAGE(production_logs[Target_Qty])",
+        "calculation_steps": [
+          "Calculate the average of the Target_Qty column in production_logs"
+        ],
+        "answer_format": "float (average quantity)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Target_Qty"
+        ],
+        "id": "Easy_26",
+        "created_at": "2025-11-28T12:32:24.339723",
+        "correct_answer": "315.46"
+      },
+      {
+        "question": "How many inspections were performed by Inspector_Name in October 2026?",
+        "category": "Easy",
+        "sql_formula": "SELECT COUNT(*) FROM quality_control WHERE Inspection_Date BETWEEN '2026-10-01' AND '2026-10-31'",
+        "excel_formula": "=COUNTIFS(quality_control[Inspection_Date],\">=\"&DATE(2026,10,1), quality_control[Inspection_Date],\"<=\"&DATE(2026,10,31))",
+        "calculation_steps": [
+          "Filter quality_control for dates between October 1, 2026, and October 31, 2026",
+          "Count the number of rows"
+        ],
+        "answer_format": "integer (number of inspections)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Inspection_Date"
+        ],
+        "id": "Easy_27",
+        "created_at": "2025-11-28T12:32:24.339803",
+        "correct_answer": "608"
+      },
+      {
+        "question": "What is the total cost of parts replaced for Machine-M3?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Cost_Rupees) FROM maintenance_logs WHERE Machine = 'Machine-M3'",
+        "excel_formula": "=SUMIF(maintenance_logs[Machine], \"Machine-M3\", maintenance_logs[Cost_Rupees])",
+        "calculation_steps": [
+          "Filter maintenance_logs for Machine = 'Machine-M3'",
+          "Sum the Cost_Rupees column"
+        ],
+        "answer_format": "integer (total cost in Rupees)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Cost_Rupees"
+        ],
+        "id": "Easy_28",
+        "created_at": "2025-11-28T12:32:24.339876",
+        "correct_answer": "183230"
+      },
+      {
+        "question": "What is the maximum downtime hours recorded for any breakdown?",
+        "category": "Easy",
+        "sql_formula": "SELECT MAX(Downtime_Hours) FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown'",
+        "excel_formula": "=MAXIFS(maintenance_logs[Downtime_Hours], maintenance_logs[Maintenance_Type], \"Breakdown\")",
+        "calculation_steps": [
+          "Filter maintenance_logs for Maintenance_Type = 'Breakdown'",
+          "Find the maximum value in the Downtime_Hours column"
+        ],
+        "answer_format": "float (maximum hours)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Maintenance_Type",
+          "Downtime_Hours"
+        ],
+        "id": "Easy_29",
+        "created_at": "2025-11-28T12:32:24.340511",
+        "correct_answer": "8.00"
+      },
+      {
+        "question": "How much total waste was recorded in 2025?",
+        "category": "Easy",
+        "sql_formula": "SELECT SUM(Wastage_Kg) FROM inventory_logs WHERE Date BETWEEN '2025-01-01' AND '2025-12-31'",
+        "excel_formula": "=SUMIFS(inventory_logs[Wastage_Kg], inventory_logs[Date],\">=\"&DATE(2025,1,1),inventory_logs[Date],\"<=\"&DATE(2025,12,31))",
+        "calculation_steps": [
+          "Filter inventory_logs for the year 2025",
+          "Sum the Wastage_Kg Column"
+        ],
+        "answer_format": "Integer (total kilograms)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Date",
+          "Wastage_Kg"
+        ],
+        "id": "Easy_30",
+        "created_at": "2025-11-28T12:32:24.341118",
+        "correct_answer": "5869"
+      },
+      {
+        "question": "What is the total cost of maintenance performed by each technician?",
+        "category": "Easy",
+        "sql_formula": "SELECT Technician, SUM(Cost_Rupees) FROM maintenance_logs GROUP BY Technician",
+        "excel_formula": "=SUMIF(maintenance_logs[Technician], \"[TECHNICIAN_NAME]\", maintenance_logs[Cost_Rupees])",
+        "calculation_steps": [
+          "Group maintenance_logs by Technician",
+          "Sum the Cost_Rupees for each Technician"
+        ],
+        "answer_format": "table with Technician and total maintenance cost (Rupees)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Technician",
+          "Cost_Rupees"
+        ],
+        "id": "Easy_31",
+        "created_at": "2025-11-28T12:32:33.449936",
+        "correct_answer": "{'Priya Sharma': 435270, 'Rajesh Kumar': 775460}"
+      },
+      {
+        "question": "What is the percentage of failed quantity for each product?",
+        "category": "Easy",
+        "sql_formula": "SELECT Product, SUM(Failed_Qty) * 100.0 / SUM(Inspected_Qty) AS Failure_Percentage FROM quality_control GROUP BY Product",
+        "excel_formula": "=(SUMIF(quality_control[Product], \"[PRODUCT_NAME]\", quality_control[Failed_Qty]) / SUMIF(quality_control[Product], \"[PRODUCT_NAME]\", quality_control[Inspected_Qty])) * 100",
+        "calculation_steps": [
+          "Group quality_control by Product",
+          "Calculate the sum of Failed_Qty for each product.",
+          "Calculate the sum of Inspected_Qty for each product",
+          "Divide the sum of Failed_Qty by the sum of Inspected_Qty, and multiply by 100"
+        ],
+        "answer_format": "table with Product and failure percentage",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Failed_Qty",
+          "Inspected_Qty"
+        ],
+        "id": "Easy_32",
+        "created_at": "2025-11-28T12:32:33.452099",
+        "correct_answer": "{'Assembly-Z': 419, 'Component-X': 384, 'Component-Y': 402, 'Widget-A': 489, 'Widget-B': 431, 'Widget-C': 341}"
+      },
+      {
+        "question": "What is the total wastage in Kg for each material?",
+        "category": "Easy",
+        "sql_formula": "SELECT Material_Name, SUM(Wastage_Kg) FROM inventory_logs GROUP BY Material_Name",
+        "excel_formula": "=SUMIF(inventory_logs[Material_Name], \"[MATERIAL_NAME]\", inventory_logs[Wastage_Kg])",
+        "calculation_steps": [
+          "Group inventory_logs by Material_Name",
+          "Sum the Wastage_Kg for each Material_Name"
+        ],
+        "answer_format": "table with Material_Name and total wastage (Kg)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Wastage_Kg"
+        ],
+        "id": "Easy_33",
+        "created_at": "2025-11-28T12:32:33.452654",
+        "correct_answer": "{'Aluminum Alloy Ingots': 90, 'Aluminum Ingot': 575, 'Aluminum Ingot (Alloy 6061)': 12, 'Aluminum Ingots': 288, 'Copper Wire': 571, 'Copper Wire (1mm)': 20, 'PVC Granules': 1219, 'PVC Granules (Industrial Grade)': 90, 'PVC Granules - Grey': 25, 'PVC Granules, Extrusion Grade': 40, 'Rubber Compund': 25, 'Steel Sheet 101': 2036, 'Steel Sheet 101 (Galvanized)': 45, 'Steel Sheet 101 - 2mm': 50, 'Steel Sheet 101, Grade A': 25, 'Synthetic Rubber': 221, 'Synthetic Rubber Blend': 135, 'Synthetic Rubber Compound': 200, 'Synthetic Rubber Roll': 192, 'Synthetic Rubber, High Tensile': 10}"
+      },
+      {
+        "question": "How many breakdowns occurred on each machine?",
+        "category": "Easy",
+        "sql_formula": "SELECT Machine, COUNT(*) FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' GROUP BY Machine",
+        "excel_formula": "=COUNTIF(maintenance_logs[Machine], \"[MACHINE_NAME]\", maintenance_logs[Maintenance_Type], \"Breakdown\")",
+        "calculation_steps": [
+          "Filter maintenance_logs for Maintenance_Type = 'Breakdown'",
+          "Group the filtered data by Machine",
+          "Count the number of breakdowns for each machine."
+        ],
+        "answer_format": "table with Machine and breakdown count",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Maintenance_Type"
+        ],
+        "id": "Easy_34",
+        "created_at": "2025-11-28T12:32:33.453169",
+        "correct_answer": "{'Machine-M1': 18, 'Machine-M2': 8, 'Machine-M3': 6, 'Machine-M4': 8, 'Machine-M5': 6}"
+      }
+    ],
+    "Medium": [
+      {
+        "question": "What is the average downtime (in minutes) per shift for Line-1/Machine-M1?",
+        "category": "Medium",
+        "sql_formula": "SELECT Shift, AVG(Downtime_Minutes) FROM production_logs WHERE Line_Machine = 'Line-1/Machine-M1' GROUP BY Shift",
+        "excel_formula": "=AVERAGEIF(production_logs[Line_Machine], \"Line-1/Machine-M1\", production_logs[Downtime_Minutes])",
+        "calculation_steps": [
+          "Filter the production_logs table for Line_Machine = 'Line-1/Machine-M1'",
+          "Group by Shift",
+          "Calculate the average Downtime_Minutes for each shift."
+        ],
+        "answer_format": "Shift and average downtime in minutes (e.g., Morning: 10.5)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Line_Machine",
+          "Downtime_Minutes",
+          "Shift"
+        ],
+        "id": "Medium_1",
+        "created_at": "2025-11-28T12:32:49.027208",
+        "correct_answer": "{'Morning': 18.366906474820144}"
+      },
+      {
+        "question": "What is the total cost of maintenance for Machine-M2 in 2026?",
+        "category": "Medium",
+        "sql_formula": "SELECT SUM(Cost_Rupees) FROM maintenance_logs WHERE Machine = 'Machine-M2' AND strftime('%Y', Maintenance_Date) = '2026'",
+        "excel_formula": "=SUMIFS(maintenance_logs[Cost_Rupees], maintenance_logs[Machine], \"Machine-M2\", maintenance_logs[Maintenance_Date], \">=2026-01-01\", maintenance_logs[Maintenance_Date], \"<=2026-12-31\")",
+        "calculation_steps": [
+          "Filter maintenance_logs for Machine = 'Machine-M2'",
+          "Filter for dates in 2026",
+          "Sum the Cost_Rupees column."
+        ],
+        "answer_format": "integer (total cost in Rupees)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Cost_Rupees",
+          "Maintenance_Date"
+        ],
+        "id": "Medium_2",
+        "created_at": "2025-11-28T12:32:49.032627",
+        "correct_answer": "200700"
+      },
+      {
+        "question": "What is the percentage of failed quantity for each product compared to the inspected quantity?",
+        "category": "Medium",
+        "sql_formula": "SELECT Product, (SUM(Failed_Qty) * 100.0 / SUM(Inspected_Qty)) AS Failure_Percentage FROM quality_control GROUP BY Product",
+        "excel_formula": "=SUM(quality_control[Failed_Qty])/SUM(quality_control[Inspected_Qty])",
+        "calculation_steps": [
+          "Group the quality_control table by Product.",
+          "Calculate the sum of Failed_Qty and Inspected_Qty for each product.",
+          "Calculate the failure percentage for each product using the formula: (SUM(Failed_Qty) * 100.0 / SUM(Inspected_Qty))."
+        ],
+        "answer_format": "Product and percentage (e.g., Widget-A: 5.2%)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Failed_Qty",
+          "Inspected_Qty"
+        ],
+        "id": "Medium_3",
+        "created_at": "2025-11-28T12:32:49.033756",
+        "correct_answer": "{'Assembly-Z': 419, 'Component-X': 384, 'Component-Y': 402, 'Widget-A': 489, 'Widget-B': 431, 'Widget-C': 341}"
+      },
+      {
+        "question": "Which technician performed the most breakdown maintenance?",
+        "category": "Medium",
+        "sql_formula": "SELECT Technician, COUNT(*) AS Breakdown_Count FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' GROUP BY Technician ORDER BY Breakdown_Count DESC LIMIT 1",
+        "excel_formula": "N/A",
+        "calculation_steps": [
+          "Filter maintenance_logs for Maintenance_Type = 'Breakdown'",
+          "Group by Technician",
+          "Count the number of breakdowns for each technician.",
+          "Order by Breakdown_Count in descending order.",
+          "Select the top row."
+        ],
+        "answer_format": "Technician name (e.g., John Doe)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Technician",
+          "Maintenance_Type"
+        ],
+        "id": "Medium_4",
+        "created_at": "2025-11-28T12:32:49.034141",
+        "correct_answer": "{'Priya Sharma': 19, 'Rajesh Kumar': 27}"
+      },
+      {
+        "question": "What is the average wastage (in Kg) of each material type per month in 2026?",
+        "category": "Medium",
+        "sql_formula": "SELECT Material_Name, AVG(Wastage_Kg) FROM inventory_logs WHERE strftime('%Y', Date) = '2026' GROUP BY Material_Name, strftime('%m', Date)",
+        "excel_formula": "N/A",
+        "calculation_steps": [
+          "Filter inventory_logs for dates in 2026.",
+          "Group by Material_Name and month (extracted from Date).",
+          "Calculate the average Wastage_Kg for each material type per month."
+        ],
+        "answer_format": "Material Name and average wastage in Kg (e.g., Steel Sheet 101: 12.5 Kg)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Wastage_Kg",
+          "Date"
+        ],
+        "id": "Medium_5",
+        "created_at": "2025-11-28T12:32:49.034985",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "How does the actual quantity produced compare to the target quantity for each product on Line-2/Machine-M2?",
+        "category": "Medium",
+        "sql_formula": "SELECT Product, AVG(Actual_Qty) AS Avg_Actual, AVG(Target_Qty) AS Avg_Target FROM production_logs WHERE Line_Machine = 'Line-2/Machine-M2' GROUP BY Product",
+        "excel_formula": "N/A",
+        "calculation_steps": [
+          "Filter production_logs for Line_Machine = 'Line-2/Machine-M2'.",
+          "Group by Product.",
+          "Calculate the average Actual_Qty and Target_Qty for each product."
+        ],
+        "answer_format": "Product, Average Actual Quantity, Average Target Quantity (e.g., Widget-A: Actual=250, Target=300)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Product",
+          "Actual_Qty",
+          "Target_Qty",
+          "Line_Machine"
+        ],
+        "id": "Medium_6",
+        "created_at": "2025-11-28T12:32:49.035081",
+        "correct_answer": "{'Assembly-Z': 137.625, 'Component-X': 327.1666666666667, 'Component-Y': 261.45, 'Widget-A': 270.0, 'Widget-B': 344.46875, 'Widget-C': 348.57142857142856}"
+      },
+      {
+        "question": "What are the top 3 most frequent defect types observed during quality control?",
+        "category": "Medium",
+        "sql_formula": "SELECT Defect_Type, COUNT(*) AS Defect_Count FROM quality_control GROUP BY Defect_Type ORDER BY Defect_Count DESC LIMIT 3",
+        "excel_formula": "N/A",
+        "calculation_steps": [
+          "Group quality_control by Defect_Type.",
+          "Count the occurrences of each defect type.",
+          "Order by Defect_Count in descending order.",
+          "Select the top 3 rows."
+        ],
+        "answer_format": "Defect type and count (e.g., Cracks: 50)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Defect_Type"
+        ],
+        "id": "Medium_7",
+        "created_at": "2025-11-28T12:32:49.035672",
+        "correct_answer": "{'Assembly Error': 99, 'Dimensional': 139, 'Material Defect': 92, 'Packaging Issue': 57, 'Surface Finish': 140}"
+      },
+      {
+        "question": "What is the average rework count for each line?",
+        "category": "Medium",
+        "sql_formula": "SELECT Line, AVG(Rework_Count) FROM quality_control GROUP BY Line",
+        "excel_formula": "AVERAGEIFS(quality_control[Rework_Count], quality_control[Line],Line)",
+        "calculation_steps": [
+          "Group the quality_control table by Line.",
+          "Calculate the average Rework_Count for each line."
+        ],
+        "answer_format": "Line and average rework count (e.g., Line-1: 2.1)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Line",
+          "Rework_Count"
+        ],
+        "id": "Medium_8",
+        "created_at": "2025-11-28T12:32:49.035942",
+        "correct_answer": "{'Line-1': 1.560747663551402, 'Line-2': 1.5560747663551402, 'Line-3': 1.6944444444444444}"
+      },
+      {
+        "question": "Which material supplier has the lowest average unit cost?",
+        "category": "Medium",
+        "sql_formula": "SELECT Supplier, AVG(Unit_Cost_Rupees) AS Avg_Cost FROM inventory_logs GROUP BY Supplier ORDER BY Avg_Cost ASC LIMIT 1",
+        "excel_formula": "N/A",
+        "calculation_steps": [
+          "Group inventory_logs by Supplier.",
+          "Calculate the average Unit_Cost_Rupees for each supplier.",
+          "Order by Avg_Cost in ascending order.",
+          "Select the top row."
+        ],
+        "answer_format": "Supplier name (e.g., Supplier-B)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Supplier",
+          "Unit_Cost_Rupees"
+        ],
+        "id": "Medium_9",
+        "created_at": "2025-11-28T12:32:49.036203",
+        "correct_answer": "{'Local Vendor': 186.27073170731705, 'Supplier-A': 309.69520547945206, 'Supplier-B': 91.0943820224719, 'Supplier-C': 271.1277777777778}"
+      },
+      {
+        "question": "How many times has the 'Motor overheating and failure to start' issue resulted in downtime greater than 4 hours?",
+        "category": "Medium",
+        "sql_formula": "SELECT COUNT(*) FROM maintenance_logs WHERE Issue_Description = 'Motor overheating and failure to start' AND Downtime_Hours > 4",
+        "excel_formula": "=COUNTIFS(maintenance_logs[Issue_Description], \"Motor overheating and failure to start\", maintenance_logs[Downtime_Hours],\">4\")",
+        "calculation_steps": [
+          "Filter maintenance_logs for Issue_Description = 'Motor overheating and failure to start'.",
+          "Filter for Downtime_Hours greater than 4.",
+          "Count the number of rows."
+        ],
+        "answer_format": "integer (number of occurrences)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Issue_Description",
+          "Downtime_Hours"
+        ],
+        "id": "Medium_10",
+        "created_at": "2025-11-28T12:32:49.036464",
+        "correct_answer": "1"
+      },
+      {
+        "question": "What is the average downtime in minutes per shift for Line-1/Machine-M1?",
+        "category": "Medium",
+        "sql_formula": "SELECT Shift, AVG(Downtime_Minutes) FROM production_logs WHERE Line_Machine = 'Line-1/Machine-M1' GROUP BY Shift",
+        "excel_formula": "=AVERAGEIF(production_logs[Line_Machine], \"Line-1/Machine-M1\", production_logs[Downtime_Minutes])",
+        "calculation_steps": [
+          "Filter the production_logs table for Line_Machine = 'Line-1/Machine-M1'",
+          "Group the filtered data by Shift",
+          "Calculate the average Downtime_Minutes for each shift group."
+        ],
+        "answer_format": "A table with Shift and average downtime in minutes",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Line_Machine",
+          "Downtime_Minutes",
+          "Shift"
+        ],
+        "id": "Medium_11",
+        "created_at": "2025-11-28T12:33:05.694561",
+        "correct_answer": "{'Morning': 18.366906474820144}"
+      },
+      {
+        "question": "What is the total cost of maintenance for Machine-M2 in the last quarter?",
+        "category": "Medium",
+        "sql_formula": "SELECT SUM(Cost_Rupees) FROM maintenance_logs WHERE Machine = 'Machine-M2' AND Maintenance_Date >= DATE('now', '-3 months')",
+        "excel_formula": "=SUMIFS(maintenance_logs[Cost_Rupees], maintenance_logs[Machine], \"Machine-M2\", maintenance_logs[Maintenance_Date], \">=\"&TODAY()-90)",
+        "calculation_steps": [
+          "Filter maintenance_logs for Machine = 'Machine-M2'",
+          "Filter for dates in the last 3 months",
+          "Sum the Cost_Rupees column"
+        ],
+        "answer_format": "number (total cost in Rupees)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Cost_Rupees",
+          "Maintenance_Date"
+        ],
+        "id": "Medium_12",
+        "created_at": "2025-11-28T12:33:05.699542",
+        "correct_answer": "200700.00"
+      },
+      {
+        "question": "What is the percentage of failed quantity for Widget-B compared to the inspected quantity?",
+        "category": "Medium",
+        "sql_formula": "SELECT (SUM(Failed_Qty) * 100.0 / SUM(Inspected_Qty)) AS FailurePercentage FROM quality_control WHERE Product = 'Widget-B'",
+        "excel_formula": "=(SUMIF(quality_control[Product], \"Widget-B\", quality_control[Failed_Qty])/SUMIF(quality_control[Product], \"Widget-B\", quality_control[Inspected_Qty]))*100",
+        "calculation_steps": [
+          "Filter the quality_control table for Product = 'Widget-B'",
+          "Sum the Failed_Qty column",
+          "Sum the Inspected_Qty column",
+          "Divide the sum of Failed_Qty by the sum of Inspected_Qty, then multiply by 100"
+        ],
+        "answer_format": "percentage",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Failed_Qty",
+          "Inspected_Qty"
+        ],
+        "id": "Medium_13",
+        "created_at": "2025-11-28T12:33:05.700737",
+        "correct_answer": "Found 118 records"
+      },
+      {
+        "question": "Which technician performed the most maintenance on Machine-M1 in the last year?",
+        "category": "Medium",
+        "sql_formula": "SELECT Technician, COUNT(*) AS MaintenanceCount FROM maintenance_logs WHERE Machine = 'Machine-M1' AND Maintenance_Date >= DATE('now', '-1 year') GROUP BY Technician ORDER BY MaintenanceCount DESC LIMIT 1",
+        "excel_formula": "Cannot be calculated directly in Excel without helper columns and formulas",
+        "calculation_steps": [
+          "Filter the maintenance_logs table for Machine = 'Machine-M1'",
+          "Filter for dates in the last year",
+          "Group the filtered data by Technician",
+          "Count the number of maintenance records for each technician",
+          "Order the technicians by the maintenance count in descending order",
+          "Select the technician with the highest maintenance count"
+        ],
+        "answer_format": "Technician name",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Technician",
+          "Maintenance_Date"
+        ],
+        "id": "Medium_14",
+        "created_at": "2025-11-28T12:33:05.701184",
+        "correct_answer": "{'Priya Sharma': 21, 'Rajesh Kumar': 34}"
+      },
+      {
+        "question": "What is the average wastage of 'Steel Sheet 101' per month?",
+        "category": "Medium",
+        "sql_formula": "SELECT strftime('%Y-%m', Date) AS Month, AVG(Wastage_Kg) FROM inventory_logs WHERE Material_Name = 'Steel Sheet 101' GROUP BY Month",
+        "excel_formula": "Requires helper column for Month, then use AVERAGEIFS",
+        "calculation_steps": [
+          "Filter the inventory_logs table for Material_Name = 'Steel Sheet 101'",
+          "Extract the month from the Date column",
+          "Group the filtered data by month",
+          "Calculate the average Wastage_Kg for each month"
+        ],
+        "answer_format": "A table showing month and average wastage in Kg",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Wastage_Kg",
+          "Date"
+        ],
+        "id": "Medium_15",
+        "created_at": "2025-11-28T12:33:05.702113",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What is the correlation between downtime and failed quantity for all products?",
+        "category": "Medium",
+        "sql_formula": "SELECT CORR(pl.Downtime_Minutes, qc.Failed_Qty) FROM production_logs pl JOIN quality_control qc ON pl.Date = qc.Inspection_Date AND pl.Product = qc.Product",
+        "excel_formula": "=CORREL(production_logs[Downtime_Minutes], quality_control[Failed_Qty]) - but requires joining the tables first",
+        "calculation_steps": [
+          "Join production_logs and quality_control tables on Date and Product",
+          "Calculate the correlation between Downtime_Minutes and Failed_Qty"
+        ],
+        "answer_format": "Correlation coefficient (number between -1 and 1)",
+        "related_tables": [
+          "production_logs",
+          "quality_control"
+        ],
+        "related_columns": [
+          "Downtime_Minutes",
+          "Failed_Qty",
+          "Date",
+          "Product"
+        ],
+        "id": "Medium_16",
+        "created_at": "2025-11-28T12:33:05.702490",
+        "correct_answer": "Found 792 records"
+      },
+      {
+        "question": "What is the total downtime hours for breakdowns caused by 'Motor overheating and failure to start'?",
+        "category": "Medium",
+        "sql_formula": "SELECT SUM(Downtime_Hours) FROM maintenance_logs WHERE Issue_Description = 'Motor overheating and failure to start'",
+        "excel_formula": "=SUMIF(maintenance_logs[Issue_Description], \"Motor overheating and failure to start\", maintenance_logs[Downtime_Hours])",
+        "calculation_steps": [
+          "Filter the maintenance_logs table for Issue_Description = 'Motor overheating and failure to start'",
+          "Sum the Downtime_Hours column for the filtered data"
+        ],
+        "answer_format": "Number (total downtime hours)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Issue_Description",
+          "Downtime_Hours"
+        ],
+        "id": "Medium_17",
+        "created_at": "2025-11-28T12:33:05.702500",
+        "correct_answer": "6.50"
+      },
+      {
+        "question": "What is the running total of 'PVC Granules' consumption by date?",
+        "category": "Medium",
+        "sql_formula": "SELECT Date, Material_Name, Consumption_Kg, SUM(Consumption_Kg) OVER (ORDER BY Date) AS RunningTotal FROM inventory_logs WHERE Material_Name LIKE '%PVC Granules%' ORDER BY Date",
+        "excel_formula": "Requires a helper column to calculate a cumulative sum.  Assuming Date column is in A and Consumption_Kg is in B, in a new column C2 enter: =SUM($B$2:B2) and drag down",
+        "calculation_steps": [
+          "Filter inventory_logs table for Material_Name containing 'PVC Granules'",
+          "Calculate the running total of Consumption_Kg ordered by Date"
+        ],
+        "answer_format": "A table with Date, Material Name, Consumption_Kg, and Running Total Consumption_Kg",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Date",
+          "Material_Name",
+          "Consumption_Kg"
+        ],
+        "id": "Medium_18",
+        "created_at": "2025-11-28T12:33:05.702985",
+        "correct_answer": "Found 407 records"
+      },
+      {
+        "question": "How does actual quantity compare to target quantity of product 'Assembly-Z' for each shift?",
+        "category": "Medium",
+        "sql_formula": "SELECT Shift, AVG(Actual_Qty) as Avg_Actual_Qty, AVG(Target_Qty) as Avg_Target_Qty FROM production_logs WHERE Product = 'Assembly-Z' GROUP BY Shift",
+        "excel_formula": "Requires pivot table or formulas using AVERAGEIFS for each shift and each Actual_Qty and Target_Qty",
+        "calculation_steps": [
+          "Filter the production_logs table for Product = 'Assembly-Z'",
+          "Group by Shift",
+          "Calculate the average Actual_Qty and average Target_Qty for each shift"
+        ],
+        "answer_format": "Table showing shift, average actual quantity, and average target quantity.",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Shift",
+          "Actual_Qty",
+          "Target_Qty",
+          "Product"
+        ],
+        "id": "Medium_19",
+        "created_at": "2025-11-28T12:33:05.703048",
+        "correct_answer": "{'Afternoon': 162.5487804878049, 'Morning': 146.25, 'Night': 179.609756097561}"
+      },
+      {
+        "question": "Which supplier had the lowest average unit cost for 'Rubber-RB' in the last 6 months?",
+        "category": "Medium",
+        "sql_formula": "SELECT Supplier, AVG(Unit_Cost_Rupees) AS AvgCost FROM inventory_logs WHERE Material_Code = 'Rubber-RB' AND Date >= DATE('now', '-6 months') GROUP BY Supplier ORDER BY AvgCost ASC LIMIT 1",
+        "excel_formula": "Requires AVERAGEIFS to get average cost by supplier, then MIN to find lowest cost.",
+        "calculation_steps": [
+          "Filter the inventory logs for Material_Code = 'Rubber-RB' and dates in the last 6 months.",
+          "Calculate the average unit cost by supplier",
+          "Order by the average cost",
+          "Select the supplier with the lowest average cost."
+        ],
+        "answer_format": "Supplier Name",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Code",
+          "Unit_Cost_Rupees",
+          "Supplier",
+          "Date"
+        ],
+        "id": "Medium_20",
+        "created_at": "2025-11-28T12:33:05.703608",
+        "correct_answer": "{'Local Vendor': 135.44262295081967, 'Supplier-C': 190.375}"
+      },
+      {
+        "question": "What is the average downtime per shift for Machine-M1 in October 2026?",
+        "category": "Medium",
+        "sql_formula": "SELECT Shift, AVG(Downtime_Minutes) FROM production_logs WHERE strftime('%Y-%m', Date) = '2026-10' AND Line_Machine LIKE '%Machine-M1%' GROUP BY Shift",
+        "excel_formula": "AVERAGEIFS(production_logs[Downtime_Minutes], production_logs[Line_Machine], \"*Machine-M1*\", production_logs[Date], \">=2026-10-01\", production_logs[Date], \"<=2026-10-31\")",
+        "calculation_steps": [
+          "Filter production_logs for Line_Machine containing 'Machine-M1'",
+          "Filter for dates in October 2026",
+          "Group by Shift",
+          "Calculate the average of Downtime_Minutes for each shift"
+        ],
+        "answer_format": "table (Shift, average downtime in minutes)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Line_Machine",
+          "Date",
+          "Shift",
+          "Downtime_Minutes"
+        ],
+        "id": "Medium_21",
+        "created_at": "2025-11-28T12:33:23.716302",
+        "correct_answer": "{'Afternoon': 12.783269961977187, 'Morning': 14.745387453874539, 'Night': 9.643410852713178}"
+      },
+      {
+        "question": "What is the total cost of breakdown maintenance for Machine-M2 between July 1, 2026, and September 30, 2026?",
+        "category": "Medium",
+        "sql_formula": "SELECT SUM(Cost_Rupees) FROM maintenance_logs WHERE Machine = 'Machine-M2' AND Maintenance_Type = 'Breakdown' AND Breakdown_Date BETWEEN '2026-07-01' AND '2026-09-30'",
+        "excel_formula": "=SUMIFS(maintenance_logs[Cost_Rupees], maintenance_logs[Machine], \"Machine-M2\", maintenance_logs[Maintenance_Type], \"Breakdown\", maintenance_logs[Breakdown_Date], \">=2026-07-01\", maintenance_logs[Breakdown_Date], \"<=2026-09-30\")",
+        "calculation_steps": [
+          "Filter maintenance_logs for Machine = 'Machine-M2'",
+          "Filter for Maintenance_Type = 'Breakdown'",
+          "Filter for Breakdown_Date between July 1, 2026, and September 30, 2026",
+          "Sum the Cost_Rupees column"
+        ],
+        "answer_format": "number (total cost in Rupees)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Maintenance_Type",
+          "Breakdown_Date",
+          "Cost_Rupees"
+        ],
+        "id": "Medium_22",
+        "created_at": "2025-11-28T12:33:23.718201",
+        "correct_answer": "166500.00"
+      },
+      {
+        "question": "What is the percentage of failed quantity for Component-X compared to the inspected quantity in Line-1?",
+        "category": "Medium",
+        "sql_formula": "SELECT SUM(Failed_Qty) * 100.0 / SUM(Inspected_Qty) FROM quality_control WHERE Product = 'Component-X' AND Line = 'Line-1'",
+        "excel_formula": "SUMIFS(quality_control[Failed_Qty], quality_control[Product], \"Component-X\", quality_control[Line], \"Line-1\") / SUMIFS(quality_control[Inspected_Qty], quality_control[Product], \"Component-X\", quality_control[Line], \"Line-1\")",
+        "calculation_steps": [
+          "Filter quality_control for Product = 'Component-X'",
+          "Filter for Line = 'Line-1'",
+          "Sum the Failed_Qty column",
+          "Sum the Inspected_Qty column",
+          "Divide the sum of Failed_Qty by the sum of Inspected_Qty",
+          "Multiply by 100 to get the percentage"
+        ],
+        "answer_format": "percentage",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Line",
+          "Failed_Qty",
+          "Inspected_Qty"
+        ],
+        "id": "Medium_23",
+        "created_at": "2025-11-28T12:33:23.720095",
+        "correct_answer": "111.00%"
+      },
+      {
+        "question": "Which material has the highest wastage (in Kg) from July 2026 to Dec 2026?",
+        "category": "Medium",
+        "sql_formula": "SELECT Material_Name FROM inventory_logs WHERE strftime('%Y-%m', Date) BETWEEN '2026-07' AND '2026-12' GROUP BY Material_Name ORDER BY SUM(Wastage_Kg) DESC LIMIT 1",
+        "excel_formula": "INDEX(inventory_logs[Material_Name],MATCH(MAX(SUMIFS(inventory_logs[Wastage_Kg],inventory_logs[Date], \">=2026-07-01\", inventory_logs[Date], \"<=2026-12-31\",inventory_logs[Material_Name], inventory_logs[Material_Name])),SUMIFS(inventory_logs[Wastage_Kg],inventory_logs[Date], \">=2026-07-01\", inventory_logs[Date], \"<=2026-12-31\",inventory_logs[Material_Name], inventory_logs[Material_Name]),0))",
+        "calculation_steps": [
+          "Filter inventory_logs for dates between July 2026 and December 2026",
+          "Group by Material_Name",
+          "Sum the Wastage_Kg for each material",
+          "Order by the sum of Wastage_Kg in descending order",
+          "Select the top material"
+        ],
+        "answer_format": "string (material name)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Date",
+          "Wastage_Kg"
+        ],
+        "id": "Medium_24",
+        "created_at": "2025-11-28T12:33:23.721415",
+        "correct_answer": "{'Aluminum Alloy Ingots': 90, 'Aluminum Ingot': 575, 'Aluminum Ingot (Alloy 6061)': 12, 'Aluminum Ingots': 288, 'Copper Wire': 571, 'Copper Wire (1mm)': 20, 'PVC Granules': 1219, 'PVC Granules (Industrial Grade)': 90, 'PVC Granules - Grey': 25, 'PVC Granules, Extrusion Grade': 40, 'Rubber Compund': 25, 'Steel Sheet 101': 2036, 'Steel Sheet 101 (Galvanized)': 45, 'Steel Sheet 101 - 2mm': 50, 'Steel Sheet 101, Grade A': 25, 'Synthetic Rubber': 221, 'Synthetic Rubber Blend': 135, 'Synthetic Rubber Compound': 200, 'Synthetic Rubber Roll': 192, 'Synthetic Rubber, High Tensile': 10}"
+      },
+      {
+        "question": "What is the correlation between Downtime_Minutes and Failed_Qty on Line-2 for the month of October 2026?",
+        "category": "Medium",
+        "sql_formula": "SELECT CORR(pl.Downtime_Minutes, qc.Failed_Qty) FROM production_logs pl JOIN quality_control qc ON pl.Date = qc.Inspection_Date AND pl.Product = qc.Product WHERE pl.Line_Machine LIKE '%Line-2%' AND qc.Line = 'Line-2' AND strftime('%Y-%m', pl.Date) = '2026-10'",
+        "excel_formula": "CORREL(FILTER(production_logs[Downtime_Minutes],(production_logs[Line_Machine]=\"Line-2/Machine-M2\")*(MONTH(production_logs[Date])=10)),FILTER(quality_control[Failed_Qty],(quality_control[Line]=\"Line-2\")*(MONTH(quality_control[Inspection_Date])=10)))",
+        "calculation_steps": [
+          "Join production_logs and quality_control on Date and Product",
+          "Filter for Line_Machine containing 'Line-2' and Line = 'Line-2'",
+          "Filter for dates in October 2026",
+          "Calculate the correlation between Downtime_Minutes and Failed_Qty"
+        ],
+        "answer_format": "number (correlation coefficient)",
+        "related_tables": [
+          "production_logs",
+          "quality_control"
+        ],
+        "related_columns": [
+          "Downtime_Minutes",
+          "Failed_Qty",
+          "Date",
+          "Product",
+          "Line_Machine",
+          "Line",
+          "Inspection_Date"
+        ],
+        "id": "Medium_25",
+        "created_at": "2025-11-28T12:33:23.722342",
+        "correct_answer": "Found 792 records"
+      },
+      {
+        "question": "What is the average number of reworks per product for each line?",
+        "category": "Medium",
+        "sql_formula": "SELECT Line, Product, AVG(Rework_Count) FROM quality_control GROUP BY Line, Product",
+        "excel_formula": "AVERAGEIFS(quality_control[Rework_Count], quality_control[Line], \"Line-1\", quality_control[Product],\"Widget-A\")",
+        "calculation_steps": [
+          "Group quality_control by Line and Product",
+          "Calculate the average of Rework_Count for each group"
+        ],
+        "answer_format": "table (Line, Product, average rework count)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Line",
+          "Product",
+          "Rework_Count"
+        ],
+        "id": "Medium_26",
+        "created_at": "2025-11-28T12:33:23.722503",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "Which technician has the highest average downtime hours per breakdown maintenance?",
+        "category": "Medium",
+        "sql_formula": "SELECT Technician, AVG(Downtime_Hours) FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' GROUP BY Technician ORDER BY AVG(Downtime_Hours) DESC LIMIT 1",
+        "excel_formula": "INDEX(maintenance_logs[Technician],MATCH(MAX(AVERAGEIFS(maintenance_logs[Downtime_Hours], maintenance_logs[Maintenance_Type],\"Breakdown\", maintenance_logs[Technician], maintenance_logs[Technician])),AVERAGEIFS(maintenance_logs[Downtime_Hours], maintenance_logs[Maintenance_Type],\"Breakdown\", maintenance_logs[Technician], maintenance_logs[Technician]),0))",
+        "calculation_steps": [
+          "Filter maintenance_logs for Maintenance_Type = 'Breakdown'",
+          "Group by Technician",
+          "Calculate the average of Downtime_Hours for each technician",
+          "Order by the average downtime in descending order",
+          "Select the top technician"
+        ],
+        "answer_format": "string (technician name)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Technician",
+          "Downtime_Hours",
+          "Maintenance_Type"
+        ],
+        "id": "Medium_27",
+        "created_at": "2025-11-28T12:33:23.722525",
+        "correct_answer": "{'Priya Sharma': 5.084210526315789, 'Rajesh Kumar': 5.385185185185185}"
+      },
+      {
+        "question": "What is the total quantity of 'Steel Sheet 101' consumed from Supplier-A in 2026?",
+        "category": "Medium",
+        "sql_formula": "SELECT SUM(Consumption_Kg) FROM inventory_logs WHERE Material_Name = 'Steel Sheet 101' AND Supplier = 'Supplier-A' AND strftime('%Y', Date) = '2026'",
+        "excel_formula": "SUMIFS(inventory_logs[Consumption_Kg], inventory_logs[Material_Name], \"Steel Sheet 101\", inventory_logs[Supplier], \"Supplier-A\", inventory_logs[Date], \">=2026-01-01\", inventory_logs[Date], \"<=2026-12-31\")",
+        "calculation_steps": [
+          "Filter inventory_logs for Material_Name = 'Steel Sheet 101'",
+          "Filter for Supplier = 'Supplier-A'",
+          "Filter for dates in 2026",
+          "Sum the Consumption_Kg column"
+        ],
+        "answer_format": "number (total quantity in Kg)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Supplier",
+          "Date",
+          "Consumption_Kg"
+        ],
+        "id": "Medium_28",
+        "created_at": "2025-11-28T12:33:23.723847",
+        "correct_answer": "66016.00"
+      },
+      {
+        "question": "How does actual quantity compare to target quantity by product on Line-3?",
+        "category": "Medium",
+        "sql_formula": "SELECT Product, AVG(Actual_Qty), AVG(Target_Qty) FROM production_logs WHERE Line_Machine LIKE '%Line-3%' GROUP BY Product",
+        "excel_formula": "AVERAGEIFS(production_logs[Actual_Qty], production_logs[Line_Machine], \"*Line-3*\", production_logs[Product], \"Widget-A\")",
+        "calculation_steps": [
+          "Filter production_logs where Line_Machine contains Line-3",
+          "Group the results by Product",
+          "Calculate the average of Actual_Qty for each Product",
+          "Calculate the average of Target_Qty for each Product"
+        ],
+        "answer_format": "table (Product, avg(Actual_Qty), avg(Target_Qty))",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Line_Machine",
+          "Product",
+          "Actual_Qty",
+          "Target_Qty"
+        ],
+        "id": "Medium_29",
+        "created_at": "2025-11-28T12:33:23.724758",
+        "correct_answer": "{'Assembly-Z': 166.28148148148148, 'Component-X': 246.38970588235293, 'Component-Y': 281.47014925373134, 'Widget-A': 276.1034482758621, 'Widget-B': 322.1353383458647, 'Widget-C': 286.5045871559633}"
+      },
+      {
+        "question": "What is the trend of product failure rate (Failed_Qty/Inspected_Qty) for Assembly-Z over the last 3 months?",
+        "category": "Medium",
+        "sql_formula": "SELECT Inspection_Date, SUM(Failed_Qty)*1.0/SUM(Inspected_Qty) FROM quality_control WHERE Product = 'Assembly-Z' AND Inspection_Date >= DATE('now', '-3 months') GROUP BY Inspection_Date",
+        "excel_formula": "SUMIFS(quality_control[Failed_Qty],quality_control[Product], \"Assembly-Z\", quality_control[Inspection_Date], \">\"&TODAY()-90) / SUMIFS(quality_control[Inspected_Qty], quality_control[Product], \"Assembly-Z\", quality_control[Inspection_Date], \">\"&TODAY()-90)",
+        "calculation_steps": [
+          "Filter quality_control for Product = 'Assembly-Z'",
+          "Filter for dates in the last 3 months",
+          "Group the results by Inspection_Date",
+          "Calculate sum of Failed_Qty and sum of Inspected_Qty for each date",
+          "Calculate Failed/Inspected for each date"
+        ],
+        "answer_format": "table (Date, failure rate)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Inspection_Date",
+          "Failed_Qty",
+          "Inspected_Qty"
+        ],
+        "id": "Medium_30",
+        "created_at": "2025-11-28T12:33:23.725388",
+        "correct_answer": "{Timestamp('2025-11-05 00:00:00'): 18, Timestamp('2025-11-08 00:00:00'): 3, Timestamp('2025-11-12 00:00:00'): 10, Timestamp('2025-11-15 00:00:00'): 27, Timestamp('2025-11-16 00:00:00'): 2, Timestamp('2025-11-20 00:00:00'): 20, Timestamp('2025-11-21 00:00:00'): 1, Timestamp('2025-11-24 00:00:00'): 10, Timestamp('2025-11-25 00:00:00'): 10, Timestamp('2025-11-27 00:00:00'): 17, Timestamp('2025-11-30 00:00:00'): 5, Timestamp('2025-12-03 00:00:00'): 9, Timestamp('2025-12-05 00:00:00'): 5, Timestamp('2025-12-09 00:00:00'): 2, Timestamp('2025-12-10 00:00:00'): 13, Timestamp('2025-12-12 00:00:00'): 2, Timestamp('2025-12-15 00:00:00'): 11, Timestamp('2025-12-20 00:00:00'): 5, Timestamp('2025-12-21 00:00:00'): 8, Timestamp('2025-12-25 00:00:00'): 11, Timestamp('2025-12-27 00:00:00'): 2, Timestamp('2025-12-30 00:00:00'): 5, Timestamp('2025-12-31 00:00:00'): 5, Timestamp('2026-01-08 00:00:00'): 2, Timestamp('2026-01-14 00:00:00'): 21, Timestamp('2026-01-20 00:00:00'): 7, Timestamp('2026-01-26 00:00:00'): 32, Timestamp('2026-02-01 00:00:00'): 23, Timestamp('2026-02-07 00:00:00'): 11, Timestamp('2026-02-13 00:00:00'): 20, Timestamp('2026-02-19 00:00:00'): 3, Timestamp('2026-02-24 00:00:00'): 0, Timestamp('2026-02-26 00:00:00'): 0, Timestamp('2026-03-08 00:00:00'): 10, Timestamp('2026-03-13 00:00:00'): 3, Timestamp('2026-03-22 00:00:00'): 4, Timestamp('2026-03-23 00:00:00'): 2, Timestamp('2026-03-28 00:00:00'): 5, Timestamp('2026-04-03 00:00:00'): 43, Timestamp('2026-04-07 00:00:00'): 1, Timestamp('2026-04-08 00:00:00'): 3, Timestamp('2026-04-14 00:00:00'): 1, Timestamp('2026-05-08 00:00:00'): 3, Timestamp('2026-06-04 00:00:00'): 4, Timestamp('2026-06-10 00:00:00'): 5, Timestamp('2026-06-16 00:00:00'): 4, Timestamp('2026-07-16 00:00:00'): 2, Timestamp('2026-07-28 00:00:00'): 2, Timestamp('2026-08-27 00:00:00'): 3, Timestamp('2026-09-12 00:00:00'): 3, Timestamp('2026-10-12 00:00:00'): 1}"
+      },
+      {
+        "question": "What is the average downtime (in minutes) per shift for Machine-M1 on Line-1 during the last quarter?",
+        "category": "Medium",
+        "sql_formula": "SELECT Shift, AVG(Downtime_Minutes) FROM production_logs WHERE Line_Machine = 'Line-1/Machine-M1' AND Date BETWEEN DATE('now', '-3 months') AND DATE('now') GROUP BY Shift",
+        "excel_formula": "=AVERAGEIFS(production_logs[Downtime_Minutes], production_logs[Line_Machine], \"Line-1/Machine-M1\", production_logs[Date], \">=\"&TODAY()-90, production_logs[Date], \"<=\"&TODAY())",
+        "calculation_steps": [
+          "Filter production_logs for Line_Machine = 'Line-1/Machine-M1'",
+          "Filter for dates in the last 3 months (approximately a quarter)",
+          "Group by Shift",
+          "Calculate the average Downtime_Minutes for each shift"
+        ],
+        "answer_format": "numerical value (average downtime in minutes) per shift",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Line_Machine",
+          "Downtime_Minutes",
+          "Date",
+          "Shift"
+        ],
+        "id": "Medium_31",
+        "created_at": "2025-11-28T12:33:37.139997",
+        "correct_answer": "{'Morning': 18.366906474820144}"
+      },
+      {
+        "question": "What is the percentage of failed quantity compared to the inspected quantity for each product type in the last month?",
+        "category": "Medium",
+        "sql_formula": "SELECT Product, (SUM(Failed_Qty) * 100.0 / SUM(Inspected_Qty)) AS Failure_Percentage FROM quality_control WHERE Inspection_Date >= DATE('now', '-1 month') GROUP BY Product",
+        "excel_formula": "=(SUMIFS(quality_control[Failed_Qty], quality_control[Inspection_Date], \">=\"&TODAY()-30) / SUMIFS(quality_control[Inspected_Qty], quality_control[Inspection_Date], \">=\"&TODAY()-30))*100",
+        "calculation_steps": [
+          "Filter quality_control for dates in the last month",
+          "Group by Product",
+          "Calculate the sum of Failed_Qty for each product",
+          "Calculate the sum of Inspected_Qty for each product",
+          "Divide the sum of Failed_Qty by the sum of Inspected_Qty and multiply by 100 to get the failure percentage"
+        ],
+        "answer_format": "percentage (failure rate) for each product type",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Failed_Qty",
+          "Inspected_Qty",
+          "Inspection_Date"
+        ],
+        "id": "Medium_32",
+        "created_at": "2025-11-28T12:33:37.148606",
+        "correct_answer": "{'Assembly-Z': 419, 'Component-X': 384, 'Component-Y': 402, 'Widget-A': 489, 'Widget-B': 431, 'Widget-C': 341}"
+      },
+      {
+        "question": "What is the total cost of maintenance for each machine in the last year and how does it compare to the previous year?",
+        "category": "Medium",
+        "sql_formula": "SELECT Machine, SUM(CASE WHEN Maintenance_Date BETWEEN DATE('now', '-1 year') AND DATE('now') THEN Cost_Rupees ELSE 0 END) AS CurrentYearCost, SUM(CASE WHEN Maintenance_Date BETWEEN DATE('now', '-2 year') AND DATE('now', '-1 year') THEN Cost_Rupees ELSE 0 END) AS PreviousYearCost FROM maintenance_logs GROUP BY Machine",
+        "excel_formula": "SUMIFS(maintenance_logs[Cost_Rupees], maintenance_logs[Maintenance_Date], \">=\"&TODAY()-365) - SUMIFS(maintenance_logs[Cost_Rupees], maintenance_logs[Maintenance_Date], \">=\"&TODAY()-730, maintenance_logs[Maintenance_Date], \"<=\"&TODAY()-365)",
+        "calculation_steps": [
+          "Group by Machine",
+          "Sum the Cost_Rupees for each machine where the Maintenance_Date is within the last year",
+          "Sum the Cost_Rupees for each machine where the Maintenance_Date is between one and two years ago"
+        ],
+        "answer_format": "numerical values (total cost) for current year and previous year for each machine",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Cost_Rupees",
+          "Maintenance_Date"
+        ],
+        "id": "Medium_33",
+        "created_at": "2025-11-28T12:33:37.149600",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "Which material had the highest wastage (in Kg) in the last 6 months, and what was the total cost associated with that wastage?",
+        "category": "Medium",
+        "sql_formula": "SELECT Material_Name, SUM(Wastage_Kg) AS TotalWastageKg, SUM(Wastage_Kg * Unit_Cost_Rupees) AS TotalWastageCost FROM inventory_logs WHERE Date >= DATE('now', '-6 months') GROUP BY Material_Name ORDER BY TotalWastageKg DESC LIMIT 1",
+        "excel_formula": "=MAX(SUMIFS(inventory_logs[Wastage_Kg], inventory_logs[Date], \">=\"&TODAY()-180))",
+        "calculation_steps": [
+          "Filter inventory_logs for dates in the last 6 months",
+          "Group by Material_Name",
+          "Calculate the sum of Wastage_Kg for each material",
+          "Calculate the sum of (Wastage_Kg * Unit_Cost_Rupees) for each material",
+          "Order by TotalWastageKg in descending order",
+          "Select the top row"
+        ],
+        "answer_format": "Material name (string), total wastage in Kg (numerical value), total cost of wastage (numerical value)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Wastage_Kg",
+          "Unit_Cost_Rupees",
+          "Date"
+        ],
+        "id": "Medium_34",
+        "created_at": "2025-11-28T12:33:37.149666",
+        "correct_answer": "{'Aluminum Alloy Ingots': 90, 'Aluminum Ingot': 575, 'Aluminum Ingot (Alloy 6061)': 12, 'Aluminum Ingots': 288, 'Copper Wire': 571, 'Copper Wire (1mm)': 20, 'PVC Granules': 1219, 'PVC Granules (Industrial Grade)': 90, 'PVC Granules - Grey': 25, 'PVC Granules, Extrusion Grade': 40, 'Rubber Compund': 25, 'Steel Sheet 101': 2036, 'Steel Sheet 101 (Galvanized)': 45, 'Steel Sheet 101 - 2mm': 50, 'Steel Sheet 101, Grade A': 25, 'Synthetic Rubber': 221, 'Synthetic Rubber Blend': 135, 'Synthetic Rubber Compound': 200, 'Synthetic Rubber Roll': 192, 'Synthetic Rubber, High Tensile': 10}"
+      },
+      {
+        "question": "How does the actual production quantity of Widget-B compare to the target production quantity in each shift?",
+        "category": "Medium",
+        "sql_formula": "SELECT Shift, AVG(Actual_Qty) AS Avg_Actual, AVG(Target_Qty) AS Avg_Target FROM production_logs WHERE Product = 'Widget-B' GROUP BY Shift",
+        "excel_formula": "=AVERAGEIFS(production_logs[Actual_Qty], production_logs[Product], \"Widget-B\") - AVERAGEIFS(production_logs[Target_Qty], production_logs[Product], \"Widget-B\")",
+        "calculation_steps": [
+          "Filter production_logs where Product is Widget-B",
+          "Group the result by Shift",
+          "Calculate Average Actual_Qty",
+          "Calculate Average Target_Qty"
+        ],
+        "answer_format": "Shift (string), average actual quantity (numerical), average target quantity (numerical)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Product",
+          "Shift",
+          "Actual_Qty",
+          "Target_Qty"
+        ],
+        "id": "Medium_35",
+        "created_at": "2025-11-28T12:33:37.150306",
+        "correct_answer": "{'Afternoon': 332.0693069306931, 'Morning': 288.72, 'Night': 298.14285714285717}"
+      }
+    ],
+    "Complex": [
+      {
+        "question": "What is the average downtime (in minutes) per shift for each machine in the last quarter?",
+        "category": "Complex",
+        "sql_formula": "SELECT pl.Line_Machine, pl.Shift, AVG(pl.Downtime_Minutes) AS Average_Downtime FROM production_logs pl WHERE pl.Date >= DATE('now', '-3 months') GROUP BY pl.Line_Machine, pl.Shift",
+        "excel_formula": "Requires pivot table functionality. Create a pivot table with Line_Machine and Shift as rows, and AVERAGE of Downtime_Minutes as values. Filter Date column for last 3 months.",
+        "calculation_steps": [
+          "Filter production_logs for the last 3 months.",
+          "Group the data by Line_Machine and Shift.",
+          "Calculate the average Downtime_Minutes for each group."
+        ],
+        "answer_format": "table (Line_Machine, Shift, Average Downtime in Minutes)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Line_Machine",
+          "Shift",
+          "Downtime_Minutes",
+          "Date"
+        ],
+        "id": "Complex_1",
+        "created_at": "2025-11-28T12:33:57.001211",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "Which material has the highest wastage percentage (Wastage_Kg / Consumption_Kg) across all suppliers?",
+        "category": "Complex",
+        "sql_formula": "SELECT Material_Name, AVG(Wastage_Kg * 1.0 / Consumption_Kg) AS Wastage_Percentage FROM inventory_logs GROUP BY Material_Name ORDER BY Wastage_Percentage DESC LIMIT 1",
+        "excel_formula": "Add a column in inventory_logs: =Wastage_Kg/Consumption_Kg. Create a pivot table with Material_Name as row and average of the new column as values. Sort by values descending and show top 1.",
+        "calculation_steps": [
+          "Calculate the wastage percentage for each row: Wastage_Kg / Consumption_Kg.",
+          "Group the data by Material_Name.",
+          "Calculate the average wastage percentage for each material.",
+          "Order the results in descending order of average wastage percentage.",
+          "Select the material with the highest wastage percentage."
+        ],
+        "answer_format": "string (Material Name)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Name",
+          "Wastage_Kg",
+          "Consumption_Kg"
+        ],
+        "id": "Complex_2",
+        "created_at": "2025-11-28T12:33:57.001454",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What is the correlation between downtime minutes and failed quantity per line machine and product?",
+        "category": "Complex",
+        "sql_formula": "SELECT CORR(pl.Downtime_Minutes, qc.Failed_Qty) AS Correlation FROM production_logs pl JOIN quality_control qc ON pl.Date = qc.Inspection_Date AND pl.Product = qc.Product AND replace(pl.Line_Machine, '/Machine-M1', '') = replace(qc.Line, 'Line-', '')",
+        "excel_formula": "=CORREL(production_logs[Downtime_Minutes], quality_control[Failed_Qty]) after joining data on Date and Product columns, and a calculated column for line",
+        "calculation_steps": [
+          "Join production_logs and quality_control tables on Date and Product",
+          "Calculate the correlation between Downtime_Minutes and Failed_Qty"
+        ],
+        "answer_format": "number (correlation coefficient)",
+        "related_tables": [
+          "production_logs",
+          "quality_control"
+        ],
+        "related_columns": [
+          "Downtime_Minutes",
+          "Failed_Qty",
+          "Date",
+          "Product"
+        ],
+        "id": "Complex_3",
+        "created_at": "2025-11-28T12:33:57.001474",
+        "correct_answer": "Found 792 records"
+      },
+      {
+        "question": "Which technician has the highest average maintenance cost for breakdown maintenance, and what is the average cost?",
+        "category": "Complex",
+        "sql_formula": "SELECT Technician, AVG(Cost_Rupees) AS Average_Cost FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' GROUP BY Technician ORDER BY Average_Cost DESC LIMIT 1",
+        "excel_formula": "Requires pivot table. Create a pivot table from maintenance_logs, with Technician as rows and AVERAGE of Cost_Rupees as values. Filter Maintenance_Type by 'Breakdown'. Sort by values descending and show top 1.",
+        "calculation_steps": [
+          "Filter maintenance_logs for Maintenance_Type = 'Breakdown'.",
+          "Group the data by Technician.",
+          "Calculate the average Cost_Rupees for each technician.",
+          "Order the results in descending order of average cost.",
+          "Select the technician with the highest average cost and their average cost."
+        ],
+        "answer_format": "string (Technician Name), number (Average Cost)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Technician",
+          "Cost_Rupees",
+          "Maintenance_Type"
+        ],
+        "id": "Complex_4",
+        "created_at": "2025-11-28T12:33:57.001493",
+        "correct_answer": "{'Priya Sharma': 18052.63157894737, 'Rajesh Kumar': 23851.85185185185}"
+      },
+      {
+        "question": "What is the trend of 'Passed_Qty' for 'Widget-A' over the last month, broken down by line?",
+        "category": "Complex",
+        "sql_formula": "SELECT Line, Inspection_Date, SUM(Passed_Qty) AS Total_Passed_Qty FROM quality_control WHERE Product = 'Widget-A' AND Inspection_Date >= DATE('now', '-1 month') GROUP BY Line, Inspection_Date ORDER BY Line, Inspection_Date",
+        "excel_formula": "Requires trendline analysis in a chart. Create a pivot table with Inspection_Date as rows, Line as columns, and SUM of Passed_Qty as values. Filter for Product='Widget-A' and last one month. Then generate trendlines for each line.",
+        "calculation_steps": [
+          "Filter quality_control for Product = 'Widget-A' and dates within the last month.",
+          "Group by Line and Inspection_Date",
+          "Sum Passed_Qty for each group to get total quantity passed",
+          "Order data by line and date.",
+          "Trendline (visually from graph of data) (Inspection_Date vs Total Passed Quantity per line)"
+        ],
+        "answer_format": "table (Line, Date, Total Passed Quantity)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Line",
+          "Inspection_Date",
+          "Passed_Qty",
+          "Product"
+        ],
+        "id": "Complex_5",
+        "created_at": "2025-11-28T12:33:57.003541",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "How does the actual quantity produced compared to the target quantity vary by shift for each product?",
+        "category": "Complex",
+        "sql_formula": "SELECT Product, Shift, AVG(Actual_Qty - Target_Qty) AS Quantity_Variance FROM production_logs GROUP BY Product, Shift",
+        "excel_formula": "Requires Pivot Table. Create a pivot table with Product and Shift as rows and AVERAGE of (Actual_Qty - Target_Qty) as values.",
+        "calculation_steps": [
+          "Calculate the variance between Actual_Qty and Target_Qty for each row.",
+          "Group the data by Product and Shift.",
+          "Calculate the average variance for each group.",
+          "Present the results as Product, Shift, and Variance."
+        ],
+        "answer_format": "table (Product, Shift, Quantity Variance)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Product",
+          "Shift",
+          "Actual_Qty",
+          "Target_Qty"
+        ],
+        "id": "Complex_6",
+        "created_at": "2025-11-28T12:33:57.004011",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What are the top 3 defect types that lead to rework for Widget-B, and what is their total rework count?",
+        "category": "Complex",
+        "sql_formula": "SELECT Defect_Type, SUM(Rework_Count) AS Total_Rework_Count FROM quality_control WHERE Product = 'Widget-B' GROUP BY Defect_Type ORDER BY Total_Rework_Count DESC LIMIT 3",
+        "excel_formula": "Create a pivot table from quality_control, with Defect_Type as rows, and SUM of Rework_Count as values. Filter Product by 'Widget-B'. Sort by values descending and show top 3.",
+        "calculation_steps": [
+          "Filter quality_control for Product = 'Widget-B'.",
+          "Group the data by Defect_Type.",
+          "Calculate the sum of Rework_Count for each defect type.",
+          "Order the results in descending order of total rework count.",
+          "Select the top 3 defect types and their corresponding total rework counts."
+        ],
+        "answer_format": "table (Defect Type, Total Rework Count)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Defect_Type",
+          "Rework_Count",
+          "Product"
+        ],
+        "id": "Complex_7",
+        "created_at": "2025-11-28T12:33:57.004024",
+        "correct_answer": "{'Assembly Error': 48, 'Dimensional': 66, 'Material Defect': 20, 'Packaging Issue': 8, 'Surface Finish': 22}"
+      },
+      {
+        "question": "What is the average time between breakdowns for each machine?",
+        "category": "Complex",
+        "sql_formula": "WITH BreakdownDates AS (SELECT Machine, Breakdown_Date, LAG(Breakdown_Date, 1, Breakdown_Date) OVER (PARTITION BY Machine ORDER BY Breakdown_Date) AS Previous_Breakdown_Date FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' ), TimeBetweenBreakdowns AS ( SELECT Machine, JULIANDAY(Breakdown_Date) - JULIANDAY(Previous_Breakdown_Date) AS Days_Between FROM BreakdownDates) SELECT Machine, AVG(Days_Between) AS Average_Days_Between FROM TimeBetweenBreakdowns GROUP BY Machine",
+        "excel_formula": "Difficult to achieve directly in Excel. Requires manual calculation of differences between breakdown dates for each machine.",
+        "calculation_steps": [
+          "Filter maintenance_logs for Breakdown events.",
+          "Using window functions, calculate the time (in days) between consecutive breakdowns for each machine.",
+          "Calculate the average time between breakdowns for each machine."
+        ],
+        "answer_format": "table (Machine, Average Days Between Breakdowns)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Breakdown_Date",
+          "Maintenance_Type"
+        ],
+        "id": "Complex_8",
+        "created_at": "2025-11-28T12:33:57.005026",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "Which supplier provides the material with the lowest unit cost, considering only materials consumed after 2026-01-01?",
+        "category": "Complex",
+        "sql_formula": "SELECT Supplier, Material_Name, MIN(Unit_Cost_Rupees) FROM inventory_logs WHERE Date > '2026-01-01' GROUP BY Supplier, Material_Name ORDER BY MIN(Unit_Cost_Rupees) ASC LIMIT 1",
+        "excel_formula": "Requires filtering and sorting. Filter inventory_logs for Date > 2026-01-01. Then sort by Unit_Cost_Rupees ascending and display Supplier and Material_Name of the first row.",
+        "calculation_steps": [
+          "Filter for materials consumed after 2026-01-01.",
+          "Group the data by supplier and material name.",
+          "Identify the minimum unit cost for each supplier and material",
+          "Order the data by minimum unit cost and take the first row"
+        ],
+        "answer_format": "string (Supplier Name), string (Material Name)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Supplier",
+          "Material_Name",
+          "Unit_Cost_Rupees",
+          "Date"
+        ],
+        "id": "Complex_9",
+        "created_at": "2025-11-28T12:33:57.005591",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "How does the average rework count vary by inspector and product?",
+        "category": "Complex",
+        "sql_formula": "SELECT Inspector_Name, Product, AVG(Rework_Count) AS Average_Rework_Count FROM quality_control GROUP BY Inspector_Name, Product",
+        "excel_formula": "Requires pivot table. Create a pivot table with Inspector_Name and Product as rows and AVERAGE of Rework_Count as values.",
+        "calculation_steps": [
+          "Group the data by Inspector_Name and Product.",
+          "Calculate the average rework count for each group.",
+          "Present the result"
+        ],
+        "answer_format": "table (Inspector Name, Product, Average Rework Count)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Inspector_Name",
+          "Product",
+          "Rework_Count"
+        ],
+        "id": "Complex_10",
+        "created_at": "2025-11-28T12:33:57.005666",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What is the average downtime per machine per month for the last 6 months, and which machine had the highest average?",
+        "category": "Complex",
+        "sql_formula": "WITH MonthlyDowntime AS (SELECT strftime('%Y-%m', Breakdown_Date) AS Month, Machine, AVG(Downtime_Hours) AS AvgDowntime FROM maintenance_logs WHERE Breakdown_Date >= DATE('now', '-6 months') GROUP BY 1, 2) SELECT Machine, AVG(AvgDowntime) AS OverallAvgDowntime FROM MonthlyDowntime GROUP BY 1 ORDER BY 2 DESC LIMIT 1",
+        "excel_formula": "Requires pivot table analysis across MAINTENANCE_LOGS. Pivot on Machine and Month (derived from Breakdown_Date), average Downtime_Hours. Then average across months for each machine and find MAX.",
+        "calculation_steps": [
+          "Extract month from Breakdown_Date.",
+          "Calculate average Downtime_Hours per machine per month.",
+          "Calculate average downtime per machine across all months.",
+          "Identify the machine with the highest average downtime."
+        ],
+        "answer_format": "Machine name (string), Average Downtime (hours, decimal)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Breakdown_Date",
+          "Machine",
+          "Downtime_Hours"
+        ],
+        "id": "Complex_11",
+        "created_at": "2025-11-28T12:34:19.367242",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What is the correlation between the 'Actual_Qty' produced and the 'Downtime_Minutes' experienced on Line-1/Machine-M1?",
+        "category": "Complex",
+        "sql_formula": "SELECT CORR(Actual_Qty, Downtime_Minutes) FROM production_logs WHERE Line_Machine = 'Line-1/Machine-M1'",
+        "excel_formula": "=CORREL(production_logs[Actual_Qty], production_logs[Downtime_Minutes]) where Line_Machine = 'Line-1/Machine-M1'",
+        "calculation_steps": [
+          "Filter production_logs for Line_Machine = 'Line-1/Machine-M1'.",
+          "Calculate the correlation coefficient between Actual_Qty and Downtime_Minutes."
+        ],
+        "answer_format": "decimal (correlation coefficient)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Actual_Qty",
+          "Downtime_Minutes",
+          "Line_Machine"
+        ],
+        "id": "Complex_12",
+        "created_at": "2025-11-28T12:34:19.383536",
+        "correct_answer": "Found 139 records"
+      },
+      {
+        "question": "How does the average rework count for 'Widget-A' differ between Line-1 and Line-2?",
+        "category": "Complex",
+        "sql_formula": "SELECT Line, AVG(Rework_Count) FROM quality_control WHERE Product = 'Widget-A' AND (Line = 'Line-1' OR Line = 'Line-2') GROUP BY Line",
+        "excel_formula": "Use AVERAGEIF function for both line 1 and line 2 where Product = 'Widget-A'. Then compare the two results.",
+        "calculation_steps": [
+          "Filter quality_control data for Product = 'Widget-A'.",
+          "Group the data by Line (Line-1 and Line-2).",
+          "Calculate the average Rework_Count for each line.",
+          "Compare the average Rework_Count between the two lines."
+        ],
+        "answer_format": "Line (string), Average Rework Count (decimal) for each line.",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Line",
+          "Rework_Count"
+        ],
+        "id": "Complex_13",
+        "created_at": "2025-11-28T12:34:19.386665",
+        "correct_answer": "{'Line-1': 1.2096774193548387, 'Line-2': 1.5806451612903225, 'Line-3': 1.5945945945945945}"
+      },
+      {
+        "question": "What is the trend of 'Wastage_Kg' for 'Steel-101' over the last quarter (3 months), and is it increasing or decreasing?",
+        "category": "Complex",
+        "sql_formula": "WITH MonthlyWastage AS (SELECT strftime('%Y-%m', Date) AS Month, SUM(Wastage_Kg) AS TotalWastage FROM inventory_logs WHERE Material_Code = 'Steel-101' AND Date >= DATE('now', '-3 months') GROUP BY 1) SELECT Month, TotalWastage, (TotalWastage - LAG(TotalWastage, 1, TotalWastage) OVER (ORDER BY Month)) AS WastageChange FROM MonthlyWastage",
+        "excel_formula": "Create a new column to calculate the monthly Wastage_Kg for 'Steel-101'. Calculate the difference between the most recent month and the first month to determine the trend.",
+        "calculation_steps": [
+          "Filter inventory_logs for Material_Code = 'Steel-101' and dates within the last 3 months.",
+          "Group by month and calculate the sum of Wastage_Kg for each month.",
+          "Calculate the difference in Wastage_Kg between consecutive months.",
+          "Determine if the trend is increasing or decreasing based on the sign of the differences."
+        ],
+        "answer_format": "Month (YYYY-MM), Total Wastage (Kg, decimal), Wastage Change (Kg, decimal), Trend (Increasing/Decreasing/Stable)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Date",
+          "Material_Code",
+          "Wastage_Kg"
+        ],
+        "id": "Complex_14",
+        "created_at": "2025-11-28T12:34:19.388747",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "Which technician is associated with the most 'Breakdown' maintenance types and what is the total cost associated with their repairs?",
+        "category": "Complex",
+        "sql_formula": "SELECT Technician, COUNT(*) AS BreakdownCount, SUM(Cost_Rupees) AS TotalCost FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' GROUP BY Technician ORDER BY BreakdownCount DESC LIMIT 1",
+        "excel_formula": "Use a pivot table to count Breakdown maintenance types for each technician. Then, use SUMIF to calculate total cost per technician for breakdowns. Finally, identify the technician with the most breakdowns.",
+        "calculation_steps": [
+          "Filter maintenance_logs for Maintenance_Type = 'Breakdown'.",
+          "Group the data by Technician and count the number of breakdowns for each.",
+          "Calculate the sum of Cost_Rupees for each technician's breakdown repairs.",
+          "Order by BreakdownCount descending and select the top technician."
+        ],
+        "answer_format": "Technician (string), Breakdown Count (integer), Total Cost (Rupees, integer)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Technician",
+          "Maintenance_Type",
+          "Cost_Rupees"
+        ],
+        "id": "Complex_15",
+        "created_at": "2025-11-28T12:34:19.389206",
+        "correct_answer": "{'Priya Sharma': 343000, 'Rajesh Kumar': 644000}"
+      },
+      {
+        "question": "What is the percentage of products that fail inspection immediately after a machine breakdown within a window of 24 hours?",
+        "category": "Complex",
+        "sql_formula": "WITH BreakdownInspections AS (SELECT ml.Breakdown_Date, qc.Inspection_Date, qc.Failed_Qty, qc.Inspected_Qty FROM maintenance_logs ml JOIN quality_control qc ON ml.Breakdown_Date <= qc.Inspection_Date AND ml.Breakdown_Date >= DATE(qc.Inspection_Date, '-1 day') ) SELECT CAST(SUM(Failed_Qty) AS REAL) * 100 / SUM(Inspected_Qty) AS FailurePercentage FROM BreakdownInspections",
+        "excel_formula": "Requires complex filtering and calculation. Find all quality control entries that happen within 24 hours of a breakdown. Then calculate Failed_Qty/Inspected_Qty percentage.",
+        "calculation_steps": [
+          "Join maintenance_logs and quality_control tables on Breakdown_Date and Inspection_Date, filtering for inspections within 24 hours of a breakdown.",
+          "Calculate the sum of Failed_Qty and the sum of Inspected_Qty.",
+          "Calculate the percentage of failed products (Failed_Qty / Inspected_Qty * 100)."
+        ],
+        "answer_format": "decimal (percentage)",
+        "related_tables": [
+          "maintenance_logs",
+          "quality_control"
+        ],
+        "related_columns": [
+          "Breakdown_Date",
+          "Inspection_Date",
+          "Failed_Qty",
+          "Inspected_Qty"
+        ],
+        "id": "Complex_16",
+        "created_at": "2025-11-28T12:34:19.390118",
+        "correct_answer": "Found 608 records"
+      },
+      {
+        "question": "For each product, what is the ratio of 'Target_Qty' to 'Actual_Qty', and identify the product with the lowest ratio?",
+        "category": "Complex",
+        "sql_formula": "SELECT Product, AVG(CAST(Actual_Qty AS REAL) / Target_Qty) AS ProductionRatio FROM production_logs GROUP BY Product ORDER BY ProductionRatio ASC LIMIT 1",
+        "excel_formula": "Create a calculated column for Actual_Qty / Target_Qty. Calculate the average of this ratio for each product using AVERAGEIF. Then, find the minimum average ratio using MIN.",
+        "calculation_steps": [
+          "Calculate the ratio of Actual_Qty to Target_Qty for each row in production_logs.",
+          "Group the data by Product and calculate the average production ratio for each product.",
+          "Order the results by ProductionRatio ascending and select the product with the lowest ratio."
+        ],
+        "answer_format": "Product (string), Production Ratio (decimal)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Product",
+          "Target_Qty",
+          "Actual_Qty"
+        ],
+        "id": "Complex_17",
+        "created_at": "2025-11-28T12:34:19.390132",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What is the average unit cost of materials purchased from each supplier, and which supplier has the lowest average cost?",
+        "category": "Complex",
+        "sql_formula": "SELECT Supplier, AVG(Unit_Cost_Rupees) AS AvgUnitCost FROM inventory_logs GROUP BY Supplier ORDER BY AvgUnitCost ASC LIMIT 1",
+        "excel_formula": "Use AVERAGEIF function to calculate the average unit cost per supplier. Then, find the minimum of these averages using the MIN function.",
+        "calculation_steps": [
+          "Group the inventory_logs data by Supplier.",
+          "Calculate the average Unit_Cost_Rupees for each supplier.",
+          "Order the results by AvgUnitCost ascending and select the supplier with the lowest average cost."
+        ],
+        "answer_format": "Supplier (string), Average Unit Cost (Rupees, decimal)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Supplier",
+          "Unit_Cost_Rupees"
+        ],
+        "id": "Complex_18",
+        "created_at": "2025-11-28T12:34:19.390148",
+        "correct_answer": "{'Local Vendor': 186.27073170731705, 'Supplier-A': 309.69520547945206, 'Supplier-B': 91.0943820224719, 'Supplier-C': 271.1277777777778}"
+      },
+      {
+        "question": "How does the 'Downtime_Minutes' in production relate to the 'Downtime_Hours' in maintenance logs when the 'Issue_Description' involves 'Motor overheating and failure to start'?",
+        "category": "Complex",
+        "sql_formula": "SELECT AVG(pl.Downtime_Minutes), AVG(ml.Downtime_Hours) FROM production_logs pl JOIN maintenance_logs ml ON pl.Date = ml.Breakdown_Date WHERE ml.Issue_Description = 'Motor overheating and failure to start'",
+        "excel_formula": "Requires joining data based on date. First, find all maintenance logs with the issue description 'Motor overheating and failure to start'. Then, extract the Breakdown_Date. Next, find the average Downtime_Minutes from Production logs that occur on that date. Finally average Downtime_Hours from maintenance logs. Compare the results.",
+        "calculation_steps": [
+          "Join production_logs and maintenance_logs on Date = Breakdown_Date.",
+          "Filter the joined data for Issue_Description = 'Motor overheating and failure to start'.",
+          "Calculate the average Downtime_Minutes from production_logs.",
+          "Calculate the average Downtime_Hours from maintenance_logs.",
+          "Compare the average Downtime_Minutes and Downtime_Hours to understand the relationship."
+        ],
+        "answer_format": "Average Downtime (minutes, decimal) from production, Average Downtime (hours, decimal) from maintenance",
+        "related_tables": [
+          "production_logs",
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Downtime_Minutes",
+          "Downtime_Hours",
+          "Date",
+          "Breakdown_Date",
+          "Issue_Description"
+        ],
+        "id": "Complex_19",
+        "created_at": "2025-11-28T12:34:19.390465",
+        "correct_answer": "0"
+      },
+      {
+        "question": "Can we predict the 'Closing_Stock_Kg' of 'Steel-101' for the next month based on the historical 'Consumption_Kg' and 'Received_Kg' values using linear regression?",
+        "category": "Complex",
+        "sql_formula": "This requires a statistical tool or programming language (like Python) with libraries for linear regression. In SQL, it's very difficult.  Conceptually: 1. Extract 'Date', 'Consumption_Kg', 'Received_Kg', 'Closing_Stock_Kg' for 'Steel-101'. 2. Use a window function to calculate a rolling average of 'Consumption_Kg' and 'Received_Kg' over, say, the last 3 months. 3. Use the rolling averages as predictors and 'Closing_Stock_Kg' as the target in a linear regression model. 4. Predict 'Closing_Stock_Kg' for the next month using forecasted 'Consumption_Kg' and 'Received_Kg'.",
+        "excel_formula": "Use the LINEST function to perform linear regression with 'Consumption_Kg' and 'Received_Kg' as independent variables and 'Closing_Stock_Kg' as the dependent variable. Then use FORECAST.LINEAR function to predict next month's Closing_Stock_Kg. Requires calculating X and Y values.",
+        "calculation_steps": [
+          "Extract historical data for 'Steel-101': Date, Consumption_Kg, Received_Kg, Closing_Stock_Kg.",
+          "Perform linear regression using Consumption_Kg and Received_Kg as independent variables and Closing_Stock_Kg as the dependent variable.",
+          "Forecast Consumption_Kg and Received_Kg for the next month (requires assumptions or another forecasting method).",
+          "Use the linear regression model to predict the Closing_Stock_Kg for the next month."
+        ],
+        "answer_format": "Predicted Closing Stock (Kg, decimal)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Date",
+          "Material_Code",
+          "Consumption_Kg",
+          "Received_Kg",
+          "Closing_Stock_Kg"
+        ],
+        "id": "Complex_20",
+        "created_at": "2025-11-28T12:34:19.390555",
+        "correct_answer": "Table not found"
+      },
+      {
+        "question": "What is the average downtime per machine per month, and which machine has the highest average downtime?",
+        "category": "Complex",
+        "sql_formula": "WITH MonthlyDowntime AS (SELECT strftime('%Y-%m', Breakdown_Date) AS Month, Machine, AVG(Downtime_Hours) AS AvgDowntime FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' GROUP BY strftime('%Y-%m', Breakdown_Date), Machine) SELECT Month, Machine, AvgDowntime FROM MonthlyDowntime WHERE AvgDowntime = (SELECT MAX(AvgDowntime) FROM MonthlyDowntime)",
+        "excel_formula": "Requires pivot table and average calculation; too complex for a single Excel formula.",
+        "calculation_steps": [
+          "Group maintenance_logs by month and Machine, filtering for Breakdown maintenance",
+          "Calculate the average Downtime_Hours for each group",
+          "Find the maximum average downtime across all months and machines",
+          "Return the month, machine, and average downtime corresponding to the maximum value"
+        ],
+        "answer_format": "Month (YYYY-MM), Machine (string), Average Downtime (number)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Breakdown_Date",
+          "Machine",
+          "Downtime_Hours",
+          "Maintenance_Type"
+        ],
+        "id": "Complex_21",
+        "created_at": "2025-11-28T12:34:39.841200",
+        "correct_answer": "0"
+      },
+      {
+        "question": "How does the percentage of failed quantity vary across different shifts for Product Widget-A?",
+        "category": "Complex",
+        "sql_formula": "WITH ProductionQuality AS (SELECT pl.Shift, qc.Failed_Qty, qc.Inspected_Qty FROM production_logs pl JOIN quality_control qc ON pl.Date = qc.Inspection_Date AND pl.Product = qc.Product WHERE pl.Product = 'Widget-A') SELECT Shift, SUM(Failed_Qty) * 100.0 / SUM(Inspected_Qty) AS FailurePercentage FROM ProductionQuality GROUP BY Shift",
+        "excel_formula": "Requires multiple SUMIFS and division; too complex for a single Excel formula.",
+        "calculation_steps": [
+          "Join production_logs and quality_control on Date and Product, filtering for 'Widget-A'",
+          "Group by Shift",
+          "Calculate the sum of Failed_Qty and Inspected_Qty for each shift",
+          "Calculate the failure percentage (Failed_Qty / Inspected_Qty) * 100 for each shift"
+        ],
+        "answer_format": "Shift (string), Failure Percentage (number)",
+        "related_tables": [
+          "production_logs",
+          "quality_control"
+        ],
+        "related_columns": [
+          "Shift",
+          "Product",
+          "Date",
+          "Failed_Qty",
+          "Inspected_Qty",
+          "Inspection_Date"
+        ],
+        "id": "Complex_22",
+        "created_at": "2025-11-28T12:34:39.843129",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What is the correlation between Downtime_Minutes and Failed_Qty on a daily basis?",
+        "category": "Complex",
+        "sql_formula": "WITH DailyDowntimeFailures AS (SELECT pl.Date, SUM(pl.Downtime_Minutes) AS TotalDowntime, SUM(qc.Failed_Qty) AS TotalFailures FROM production_logs pl JOIN quality_control qc ON pl.Date = qc.Inspection_Date GROUP BY pl.Date) SELECT CORR(TotalDowntime, TotalFailures) AS Correlation FROM DailyDowntimeFailures",
+        "excel_formula": "=CORREL(SUMIFS(production_logs[Downtime_Minutes], production_logs[Date], quality_control[Inspection_Date]), SUMIFS(quality_control[Failed_Qty], quality_control[Inspection_Date], production_logs[Date]))",
+        "calculation_steps": [
+          "Join production_logs and quality_control on Date",
+          "Group by Date",
+          "Calculate the sum of Downtime_Minutes and Failed_Qty for each date",
+          "Calculate the Pearson correlation coefficient between TotalDowntime and TotalFailures"
+        ],
+        "answer_format": "Correlation Coefficient (number between -1 and 1)",
+        "related_tables": [
+          "production_logs",
+          "quality_control"
+        ],
+        "related_columns": [
+          "Date",
+          "Downtime_Minutes",
+          "Inspection_Date",
+          "Failed_Qty"
+        ],
+        "id": "Complex_23",
+        "created_at": "2025-11-28T12:34:39.843243",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "For Material Steel-101, what is the trend of wastage (increase or decrease) over the past 6 months?",
+        "category": "Complex",
+        "sql_formula": "WITH MonthlyWastage AS (SELECT strftime('%Y-%m', Date) AS Month, SUM(Wastage_Kg) AS TotalWastage FROM inventory_logs WHERE Material_Code = 'Steel-101' AND Date >= DATE('now', '-6 months') GROUP BY strftime('%Y-%m', Date) ORDER BY Month) SELECT CASE WHEN (SELECT TotalWastage FROM MonthlyWastage ORDER BY Month DESC LIMIT 1) > (SELECT TotalWastage FROM MonthlyWastage ORDER BY Month ASC LIMIT 1) THEN 'Increasing' ELSE 'Decreasing' END AS WastageTrend",
+        "excel_formula": "Requires calculating wastage per month using a pivot table and then comparing first and last month's values. Too complex for a single formula.",
+        "calculation_steps": [
+          "Filter inventory_logs for Material_Code = 'Steel-101' and dates within the last 6 months",
+          "Group by month",
+          "Calculate the sum of Wastage_Kg for each month",
+          "Compare the wastage in the first month to the wastage in the last month",
+          "Determine if the trend is increasing or decreasing"
+        ],
+        "answer_format": "Trend (string: 'Increasing' or 'Decreasing')",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Date",
+          "Material_Code",
+          "Wastage_Kg"
+        ],
+        "id": "Complex_24",
+        "created_at": "2025-11-28T12:34:39.843260",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "Which technician has the lowest average downtime per breakdown incident?",
+        "category": "Complex",
+        "sql_formula": "SELECT Technician, AVG(Downtime_Hours) AS AvgDowntime FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' GROUP BY Technician ORDER BY AvgDowntime ASC LIMIT 1",
+        "excel_formula": "Requires calculating average downtime per technician for breakdowns. Too complex for a single Excel formula.",
+        "calculation_steps": [
+          "Filter maintenance_logs for Maintenance_Type = 'Breakdown'",
+          "Group by Technician",
+          "Calculate the average Downtime_Hours for each technician",
+          "Order by AvgDowntime in ascending order",
+          "Select the technician with the lowest average downtime"
+        ],
+        "answer_format": "Technician (string), Average Downtime (number)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Technician",
+          "Downtime_Hours",
+          "Maintenance_Type"
+        ],
+        "id": "Complex_25",
+        "created_at": "2025-11-28T12:34:39.843753",
+        "correct_answer": "{'Priya Sharma': 5.084210526315789, 'Rajesh Kumar': 5.385185185185185}"
+      },
+      {
+        "question": "What is the impact of preventive maintenance on the subsequent breakdown frequency for Machine-M1?",
+        "category": "Complex",
+        "sql_formula": "WITH PreventiveMaintenance AS (SELECT Maintenance_Date FROM maintenance_logs WHERE Machine = 'Machine-M1' AND Maintenance_Type = 'Preventive'), BreakdownEvents AS (SELECT Breakdown_Date FROM maintenance_logs WHERE Machine = 'Machine-M1' AND Maintenance_Type = 'Breakdown'), TimeToBreakdown AS (SELECT JULIANDAY(be.Breakdown_Date) - JULIANDAY(pm.Maintenance_Date) AS DaysToBreakdown FROM PreventiveMaintenance pm JOIN BreakdownEvents be ON pm.Maintenance_Date < be.Breakdown_Date AND JULIANDAY(be.Breakdown_Date) - JULIANDAY(pm.Maintenance_Date) <= 90) SELECT AVG(DaysToBreakdown) AS AvgDaysToBreakdown FROM TimeToBreakdown",
+        "excel_formula": "Too complex to calculate this impact with a single Excel formula.",
+        "calculation_steps": [
+          "Identify dates of preventive maintenance for Machine-M1",
+          "Identify dates of breakdown events for Machine-M1",
+          "Calculate the time (in days) between each preventive maintenance and the next breakdown (within a reasonable window, e.g., 90 days)",
+          "Calculate the average time to breakdown after preventive maintenance"
+        ],
+        "answer_format": "Average Days To Breakdown (number)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Maintenance_Date",
+          "Machine",
+          "Maintenance_Type",
+          "Breakdown_Date"
+        ],
+        "id": "Complex_26",
+        "created_at": "2025-11-28T12:34:39.844934",
+        "correct_answer": "0"
+      },
+      {
+        "question": "Which supplier provides the raw material with the lowest unit cost but highest wastage percentage?",
+        "category": "Complex",
+        "sql_formula": "WITH MaterialWastage AS (SELECT Supplier, Material_Name, AVG(Unit_Cost_Rupees) as Avg_Unit_Cost, SUM(Wastage_Kg) * 100.0 / SUM(Received_Kg) AS WastagePercentage FROM inventory_logs WHERE Received_Kg > 0 GROUP BY Supplier, Material_Name), RankedWastage AS (SELECT Supplier, Material_Name, Avg_Unit_Cost, WastagePercentage, RANK() OVER (ORDER BY WastagePercentage DESC) AS WastageRank FROM MaterialWastage) SELECT Supplier, Material_Name, Avg_Unit_Cost, WastagePercentage FROM RankedWastage WHERE WastageRank = 1 ORDER BY Avg_Unit_Cost ASC LIMIT 1",
+        "excel_formula": "Requires multiple calculations and sorting. Too complex for a single excel formula.",
+        "calculation_steps": [
+          "Calculate the average Unit_Cost_Rupees and the Wastage Percentage for each Supplier and Material_Name",
+          "Rank the materials based on WastagePercentage in descending order",
+          "Filter to show the Material with rank 1",
+          "Order by Avg_Unit_Cost Ascending and get the top record",
+          "Return the Supplier, Material_Name and associated Wastage Percentage and Unit Cost"
+        ],
+        "answer_format": "Supplier (string), Material_Name (string), Avg. Unit Cost (number), Wastage Percentage (number)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Supplier",
+          "Material_Name",
+          "Unit_Cost_Rupees",
+          "Wastage_Kg",
+          "Received_Kg"
+        ],
+        "id": "Complex_27",
+        "created_at": "2025-11-28T12:34:39.845919",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What is the predicted Actual_Qty for Product Component-X on Line-2/Machine-M2 for the next shift, using the average Actual_Qty over the last week?",
+        "category": "Complex",
+        "sql_formula": "SELECT AVG(Actual_Qty) FROM production_logs WHERE Product = 'Component-X' AND Line_Machine = 'Line-2/Machine-M2' AND Date >= DATE('now', '-7 days')",
+        "excel_formula": "=AVERAGEIFS(production_logs[Actual_Qty], production_logs[Product], \"Component-X\", production_logs[Line_Machine], \"Line-2/Machine-M2\", production_logs[Date], \">=\"&TODAY()-7)",
+        "calculation_steps": [
+          "Filter production_logs for Product = 'Component-X' and Line_Machine = 'Line-2/Machine-M2'",
+          "Filter for dates within the last 7 days",
+          "Calculate the average of Actual_Qty"
+        ],
+        "answer_format": "Predicted Quantity (number)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Product",
+          "Line_Machine",
+          "Date",
+          "Actual_Qty"
+        ],
+        "id": "Complex_28",
+        "created_at": "2025-11-28T12:34:39.845999",
+        "correct_answer": "327.48"
+      },
+      {
+        "question": "How does the rework count vary by defect type and product?",
+        "category": "Complex",
+        "sql_formula": "SELECT Defect_Type, Product, AVG(Rework_Count) FROM quality_control GROUP BY Defect_Type, Product",
+        "excel_formula": "Requires pivot table. Too complex for a single Excel formula.",
+        "calculation_steps": [
+          "Group the quality_control table by Defect_Type and Product",
+          "Calculate the average Rework_Count for each group"
+        ],
+        "answer_format": "Defect_Type (string), Product (string), Average Rework Count (number)",
+        "related_tables": [
+          "quality_control"
+        ],
+        "related_columns": [
+          "Defect_Type",
+          "Product",
+          "Rework_Count"
+        ],
+        "id": "Complex_29",
+        "created_at": "2025-11-28T12:34:39.856620",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "Can we identify specific Issue_Description from the Maintenance Logs impacting Quality (Failed_Qty from Quality Control)?",
+        "category": "Complex",
+        "sql_formula": "WITH BreakdownQuality AS (SELECT ml.Issue_Description, pl.Date AS production_date, SUM(qc.Failed_Qty) AS TotalFailures FROM maintenance_logs ml JOIN production_logs pl ON ml.Breakdown_Date = pl.Date JOIN quality_control qc ON pl.Date = qc.Inspection_Date WHERE ml.Maintenance_Type = 'Breakdown' GROUP BY ml.Issue_Description, pl.Date ORDER BY TotalFailures DESC) SELECT Issue_Description, AVG(TotalFailures) AS AverageFailures FROM BreakdownQuality GROUP BY Issue_Description ORDER BY AverageFailures DESC LIMIT 5",
+        "excel_formula": "Too complex for single excel formula - requires multiple lookups and calculations",
+        "calculation_steps": [
+          "Join Maintenance Logs with Production logs on Breakdown_Date and Date",
+          "Join the resulting table with Quality Control on production_date and Inspection_Date",
+          "Filter where the Maintenance_Type is 'Breakdown'",
+          "Aggregate the sum of Failed Quantities group by Issue Description and production date",
+          "Order results in terms of Total Failure desc",
+          "Calculate averages and return the top 5 most impactful",
+          "Return Issue Description and Average failures for that description"
+        ],
+        "answer_format": "Issue_Description (string), Average Failures (Number)",
+        "related_tables": [
+          "maintenance_logs",
+          "production_logs",
+          "quality_control"
+        ],
+        "related_columns": [
+          "Issue_Description",
+          "Breakdown_Date",
+          "Date",
+          "Failed_Qty",
+          "Maintenance_Type"
+        ],
+        "id": "Complex_30",
+        "created_at": "2025-11-28T12:34:39.856644",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What is the correlation between downtime (in minutes) and failed quantity for each product?",
+        "category": "Complex",
+        "sql_formula": "WITH ProductDowntime AS (SELECT pl.Product, SUM(pl.Downtime_Minutes) AS TotalDowntime FROM production_logs pl GROUP BY pl.Product), ProductFailedQty AS (SELECT qc.Product, SUM(qc.Failed_Qty) AS TotalFailedQty FROM quality_control qc GROUP BY qc.Product) SELECT pd.Product, CORR(pd.TotalDowntime, pf.TotalFailedQty) AS Correlation FROM ProductDowntime pd JOIN ProductFailedQty pf ON pd.Product = pf.Product;",
+        "excel_formula": "Not readily achievable in Excel without significant data preparation and helper columns. Requires creating tables with summed Downtime and Failed Qty per product and then using CORREL function.",
+        "calculation_steps": [
+          "Calculate total downtime for each product from production_logs",
+          "Calculate total failed quantity for each product from quality_control",
+          "Join the two results based on product",
+          "Calculate the correlation coefficient between total downtime and total failed quantity"
+        ],
+        "answer_format": "decimal (correlation coefficient between -1 and 1) per product",
+        "related_tables": [
+          "production_logs",
+          "quality_control"
+        ],
+        "related_columns": [
+          "Product",
+          "Downtime_Minutes",
+          "Failed_Qty"
+        ],
+        "id": "Complex_31",
+        "created_at": "2025-11-28T12:34:56.715045",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "Which machine has the highest average downtime due to breakdowns in the last quarter, and what is the total cost associated with those breakdowns?",
+        "category": "Complex",
+        "sql_formula": "WITH BreakdownDowntime AS (SELECT Machine, AVG(Downtime_Hours) AS AvgDowntime, SUM(Cost_Rupees) AS TotalCost FROM maintenance_logs WHERE Maintenance_Type = 'Breakdown' AND Maintenance_Date BETWEEN DATE('now', '-3 months') AND DATE('now') GROUP BY Machine) SELECT Machine, AvgDowntime, TotalCost FROM BreakdownDowntime ORDER BY AvgDowntime DESC LIMIT 1;",
+        "excel_formula": "Requires creation of a pivot table from maintenance_logs to summarise Avg Downtime and Total Cost per Machine, filtering for Maintenance_Type 'Breakdown' and date range. MAX function can then be used to find the highest average downtime, lookup functions to return associated cost.",
+        "calculation_steps": [
+          "Filter maintenance_logs for records with Maintenance_Type as 'Breakdown' and within the last 3 months",
+          "Group the filtered records by 'Machine'",
+          "Calculate the average Downtime_Hours and sum of Cost_Rupees for each machine group",
+          "Order the grouped data by average Downtime_Hours in descending order",
+          "Select the machine with the highest average downtime and its corresponding total cost"
+        ],
+        "answer_format": "machine name (string), average downtime (decimal hours), total cost (Rupees)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Machine",
+          "Downtime_Hours",
+          "Maintenance_Type",
+          "Maintenance_Date",
+          "Cost_Rupees"
+        ],
+        "id": "Complex_32",
+        "created_at": "2025-11-28T12:34:56.715635",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What are the top 3 most frequently replaced parts across all machines, and what is the total cost associated with replacing these parts?",
+        "category": "Complex",
+        "sql_formula": "SELECT Parts_Replaced, COUNT(*) AS ReplacementCount, SUM(Cost_Rupees) AS TotalCost FROM maintenance_logs GROUP BY Parts_Replaced ORDER BY ReplacementCount DESC LIMIT 3;",
+        "excel_formula": "Create a pivot table from maintenance_logs, summarising Count of Maintenance Logs and Sum of Cost Rupees per Parts_Replaced. Sort table by Count in descending order. Extract the top 3 rows.",
+        "calculation_steps": [
+          "Group maintenance_logs data by Parts_Replaced",
+          "Count the occurrences of each Parts_Replaced (ReplacementCount)",
+          "Calculate the total cost (SUM(Cost_Rupees)) for each Parts_Replaced group",
+          "Order the results by ReplacementCount in descending order",
+          "Select the top 3 Parts_Replaced entries with their counts and total costs."
+        ],
+        "answer_format": "list of top 3 parts (string), their replacement count (integer), and total cost (Rupees)",
+        "related_tables": [
+          "maintenance_logs"
+        ],
+        "related_columns": [
+          "Parts_Replaced",
+          "Cost_Rupees"
+        ],
+        "id": "Complex_33",
+        "created_at": "2025-11-28T12:34:56.723403",
+        "correct_answer": "{'AirFilter-01': 900, 'Bearing-101': 27000, 'Bearing-101, Seal-22': 22500, 'Bearing-101, Seal-303': 15000, 'Bearing-201': 20000, 'Bearing-202, Grease-3': 3000, 'Bearing-205, Seal-302': 32000, 'Bearing-GB2, Seal-GB1': 28000, 'Belt-B1, Belt-B2': 2200, 'Belt-B2': 3500, 'Belt-B3': 6500, 'Belt-B3, Pulley-P1': 1500, 'Belt-B7': 11000, 'Belt-C4': 15000, 'Belt-CNV4, Roller-12': 12000, 'Belt-Conv-200': 25000, 'Belt-Repair-Kit': 3500, 'Bolt-M8': 800, 'Brushes-M3': 1500, 'CPU-22, Cable-10': 12000, 'Capacitor-C3': 3500, 'Chain, Sprocket': 35000, 'Circuit-B1': 9500, 'Connector-1': 1250, 'Controller-V2, Cable-A4': 45000, 'Fan-22': 8000, 'Fan-401, Relay-12': 18000, 'Filter': 1000, 'Filter-202': 1200, 'Filter-A1': 2000, 'Filter-A1, Oil-X2': 1200, 'Filter-A3': 2700, 'Filter-H1, Oil-20L': 2800, 'Filter-X2': 1200, 'Fuse-10': 5000, 'Fuse-30A': 4000, 'Gear': 50000, 'Gear-22, Seal-11': 15000, 'Gear-32, Seal-44': 12000, 'Gear-G4, Oil-Seal': 15000, 'Grease': 800, 'Grease-1': 500, 'Grease-2': 550, 'Grease-G2': 850, 'Hose-HY12, Seal-S2': 2800, 'Hydraulic-Fluid': 800, 'Lubricant-X200, Filter-F1': 3200, 'Motor-1HP': 22000, 'Motor-202, Cooling-Fan': 25000, 'Motor-220': 18000, 'Motor-22B, Connector-X1': 28500, 'Motor-345, Relay-12': 18000, 'Motor-A6': 20000, 'Motor-M12, Capacitor-C3': 32000, 'Motor-M12, Fan-F3': 22000, 'Motor-M20, Cooling-Fan': 42000, 'Oil-10L, Filter-A2': 1200, 'Oil-G5': 2000, 'Oil-GB10L, Filter-GBF1': 1800, 'Oil-X1': 650, 'Power-Supply-1, Fuse-Box': 35000, 'PowerSupply-PS3, Fuse-20A': 18000, 'Pump-300': 22000, 'Pump-42': 28000, 'Pump-45': 18000, 'Pump-H1': 18000, 'Pump-H2, Seal-H3': 25000, 'Pump-H22': 18000, 'Pump-HP3, Seal-S12': 35000, 'Relay-05, Fuse-20A': 12500, 'Relay-R1, Fuse-F1': 15000, 'Relay-R15': 7500, 'Seal-S2, Gasket-G1': 18000, 'Sensor-001': 6500, 'Sensor-S101': 9000, 'Shaft-789': 23000, 'Transformer-T1, Fuse-F2, Relay-R2': 45000, 'Valve-V2, Filter-F4': 2000, 'Welding Rods': 4000, 'Wire-12, Connector-5': 3000, 'Wire-12A': 1200, 'Wiring, Breaker': 40000}"
+      },
+      {
+        "question": "How does the average 'Actual_Qty' of 'Widget-A' on 'Line-1' change over time compared to its 'Target_Qty', and is there a trend indicating improved or declined production?",
+        "category": "Complex",
+        "sql_formula": "WITH DailyProduction AS (SELECT Date, AVG(Actual_Qty) AS AvgActual, AVG(Target_Qty) AS AvgTarget FROM production_logs WHERE Product = 'Widget-A' AND Line_Machine LIKE 'Line-1/%' GROUP BY Date) SELECT Date, AvgActual, AvgTarget, (AvgActual - AvgTarget) AS Difference, (AvgActual - LAG(AvgActual, 1, AvgActual) OVER (ORDER BY Date)) AS ActualChange FROM DailyProduction ORDER BY Date;",
+        "excel_formula": "Requires a time series chart created from a pivot table summarizing Avg Actual_Qty and Avg Target_Qty for Widget-A on Line-1 by Date from production_logs. A trendline can be added to the chart to visualize the trend in Actual_Qty over time. Requires calculation of difference (Actual - Target) and day-over-day change to analyse trends",
+        "calculation_steps": [
+          "Filter the 'production_logs' for 'Widget-A' and 'Line-1'",
+          "Calculate average of 'Actual_Qty' and 'Target_Qty' grouping by 'Date'",
+          "Calculate difference of average actual - average target values for each day",
+          "Calculate the difference between consecutive days' average Actual_Qty values using the LAG function to determine change",
+          "Output Date, average Actual, average Target, difference, and day-over-day change in Actual"
+        ],
+        "answer_format": "date, average actual quantity (decimal), average target quantity (decimal), difference (decimal), change from previous day (decimal)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Date",
+          "Actual_Qty",
+          "Target_Qty",
+          "Product",
+          "Line_Machine"
+        ],
+        "id": "Complex_34",
+        "created_at": "2025-11-28T12:34:56.725758",
+        "correct_answer": "Unable to parse GROUP BY query"
+      },
+      {
+        "question": "What is the wastage rate (Wastage_Kg / Consumption_Kg) for each material supplied by 'Supplier-A', and has the average unit cost for those materials changed significantly in the last year?",
+        "category": "Complex",
+        "sql_formula": "WITH SupplierAMaterials AS (SELECT Material_Code, AVG(Wastage_Kg / Consumption_Kg) AS AvgWastageRate, AVG(Unit_Cost_Rupees) AS AvgUnitCost FROM inventory_logs WHERE Supplier = 'Supplier-A' GROUP BY Material_Code), PreviousYearCosts AS (SELECT Material_Code, AVG(Unit_Cost_Rupees) AS PrevYearCost FROM inventory_logs WHERE Supplier = 'Supplier-A' AND Date BETWEEN DATE('now', '-1 year') AND DATE('now', '-364 days') GROUP BY Material_Code) SELECT sa.Material_Code, sa.AvgWastageRate, sa.AvgUnitCost, py.PrevYearCost, (sa.AvgUnitCost - py.PrevYearCost) AS CostChange FROM SupplierAMaterials sa JOIN PreviousYearCosts py ON sa.Material_Code = py.Material_Code;",
+        "excel_formula": "Requires generating two pivot tables from inventory_logs filtered by supplier A. One for the last year and the current period. Wastage Rate needs to be calculated per material using calculated fields inside pivot table. Unit Cost also needs to be averaged per material. Finally both pivot tables needs to be compared material wise and cost change calculated with difference of Unit Cost",
+        "calculation_steps": [
+          "Filter inventory_logs for Supplier 'Supplier-A'",
+          "Calculate wastage rate by dividing 'Wastage_Kg' by 'Consumption_Kg' for each material.",
+          "Calculate the average wastage rate for each Material_Code.",
+          "Calculate the average 'Unit_Cost_Rupees' for each Material_Code.",
+          "Calculate unit costs from the past year (same day last year), grouping by Material_Code",
+          "Join with material and compare current and previous unit cost, find the differences",
+          "Output results including Material, Wastage Rate, and previous cost."
+        ],
+        "answer_format": "Material Code (string), average wastage rate (decimal), average unit cost (Rupees), cost change (Rupees)",
+        "related_tables": [
+          "inventory_logs"
+        ],
+        "related_columns": [
+          "Material_Code",
+          "Wastage_Kg",
+          "Consumption_Kg",
+          "Unit_Cost_Rupees",
+          "Supplier",
+          "Date"
+        ],
+        "id": "Complex_35",
+        "created_at": "2025-11-28T12:34:56.726845",
+        "correct_answer": "Unable to parse GROUP BY query"
+      }
+    ]
+  }
+}

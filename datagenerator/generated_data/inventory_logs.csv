@@ -1,0 +1,408 @@
+Date,Material_Code,Material_Name,Opening_Stock_Kg,Consumption_Kg,Received_Kg,Closing_Stock_Kg,Wastage_Kg,Supplier,Unit_Cost_Rupees
+2024-01-15,Steel-101,"Steel Sheet 101, Grade A",5000,1500,0,3525,25,Supplier-A,250.5
+2024-01-15,Plastic-PVC,"PVC Granules, Extrusion Grade",2000,800,3000,4160,40,Supplier-B,85.75
+2024-01-15,Rubber-RB,"Synthetic Rubber, High Tensile",1200,300,0,890,10,Local Vendor,150.0
+2024-07-15,Steel-101,Steel Sheet 101 - 2mm,5000,1500,0,3500,50,Supplier-A,250.5
+2024-07-15,Plastic-PVC,PVC Granules - Grey,2500,800,1000,2700,25,Supplier-B,85.75
+2024-01-15,Steel-101,Steel Sheet 101 (Galvanized),5500,1200,0,4300,45,Supplier-A,220.5
+2024-01-15,Plastic-PVC,PVC Granules (Industrial Grade),2800,1800,3000,4000,90,Supplier-B,85.75
+2024-01-15,Aluminum-AL,Aluminum Ingot (Alloy 6061),1500,350,0,1150,12,Local Vendor,310.2
+2024-01-15,Steel-101,Steel Sheet 101,5000,1200,0,3800,60,Supplier-A,250.0
+2024-01-15,Plastic-PVC,PVC Granules,2500,800,1000,2700,40,Supplier-B,80.0
+2024-01-15,Aluminum-AL,Aluminum Alloy Ingots,1800,650,5000,6150,35,Supplier-C,350.0
+2024-01-15,Rubber-RB,Synthetic Rubber Compound,8000,300,0,7700,15,Local Vendor,120.0
+2024-01-15,Copper-CU,Copper Wire (1mm),1200,400,2000,2800,20,Supplier-A,450.0
+2024-01-01,Steel-101,Steel Sheet 101,5000,800,0,4200,25,Supplier-A,250.5
+2024-01-01,Plastic-PVC,PVC Granules,8000,500,0,7500,10,Supplier-B,75.25
+2024-01-02,Aluminum-AL,Aluminum Ingot,3000,300,0,2700,5,Supplier-C,350.0
+2024-01-02,Rubber-RB,Synthetic Rubber Compound,2000,200,0,1800,5,Local Vendor,150.75
+2024-01-03,Copper-CU,Copper Wire,1500,150,0,1350,3,Supplier-A,400.0
+2024-01-03,Steel-101,Steel Sheet 101,4200,750,0,3450,20,Supplier-A,250.5
+2024-01-04,Plastic-PVC,PVC Granules,7500,480,0,7020,8,Supplier-B,75.25
+2024-01-04,Aluminum-AL,Aluminum Ingot,2700,280,0,2420,4,Supplier-C,350.0
+2024-01-05,Rubber-RB,Synthetic Rubber Compound,1800,190,0,1610,4,Local Vendor,150.75
+2024-01-05,Copper-CU,Copper Wire,1350,140,0,1210,2,Supplier-A,400.0
+2024-01-06,Steel-101,Steel Sheet 101,3450,700,3000,5750,18,Supplier-A,250.5
+2024-01-06,Plastic-PVC,PVC Granules,7020,450,0,6570,7,Supplier-B,75.25
+2024-01-07,Aluminum-AL,Aluminum Ingot,2420,270,2000,4150,4,Supplier-C,350.0
+2024-01-07,Rubber-RB,Synthetic Rubber Compound,1610,180,0,1430,3,Local Vendor,150.75
+2024-01-08,Copper-CU,Copper Wire,1210,130,1500,2580,2,Supplier-A,400.0
+2024-01-08,Steel-101,Steel Sheet 101,5750,650,0,5100,16,Supplier-A,250.5
+2024-01-09,Plastic-PVC,PVC Granules,6570,420,0,6150,6,Supplier-B,75.25
+2024-01-09,Aluminum-AL,Aluminum Ingot,4150,250,0,3900,3,Supplier-C,350.0
+2024-01-10,Rubber-RB,Synthetic Rubber Compound,1430,170,2000,3260,3,Local Vendor,150.75
+2024-01-10,Copper-CU,Copper Wire,2580,120,0,2460,2,Supplier-A,400.0
+2024-01-11,Steel-101,Steel Sheet 101,5100,600,0,4500,15,Supplier-A,250.5
+2024-01-11,Plastic-PVC,PVC Granules,6150,400,0,5750,6,Supplier-B,75.25
+2024-01-12,Aluminum-AL,Aluminum Ingot,3900,240,0,3660,3,Supplier-C,350.0
+2024-01-12,Rubber-RB,Synthetic Rubber Compound,3260,160,0,3100,3,Local Vendor,150.75
+2024-01-13,Copper-CU,Copper Wire,2460,110,0,2350,2,Supplier-A,400.0
+2024-01-13,Steel-101,Steel Sheet 101,4500,550,0,3950,14,Supplier-A,250.5
+2024-01-14,Plastic-PVC,PVC Granules,5750,380,4000,9370,5,Supplier-B,75.25
+2024-01-14,Aluminum-AL,Aluminum Ingot,3660,230,0,3430,3,Supplier-C,350.0
+2024-01-15,Rubber-RB,Synthetic Rubber Compound,3100,150,0,2950,3,Local Vendor,150.75
+2024-01-15,Copper-CU,Copper Wire,2350,100,0,2250,2,Supplier-A,400.0
+2024-01-16,Steel-101,Steel Sheet 101,3950,500,5000,8450,13,Supplier-A,250.5
+2024-01-16,Plastic-PVC,PVC Granules,9370,350,0,9020,5,Supplier-B,75.25
+2024-01-17,Aluminum-AL,Aluminum Ingot,3430,220,0,3210,3,Supplier-C,350.0
+2024-01-17,Rubber-RB,Synthetic Rubber Compound,2950,140,0,2810,2,Local Vendor,150.75
+2024-01-18,Copper-CU,Copper Wire,2250,90,0,2160,1,Supplier-A,400.0
+2024-01-18,Steel-101,Steel Sheet 101,8450,450,0,8000,12,Supplier-A,250.5
+2024-01-19,Plastic-PVC,PVC Granules,9020,330,0,8690,5,Supplier-B,75.25
+2024-01-19,Aluminum-AL,Aluminum Ingot,3210,210,0,3000,3,Supplier-C,350.0
+2024-01-20,Rubber-RB,Synthetic Rubber Compound,2810,130,0,2680,2,Local Vendor,150.75
+2024-01-20,Copper-CU,Copper Wire,2160,80,5000,7080,1,Supplier-A,400.0
+2024-01-21,Steel-101,Steel Sheet 101,8000,400,0,7600,10,Supplier-A,250.5
+2024-01-21,Plastic-PVC,PVC Granules,8690,300,0,8390,4,Supplier-B,75.25
+2024-01-22,Aluminum-AL,Aluminum Ingot,3000,200,2500,5300,3,Supplier-C,350.0
+2024-01-22,Rubber-RB,Synthetic Rubber Compound,2680,120,0,2560,2,Local Vendor,150.75
+2024-01-23,Copper-CU,Copper Wire,7080,70,0,7010,1,Supplier-A,400.0
+2024-01-23,Steel-101,Steel Sheet 101,7600,350,0,7250,9,Supplier-A,250.5
+2024-01-24,Plastic-PVC,PVC Granules,8390,280,0,8110,4,Supplier-B,75.25
+2024-01-24,Aluminum-AL,Aluminum Ingot,5300,190,0,5110,2,Supplier-C,350.0
+2024-01-25,Rubber-RB,Synthetic Rubber Compound,2560,110,0,2450,2,Local Vendor,150.75
+2024-01-25,Copper-CU,Copper Wire,7010,60,0,6950,1,Supplier-A,400.0
+2024-01-26,Steel-101,Steel Sheet 101,7250,300,0,6950,8,Supplier-A,250.5
+2024-01-26,Plastic-PVC,PVC Granules,8110,250,0,7860,3,Supplier-B,75.25
+2024-01-27,Aluminum-AL,Aluminum Ingot,5110,180,0,4930,2,Supplier-C,350.0
+2024-01-01,Steel-101,Steel Sheet 101,5000,800,0,4200,40,Supplier-A,250.5
+2024-01-01,Plastic-PVC,PVC Granules,3500,600,0,2900,30,Supplier-B,85.75
+2024-01-02,Aluminum-AL,Aluminum Ingot,6000,400,0,5600,20,Supplier-C,180.2
+2024-01-02,Rubber-RB,Synthetic Rubber Compound,2000,300,0,1700,15,Local Vendor,120.0
+2024-01-03,Copper-CU,Copper Wire,1500,250,0,1250,12,Supplier-A,400.0
+2024-01-03,Steel-101,Steel Sheet 101,4200,750,0,3450,38,Supplier-A,250.5
+2024-01-04,Plastic-PVC,PVC Granules,2900,550,0,2350,28,Supplier-B,85.75
+2024-01-04,Aluminum-AL,Aluminum Ingot,5600,380,0,5220,19,Supplier-C,180.2
+2024-01-05,Rubber-RB,Synthetic Rubber Compound,1700,280,0,1420,14,Local Vendor,120.0
+2024-01-05,Copper-CU,Copper Wire,1250,230,0,1020,11,Supplier-A,400.0
+2024-01-06,Steel-101,Steel Sheet 101,3450,700,2000,4750,35,Supplier-A,250.5
+2024-01-06,Plastic-PVC,PVC Granules,2350,500,1000,2850,25,Supplier-B,85.75
+2024-01-07,Aluminum-AL,Aluminum Ingot,5220,350,0,4870,18,Supplier-C,180.2
+2024-01-07,Rubber-RB,Synthetic Rubber Compound,1420,250,1500,2670,13,Local Vendor,120.0
+2024-01-08,Copper-CU,Copper Wire,1020,200,2500,3320,10,Supplier-A,400.0
+2024-01-08,Steel-101,Steel Sheet 101,4750,850,0,3900,43,Supplier-A,250.5
+2024-01-09,Plastic-PVC,PVC Granules,2850,650,0,2200,33,Supplier-B,85.75
+2024-01-09,Aluminum-AL,Aluminum Ingot,4870,420,0,4450,21,Supplier-C,180.2
+2024-01-10,Rubber-RB,Synthetic Rubber Compound,2670,320,0,2350,16,Local Vendor,120.0
+2024-01-10,Copper-CU,Copper Wire,3320,270,0,3050,14,Supplier-A,400.0
+2024-01-11,Steel-101,Steel Sheet 101,3900,900,3000,6000,45,Supplier-A,250.5
+2024-01-11,Plastic-PVC,PVC Granules,2200,700,2000,3500,35,Supplier-B,85.75
+2024-01-12,Aluminum-AL,Aluminum Ingot,4450,450,0,4000,23,Supplier-C,180.2
+2024-01-12,Rubber-RB,Synthetic Rubber Compound,2350,350,0,2000,18,Local Vendor,120.0
+2024-01-13,Copper-CU,Copper Wire,3050,300,0,2750,15,Supplier-A,400.0
+2024-01-13,Steel-101,Steel Sheet 101,6000,820,0,5180,41,Supplier-A,250.5
+2024-01-14,Plastic-PVC,PVC Granules,3500,620,0,2880,31,Supplier-B,85.75
+2024-01-14,Aluminum-AL,Aluminum Ingot,4000,430,3000,6570,22,Supplier-C,180.2
+2024-01-15,Rubber-RB,Synthetic Rubber Compound,2000,330,0,1670,17,Local Vendor,120.0
+2024-01-15,Copper-CU,Copper Wire,2750,280,0,2470,14,Supplier-A,400.0
+2024-01-16,Steel-101,Steel Sheet 101,5180,950,0,4230,48,Supplier-A,250.5
+2024-01-16,Plastic-PVC,PVC Granules,2880,680,0,2200,34,Supplier-B,85.75
+2024-01-17,Aluminum-AL,Aluminum Ingot,6570,460,0,6110,23,Supplier-C,180.2
+2024-01-17,Rubber-RB,Synthetic Rubber Compound,1670,310,2000,3360,16,Local Vendor,120.0
+2024-01-18,Copper-CU,Copper Wire,2470,290,0,2180,15,Supplier-A,400.0
+2024-01-18,Steel-101,Steel Sheet 101,4230,880,0,3350,44,Supplier-A,250.5
+2024-01-19,Plastic-PVC,PVC Granules,2200,660,3000,4540,33,Supplier-B,85.75
+2024-01-19,Aluminum-AL,Aluminum Ingot,6110,440,0,5670,22,Supplier-C,180.2
+2024-01-20,Rubber-RB,Synthetic Rubber Compound,3360,340,0,3020,17,Local Vendor,120.0
+2024-01-20,Copper-CU,Copper Wire,2180,260,5000,6920,13,Supplier-A,400.0
+2024-01-21,Steel-101,Steel Sheet 101,3350,780,5000,7570,39,Supplier-A,250.5
+2024-01-21,Plastic-PVC,PVC Granules,4540,640,0,3900,32,Supplier-B,85.75
+2024-01-22,Aluminum-AL,Aluminum Ingot,5670,410,0,5260,21,Supplier-C,180.2
+2024-01-22,Rubber-RB,Synthetic Rubber Compound,3020,300,0,2720,15,Local Vendor,120.0
+2024-01-23,Copper-CU,Copper Wire,6920,270,0,6650,14,Supplier-A,400.0
+2024-01-23,Steel-101,Steel Sheet 101,7570,810,0,6760,41,Supplier-A,250.5
+2024-01-24,Plastic-PVC,PVC Granules,3900,610,0,3290,31,Supplier-B,85.75
+2024-01-24,Aluminum-AL,Aluminum Ingot,5260,400,2000,6860,20,Supplier-C,180.2
+2024-01-25,Rubber-RB,Synthetic Rubber Compound,2720,290,0,2430,15,Local Vendor,120.0
+2024-01-25,Copper-CU,Copper Wire,6650,250,0,6400,13,Supplier-A,400.0
+2024-01-01,Steel-101,Steel Sheet 101,5000,800,0,4200,20,Supplier-A,250.0
+2024-01-02,Plastic-PVC,PVC Granules,3000,500,0,2500,15,Supplier-B,80.0
+2024-01-03,Aluminum-AL,Aluminum Ingot,2000,300,0,1700,8,Supplier-C,300.0
+2024-01-04,Rubber-RB,Synthetic Rubber Roll,1500,200,0,1300,5,Local Vendor,150.0
+2024-01-05,Copper-CU,Copper Wire,1000,150,0,850,3,Supplier-A,400.0
+2024-01-06,Steel-101,Steel Sheet 101,4200,900,0,3300,25,Supplier-A,250.0
+2024-01-07,Plastic-PVC,PVC Granules,2500,600,0,1900,18,Supplier-B,80.0
+2024-01-08,Aluminum-AL,Aluminum Ingot,1700,400,0,1300,10,Supplier-C,300.0
+2024-01-09,Rubber-RB,Synthetic Rubber Roll,1300,250,0,1050,7,Local Vendor,150.0
+2024-01-10,Copper-CU,Copper Wire,850,200,0,650,4,Supplier-A,400.0
+2024-01-11,Steel-101,Steel Sheet 101,3300,1000,2000,4300,30,Supplier-A,250.0
+2024-01-12,Plastic-PVC,PVC Granules,1900,700,1000,2200,20,Supplier-B,80.0
+2024-01-13,Aluminum-AL,Aluminum Ingot,1300,500,1500,2300,12,Supplier-C,300.0
+2024-01-14,Rubber-RB,Synthetic Rubber Roll,1050,300,1000,1750,8,Local Vendor,150.0
+2024-01-15,Copper-CU,Copper Wire,650,250,1000,1400,5,Supplier-A,400.0
+2024-01-16,Steel-101,Steel Sheet 101,4300,700,0,3600,20,Supplier-A,250.0
+2024-01-17,Plastic-PVC,PVC Granules,2200,400,0,1800,10,Supplier-B,80.0
+2024-01-18,Aluminum-AL,Aluminum Ingot,2300,350,0,1950,9,Supplier-C,300.0
+2024-01-19,Rubber-RB,Synthetic Rubber Roll,1750,220,0,1530,6,Local Vendor,150.0
+2024-01-20,Copper-CU,Copper Wire,1400,180,0,1220,4,Supplier-A,400.0
+2024-01-21,Steel-101,Steel Sheet 101,3600,850,0,2750,22,Supplier-A,250.0
+2024-01-22,Plastic-PVC,PVC Granules,1800,550,0,1250,16,Supplier-B,80.0
+2024-01-23,Aluminum-AL,Aluminum Ingot,1950,450,0,1500,11,Supplier-C,300.0
+2024-01-24,Rubber-RB,Synthetic Rubber Roll,1530,280,0,1250,7,Local Vendor,150.0
+2024-01-25,Copper-CU,Copper Wire,1220,220,0,1000,4,Supplier-A,400.0
+2024-01-26,Steel-101,Steel Sheet 101,2750,950,3000,4800,28,Supplier-A,250.0
+2024-01-27,Plastic-PVC,PVC Granules,1250,650,2000,2600,19,Supplier-B,80.0
+2024-01-28,Aluminum-AL,Aluminum Ingot,1500,550,2500,3450,14,Supplier-C,300.0
+2024-01-29,Rubber-RB,Synthetic Rubber Roll,1250,350,2000,2900,9,Local Vendor,150.0
+2024-01-30,Copper-CU,Copper Wire,1000,280,2000,2720,6,Supplier-A,400.0
+2024-02-01,Steel-101,Steel Sheet 101,4800,1100,0,3700,33,Supplier-A,250.0
+2024-02-02,Plastic-PVC,PVC Granules,2600,750,0,1850,22,Supplier-B,80.0
+2024-02-03,Aluminum-AL,Aluminum Ingot,3450,650,0,2800,16,Supplier-C,300.0
+2024-02-04,Rubber-RB,Synthetic Rubber Roll,2900,450,0,2450,11,Local Vendor,150.0
+2024-02-05,Copper-CU,Copper Wire,2720,350,0,2370,7,Supplier-A,400.0
+2024-02-06,Steel-101,Steel Sheet 101,3700,900,0,2800,27,Supplier-A,250.0
+2024-02-07,Plastic-PVC,PVC Granules,1850,500,0,1350,15,Supplier-B,80.0
+2024-02-08,Aluminum-AL,Aluminum Ingot,2800,400,0,2400,10,Supplier-C,300.0
+2024-02-09,Rubber-RB,Synthetic Rubber Roll,2450,300,0,2150,7,Local Vendor,150.0
+2024-02-10,Copper-CU,Copper Wire,2370,250,0,2120,5,Supplier-A,400.0
+2024-02-11,Steel-101,Steel Sheet 101,2800,1000,2000,3800,30,Supplier-A,250.0
+2024-02-12,Plastic-PVC,PVC Granules,1350,600,1000,1750,18,Supplier-B,80.0
+2024-02-13,Aluminum-AL,Aluminum Ingot,2400,500,1500,3400,12,Supplier-C,300.0
+2024-02-14,Rubber-RB,Synthetic Rubber Roll,2150,350,1000,2800,9,Local Vendor,150.0
+2024-02-15,Copper-CU,Copper Wire,2120,300,1000,2820,6,Supplier-A,400.0
+2024-02-16,Steel-101,Steel Sheet 101,3800,800,0,3000,24,Supplier-A,250.0
+2024-02-17,Plastic-PVC,PVC Granules,1750,400,0,1350,12,Supplier-B,80.0
+2024-02-18,Aluminum-AL,Aluminum Ingot,3400,350,0,3050,9,Supplier-C,300.0
+2024-02-19,Rubber-RB,Synthetic Rubber Roll,2800,220,0,2580,6,Local Vendor,150.0
+2024-02-20,Copper-CU,Copper Wire,2820,180,0,2640,4,Supplier-A,400.0
+2024-01-01,Steel-101,Steel Sheet 101,5000,800,0,4200,40,Supplier-A,250.0
+2024-01-01,Plastic-PVC,PVC Granules,3000,500,0,2500,15,Supplier-B,80.5
+2024-01-01,Aluminum-AL,Aluminum Ingot,2000,300,0,1700,6,Supplier-C,300.75
+2024-01-01,Rubber-RB,Synthetic Rubber Roll,1500,200,0,1300,8,Local Vendor,150.2
+2024-01-01,Copper-CU,Copper Wire,1000,150,0,850,3,Supplier-A,450.9
+2024-01-08,Steel-101,Steel Sheet 101,4200,900,2000,5300,45,Supplier-A,250.0
+2024-01-08,Plastic-PVC,PVC Granules,2500,600,1000,2900,20,Supplier-B,80.5
+2024-01-08,Aluminum-AL,Aluminum Ingot,1700,400,1500,2800,8,Supplier-C,300.75
+2024-01-08,Rubber-RB,Synthetic Rubber Roll,1300,300,500,1500,10,Local Vendor,150.2
+2024-01-08,Copper-CU,Copper Wire,850,200,1000,1650,4,Supplier-A,450.9
+2024-01-15,Steel-101,Steel Sheet 101,5300,700,0,4600,35,Supplier-A,250.0
+2024-01-15,Plastic-PVC,PVC Granules,2900,450,0,2450,14,Supplier-B,80.5
+2024-01-15,Aluminum-AL,Aluminum Ingot,2800,350,0,2450,7,Supplier-C,300.75
+2024-01-15,Rubber-RB,Synthetic Rubber Roll,1500,250,0,1250,9,Local Vendor,150.2
+2024-01-15,Copper-CU,Copper Wire,1650,180,0,1470,4,Supplier-A,450.9
+2024-01-22,Steel-101,Steel Sheet 101,4600,850,0,3750,43,Supplier-A,250.0
+2024-01-22,Plastic-PVC,PVC Granules,2450,550,2000,3900,18,Supplier-B,80.5
+2024-01-22,Aluminum-AL,Aluminum Ingot,2450,380,0,2070,7,Supplier-C,300.75
+2024-01-22,Rubber-RB,Synthetic Rubber Roll,1250,270,0,980,11,Local Vendor,150.2
+2024-01-22,Copper-CU,Copper Wire,1470,220,0,1250,5,Supplier-A,450.9
+2024-01-29,Steel-101,Steel Sheet 101,3750,950,3000,5800,48,Supplier-A,250.0
+2024-01-29,Plastic-PVC,PVC Granules,3900,400,0,3500,12,Supplier-B,80.5
+2024-01-29,Aluminum-AL,Aluminum Ingot,2070,420,2500,4150,9,Supplier-C,300.75
+2024-01-29,Rubber-RB,Synthetic Rubber Roll,980,320,2000,2660,13,Local Vendor,150.2
+2024-01-29,Copper-CU,Copper Wire,1250,250,0,1000,6,Supplier-A,450.9
+2024-02-05,Steel-101,Steel Sheet 101,5800,750,0,5050,38,Supplier-A,250.0
+2024-02-05,Plastic-PVC,PVC Granules,3500,480,0,3020,16,Supplier-B,80.5
+2024-02-05,Aluminum-AL,Aluminum Ingot,4150,390,0,3760,8,Supplier-C,300.75
+2024-02-05,Rubber-RB,Synthetic Rubber Roll,2660,290,0,2370,12,Local Vendor,150.2
+2024-02-05,Copper-CU,Copper Wire,1000,190,3000,3810,4,Supplier-A,450.9
+2024-02-12,Steel-101,Steel Sheet 101,5050,880,0,4170,44,Supplier-A,250.0
+2024-02-12,Plastic-PVC,PVC Granules,3020,520,0,2500,17,Supplier-B,80.5
+2024-02-12,Aluminum-AL,Aluminum Ingot,3760,410,0,3350,8,Supplier-C,300.75
+2024-02-12,Rubber-RB,Synthetic Rubber Roll,2370,310,0,2060,12,Local Vendor,150.2
+2024-02-12,Copper-CU,Copper Wire,3810,210,0,3600,5,Supplier-A,450.9
+2024-02-19,Steel-101,Steel Sheet 101,4170,920,4000,7250,46,Supplier-A,250.0
+2024-02-19,Plastic-PVC,PVC Granules,2500,650,3000,4850,22,Supplier-B,80.5
+2024-02-19,Aluminum-AL,Aluminum Ingot,3350,450,0,2900,9,Supplier-C,300.75
+2024-02-19,Rubber-RB,Synthetic Rubber Roll,2060,330,0,1730,13,Local Vendor,150.2
+2024-02-19,Copper-CU,Copper Wire,3600,230,0,3370,5,Supplier-A,450.9
+2024-02-26,Steel-101,Steel Sheet 101,7250,1000,0,6250,50,Supplier-A,250.0
+2024-02-26,Plastic-PVC,PVC Granules,4850,700,0,4150,24,Supplier-B,80.5
+2024-02-26,Aluminum-AL,Aluminum Ingot,2900,500,4000,6400,10,Supplier-C,300.75
+2024-02-26,Rubber-RB,Synthetic Rubber Roll,1730,350,3000,4380,14,Local Vendor,150.2
+2024-02-26,Copper-CU,Copper Wire,3370,240,0,3130,6,Supplier-A,450.9
+2024-03-04,Steel-101,Steel Sheet 101,6250,780,0,5470,39,Supplier-A,250.0
+2024-03-04,Plastic-PVC,PVC Granules,4150,530,0,3620,18,Supplier-B,80.5
+2024-03-04,Aluminum-AL,Aluminum Ingot,6400,430,0,5970,9,Supplier-C,300.75
+2024-03-04,Rubber-RB,Synthetic Rubber Roll,4380,370,0,4010,15,Local Vendor,150.2
+2024-03-04,Copper-CU,Copper Wire,3130,260,0,2870,6,Supplier-A,450.9
+2024-01-01,Steel-101,Steel Sheet 101,5000,800,0,4200,25,Supplier-A,250.0
+2024-01-01,Plastic-PVC,PVC Granules,8000,500,0,7500,15,Supplier-B,80.0
+2024-01-02,Aluminum-AL,Aluminum Ingot,3000,300,0,2700,10,Supplier-C,180.0
+2024-01-02,Rubber-RB,Synthetic Rubber,6000,400,0,5600,20,Local Vendor,120.0
+2024-01-03,Copper-CU,Copper Wire,2500,200,0,2300,5,Supplier-A,350.0
+2024-01-03,Steel-101,Steel Sheet 101,4200,750,0,3450,23,Supplier-A,250.0
+2024-01-04,Plastic-PVC,PVC Granules,7500,480,0,7020,14,Supplier-B,80.0
+2024-01-04,Aluminum-AL,Aluminum Ingot,2700,280,0,2420,9,Supplier-C,180.0
+2024-01-05,Rubber-RB,Synthetic Rubber,5600,380,0,5220,19,Local Vendor,120.0
+2024-01-05,Copper-CU,Copper Wire,2300,190,0,2110,5,Supplier-A,350.0
+2024-01-06,Steel-101,Steel Sheet 101,3450,700,2000,4750,22,Supplier-A,250.0
+2024-01-06,Plastic-PVC,PVC Granules,7020,450,0,6570,13,Supplier-B,80.0
+2024-01-07,Aluminum-AL,Aluminum Ingot,2420,250,0,2170,8,Supplier-C,180.0
+2024-01-07,Rubber-RB,Synthetic Rubber,5220,350,0,4870,18,Local Vendor,120.0
+2024-01-08,Copper-CU,Copper Wire,2110,180,0,1930,4,Supplier-A,350.0
+2024-01-08,Steel-101,Steel Sheet 101,4750,720,0,4030,22,Supplier-A,250.0
+2024-01-09,Plastic-PVC,PVC Granules,6570,430,0,6140,12,Supplier-B,80.0
+2024-01-09,Aluminum-AL,Aluminum Ingot,2170,230,0,1940,7,Supplier-C,180.0
+2024-01-10,Rubber-RB,Synthetic Rubber,4870,330,0,4540,17,Local Vendor,120.0
+2024-01-10,Copper-CU,Copper Wire,1930,170,0,1760,4,Supplier-A,350.0
+2024-01-11,Steel-101,Steel Sheet 101,4030,700,0,3330,21,Supplier-A,250.0
+2024-01-11,Plastic-PVC,PVC Granules,6140,400,3000,8740,12,Supplier-B,80.0
+2024-01-12,Aluminum-AL,Aluminum Ingot,1940,200,3000,4740,6,Supplier-C,180.0
+2024-01-12,Rubber-RB,Synthetic Rubber,4540,300,0,4240,15,Local Vendor,120.0
+2024-01-13,Copper-CU,Copper Wire,1760,160,2000,3600,4,Supplier-A,350.0
+2024-01-13,Steel-101,Steel Sheet 101,3330,680,0,2650,20,Supplier-A,250.0
+2024-01-14,Plastic-PVC,PVC Granules,8740,380,0,8360,11,Supplier-B,80.0
+2024-01-14,Aluminum-AL,Aluminum Ingot,4740,180,0,4560,5,Supplier-C,180.0
+2024-01-15,Rubber-RB,Synthetic Rubber,4240,280,0,3960,14,Local Vendor,120.0
+2024-01-15,Copper-CU,Copper Wire,3600,150,0,3450,3,Supplier-A,350.0
+2024-01-16,Steel-101,Steel Sheet 101,2650,650,3000,5000,19,Supplier-A,250.0
+2024-01-16,Plastic-PVC,PVC Granules,8360,350,0,8010,10,Supplier-B,80.0
+2024-01-17,Aluminum-AL,Aluminum Ingot,4560,170,0,4390,5,Supplier-C,180.0
+2024-01-17,Rubber-RB,Synthetic Rubber,3960,260,0,3700,13,Local Vendor,120.0
+2024-01-18,Copper-CU,Copper Wire,3450,140,0,3310,3,Supplier-A,350.0
+2024-01-18,Steel-101,Steel Sheet 101,5000,630,0,4370,18,Supplier-A,250.0
+2024-01-19,Plastic-PVC,PVC Granules,8010,330,0,7680,10,Supplier-B,80.0
+2024-01-19,Aluminum-AL,Aluminum Ingot,4390,160,0,4230,5,Supplier-C,180.0
+2024-01-20,Rubber-RB,Synthetic Rubber,3700,250,4000,7450,12,Local Vendor,120.0
+2024-01-20,Copper-CU,Copper Wire,3310,130,0,3180,3,Supplier-A,350.0
+2024-01-21,Steel-101,Steel Sheet 101,4370,600,0,3770,18,Supplier-A,250.0
+2024-01-21,Plastic-PVC,PVC Granules,7680,300,0,7380,9,Supplier-B,80.0
+2024-01-22,Aluminum-AL,Aluminum Ingot,4230,150,0,4080,4,Supplier-C,180.0
+2024-01-22,Rubber-RB,Synthetic Rubber,7450,240,0,7210,12,Local Vendor,120.0
+2024-01-23,Copper-CU,Copper Wire,3180,120,0,3060,3,Supplier-A,350.0
+2024-01-23,Steel-101,Steel Sheet 101,3770,580,0,3190,17,Supplier-A,250.0
+2024-01-24,Plastic-PVC,PVC Granules,7380,280,0,7100,8,Supplier-B,80.0
+2024-01-24,Aluminum-AL,Aluminum Ingot,4080,140,0,3940,4,Supplier-C,180.0
+2024-01-01,Steel-101,Steel Sheet 101,5000,800,0,4200,20,Supplier-A,250.5
+2024-01-01,Plastic-PVC,PVC Granules,3000,500,1000,3500,15,Supplier-B,85.75
+2024-01-02,Aluminum-AL,Aluminum Ingots,8000,1200,0,6800,30,Supplier-C,350.0
+2024-01-02,Rubber-RB,Synthetic Rubber,2500,300,0,2200,8,Local Vendor,120.25
+2024-01-03,Copper-CU,Copper Wire,4000,600,5000,8400,10,Supplier-A,480.9
+2024-01-03,Steel-101,Steel Sheet 101,4200,700,0,3500,18,Supplier-A,250.5
+2024-01-04,Plastic-PVC,PVC Granules,3500,450,0,3050,14,Supplier-B,85.75
+2024-01-04,Aluminum-AL,Aluminum Ingots,6800,1100,2000,7700,28,Supplier-C,350.0
+2024-01-05,Rubber-RB,Synthetic Rubber,2200,280,0,1920,7,Local Vendor,120.25
+2024-01-05,Copper-CU,Copper Wire,8400,550,0,7850,9,Supplier-A,480.9
+2024-01-06,Steel-101,Steel Sheet 101,3500,900,3000,5600,23,Supplier-A,250.5
+2024-01-06,Plastic-PVC,PVC Granules,3050,400,0,2650,12,Supplier-B,85.75
+2024-01-07,Aluminum-AL,Aluminum Ingots,7700,1300,0,6400,33,Supplier-C,350.0
+2024-01-07,Rubber-RB,Synthetic Rubber,1920,320,1000,2600,9,Local Vendor,120.25
+2024-01-08,Copper-CU,Copper Wire,7850,700,0,7150,11,Supplier-A,480.9
+2024-01-08,Steel-101,Steel Sheet 101,5600,750,0,4850,19,Supplier-A,250.5
+2024-01-09,Plastic-PVC,PVC Granules,2650,550,2000,4100,17,Supplier-B,85.75
+2024-01-09,Aluminum-AL,Aluminum Ingots,6400,1000,0,5400,25,Supplier-C,350.0
+2024-01-10,Rubber-RB,Synthetic Rubber,2600,250,0,2350,6,Local Vendor,120.25
+2024-01-10,Copper-CU,Copper Wire,7150,650,0,6500,10,Supplier-A,480.9
+2024-01-11,Steel-101,Steel Sheet 101,4850,850,0,4000,21,Supplier-A,250.5
+2024-01-11,Plastic-PVC,PVC Granules,4100,500,0,3600,15,Supplier-B,85.75
+2024-01-12,Aluminum-AL,Aluminum Ingots,5400,900,3000,7500,23,Supplier-C,350.0
+2024-01-12,Rubber-RB,Synthetic Rubber,2350,270,0,2080,7,Local Vendor,120.25
+2024-01-13,Copper-CU,Copper Wire,6500,600,0,5900,9,Supplier-A,480.9
+2024-01-13,Steel-101,Steel Sheet 101,4000,1000,5000,8000,25,Supplier-A,250.5
+2024-01-14,Plastic-PVC,PVC Granules,3600,480,0,3120,14,Supplier-B,85.75
+2024-01-14,Aluminum-AL,Aluminum Ingots,7500,1150,0,6350,29,Supplier-C,350.0
+2024-01-15,Rubber-RB,Synthetic Rubber,2080,300,0,1780,8,Local Vendor,120.25
+2024-01-15,Copper-CU,Copper Wire,5900,750,3000,8150,12,Supplier-A,480.9
+2024-01-16,Steel-101,Steel Sheet 101,8000,950,0,7050,24,Supplier-A,250.5
+2024-01-16,Plastic-PVC,PVC Granules,3120,420,0,2700,13,Supplier-B,85.75
+2024-01-17,Aluminum-AL,Aluminum Ingots,6350,1250,4000,9100,31,Supplier-C,350.0
+2024-01-17,Rubber-RB,Synthetic Rubber,1780,350,1500,2930,9,Local Vendor,120.25
+2024-01-18,Copper-CU,Copper Wire,8150,800,0,7350,13,Supplier-A,480.9
+2024-01-18,Steel-101,Steel Sheet 101,7050,800,0,6250,20,Supplier-A,250.5
+2024-01-19,Plastic-PVC,PVC Granules,2700,520,3000,5180,16,Supplier-B,85.75
+2024-01-19,Aluminum-AL,Aluminum Ingots,9100,1400,0,7700,35,Supplier-C,350.0
+2024-01-20,Rubber-RB,Synthetic Rubber,2930,400,0,2530,10,Local Vendor,120.25
+2024-01-20,Copper-CU,Copper Wire,7350,700,0,6650,11,Supplier-A,480.9
+2024-01-21,Steel-101,Steel Sheet 101,6250,900,2000,7350,23,Supplier-A,250.5
+2024-01-21,Plastic-PVC,PVC Granules,5180,600,0,4580,18,Supplier-B,85.75
+2024-01-22,Aluminum-AL,Aluminum Ingots,7700,1100,0,6600,28,Supplier-C,350.0
+2024-01-22,Rubber-RB,Synthetic Rubber,2530,330,0,2200,8,Local Vendor,120.25
+2024-01-23,Copper-CU,Copper Wire,6650,750,4000,9900,12,Supplier-A,480.9
+2024-01-23,Steel-101,Steel Sheet 101,7350,850,0,6500,21,Supplier-A,250.5
+2024-01-24,Plastic-PVC,PVC Granules,4580,550,0,4030,17,Supplier-B,85.75
+2024-01-24,Aluminum-AL,Aluminum Ingots,6600,1050,0,5550,26,Supplier-C,350.0
+2024-01-25,Rubber-RB,Synthetic Rubber,2200,350,2500,4350,9,Local Vendor,120.25
+2024-01-25,Copper-CU,Copper Wire,9900,800,0,9100,13,Supplier-A,480.9
+2025-10-28,Steel-101,Steel Sheet 101,4500,625,0,3875,25,Supplier-A,150.5
+2025-10-31,Plastic-PVC,PVC Granules,3800,435,0,3365,10,Supplier-B,85.2
+2025-11-03,Plastic-PVC,PVC Granules,3520,310,0,3210,12,Supplier-B,85.2
+2025-11-06,Aluminum-AL,Aluminum Ingot,6200,290,0,5910,5,Supplier-C,210.75
+2025-11-09,Steel-101,Steel Sheet 101,3950,600,1500,4850,30,Supplier-A,150.5
+2025-11-12,Copper-CU,Copper Wire,2200,1928,0,272,15,Local Vendor,350.0
+2025-11-15,Steel-101,Steel Sheet 101,4850,1047,0,3803,35,Supplier-A,150.5
+2025-11-18,Copper-CU,Copper Wire,1900,1614,1000,1286,18,Local Vendor,350.0
+2025-11-21,Plastic-PVC,PVC Granules,3210,1963,500,1747,15,Supplier-B,85.2
+2025-11-24,Aluminum-AL,Aluminum Ingot,5910,477,0,5433,8,Supplier-C,210.75
+2025-11-27,Steel-101,Steel Sheet 101,3950,587,0,3363,1,Supplier-A,150.5
+2025-11-30,Plastic-PVC,PVC Granules,3520,448,0,3072,1,Supplier-B,85.2
+2025-12-03,Plastic-PVC,PVC Granules,3210,1462,0,1748,1,Supplier-B,85.2
+2025-12-06,Aluminum-AL,Aluminum Ingot,5910,691,0,5219,0,Supplier-C,210.75
+2025-12-09,Steel-101,Steel Sheet 101,4850,417,0,4433,1,Supplier-A,150.5
+2025-12-12,Copper-CU,Copper Wire,1900,1456,0,444,0,Local Vendor,350.0
+2025-12-15,Steel-101,Steel Sheet 101,4150,810,0,3340,2,Supplier-A,150.5
+2025-12-18,Copper-CU,Copper Wire,2550,792,0,1758,0,Local Vendor,350.0
+2025-12-21,Plastic-PVC,PVC Granules,3310,805,0,2505,1,Supplier-B,85.2
+2025-12-24,Aluminum-AL,Aluminum Ingot,5520,10,0,5510,0,Supplier-C,210.75
+2025-12-27,Steel-101,Steel Sheet 101,4115,50,1000,5065,3,Supplier-A,150.5
+2025-12-30,Copper-CU,Copper Wire,2532,596,0,1936,1,Local Vendor,350.0
+2026-01-02,Plastic-PVC,PVC Granules,3290,15,0,3275,1,Supplier-B,85.2
+2026-01-05,Aluminum-AL,Aluminum Ingot,5510,10,0,5500,0,Supplier-C,210.75
+2026-01-08,Rubber-RB,Rubber Compund,2500,1264,500,1736,1,Supplier-C,200.0
+2026-01-11,Rubber-RB,Rubber Compund,2975,30,0,2945,1,Supplier-C,200.0
+2026-01-14,Steel-101,Steel Sheet 101,5065,25,0,5040,1,Supplier-A,150.5
+2026-01-17,Copper-CU,Copper Wire,2507,1612,0,895,1,Local Vendor,350.0
+2026-01-20,Plastic-PVC,PVC Granules,3275,1899,0,1376,1,Supplier-B,85.2
+2026-01-23,Aluminum-AL,Aluminum Ingot,5500,15,0,5485,0,Supplier-C,210.75
+2026-01-26,Rubber-RB,Rubber Compund,2945,1323,0,1622,0,Supplier-C,200.0
+2026-01-29,Steel-101,Steel Sheet 101,5040,2117,0,2923,5,Supplier-A,150.5
+2026-02-01,Copper-CU,Copper Wire,2495,50,0,2445,3,Local Vendor,350.0
+2026-02-04,Plastic-PVC,PVC Granules,3265,100,500,3665,5,Supplier-B,85.2
+2026-02-07,Aluminum-AL,Aluminum Ingot,5485,318,0,5167,7,Supplier-C,210.75
+2026-02-10,Rubber-RB,Rubber Compund,2935,50,0,2885,3,Supplier-C,200.0
+2026-02-13,Steel-101,Steel Sheet 101,4940,200,0,4740,10,Supplier-A,150.5
+2026-02-16,Copper-CU,Copper Wire,2445,1394,0,1051,5,Local Vendor,350.0
+2026-02-19,Plastic-PVC,PVC Granules,3665,1426,0,2239,10,Supplier-B,85.2
+2026-02-22,Aluminum-AL,Aluminum Ingot,5335,1494,0,3841,13,Supplier-C,210.75
+2026-02-25,Rubber-RB,Rubber Compund,2885,266,0,2619,5,Supplier-C,200.0
+2026-02-28,Steel-101,Steel Sheet 101,4740,2179,3000,5561,25,Supplier-A,150.5
+2026-03-03,Copper-CU,Copper Wire,2345,250,1000,3095,13,Local Vendor,350.0
+2026-03-06,Plastic-PVC,PVC Granules,3465,719,2000,4746,20,Supplier-B,85.2
+2026-03-09,Aluminum-AL,Aluminum Ingot,5085,1121,2500,6464,23,Supplier-C,210.75
+2026-03-12,Rubber-RB,Rubber Compund,2785,566,1500,3719,15,Supplier-C,200.0
+2026-03-15,Steel-101,Steel Sheet 101,7240,1412,0,5828,18,Supplier-A,150.5
+2026-03-18,Copper-CU,Copper Wire,3095,640,0,2455,15,Local Vendor,350.0
+2026-03-21,Plastic-PVC,PVC Granules,5065,1180,0,3885,18,Supplier-B,85.2
+2026-03-24,Aluminum-AL,Aluminum Ingot,7135,966,0,6169,20,Supplier-C,210.75
+2026-03-27,Steel-101,Steel Sheet 101,4500,995,0,3505,20,Supplier-A,250.5
+2026-03-30,Plastic-PVC,PVC Granules,6000,546,0,5454,10,Supplier-B,150.0
+2026-04-02,Rubber-RB,Synthetic Rubber Blend,3000,361,0,2639,30,Supplier-C,180.75
+2026-04-05,Steel-101,Steel Sheet 101,3900,1504,1000,3396,25,Supplier-A,250.5
+2026-04-08,Plastic-PVC,PVC Granules,5640,1006,0,4634,8,Supplier-B,150.0
+2026-04-11,Aluminum-AL,Aluminum Alloy Ingots,7000,291,0,6709,5,Local Vendor,320.2
+2026-04-14,Copper-CU,Copper Wire,8000,627,0,7373,30,Supplier-C,450.0
+2026-04-17,Steel-101,Steel Sheet 101,4273,650,0,3623,20,Supplier-A,250.5
+2026-04-20,Plastic-PVC,PVC Granules,5276,565,0,4711,12,Supplier-B,150.0
+2026-04-23,Rubber-RB,Synthetic Rubber Blend,2600,301,0,2299,20,Supplier-C,180.75
+2026-04-26,Steel-101,Steel Sheet 101,3755,762,1500,4493,10,Supplier-A,250.5
+2026-04-29,Plastic-PVC,PVC Granules,4711,397,0,4314,5,Supplier-B,150.0
+2026-05-02,Aluminum-AL,Aluminum Alloy Ingots,6709,540,0,6169,7,Local Vendor,320.2
+2026-05-05,Rubber-RB,Synthetic Rubber Blend,2299,372,0,1927,25,Supplier-C,180.75
+2026-05-08,Steel-101,Steel Sheet 101,4950,787,0,4163,12,Supplier-A,250.5
+2026-05-11,Plastic-PVC,PVC Granules,4541,390,0,4151,9,Supplier-B,150.0
+2026-05-14,Aluminum-AL,Aluminum Alloy Ingots,6412,558,0,5854,4,Local Vendor,320.2
+2026-05-17,Steel-101,Steel Sheet 101,3900,637,0,3263,15,Supplier-A,250.5
+2026-05-20,Plastic-PVC,PVC Granules,5640,250,0,5390,7,Supplier-B,150.0
+2026-05-23,Rubber-RB,Synthetic Rubber Blend,2600,350,0,2250,20,Supplier-C,180.75
+2026-05-26,Aluminum-AL,Aluminum Alloy Ingots,7000,540,0,6460,6,Local Vendor,320.2
+2026-05-29,Steel-101,Steel Sheet 101,3755,745,0,3010,15,Supplier-A,250.5
+2026-06-01,Plastic-PVC,PVC Granules,5276,391,0,4885,8,Supplier-B,150.0
+2026-06-04,Copper-CU,Copper Wire,8000,500,0,7500,25,Supplier-C,450.0
+2026-06-07,Aluminum-AL,Aluminum Alloy Ingots,6709,250,0,6459,5,Local Vendor,320.2
+2026-06-10,Aluminum-AL,Aluminum Alloy Ingots,8000,250,0,7750,5,Local Vendor,320.2
+2026-06-13,Copper-CU,Copper Wire,7500,350,0,7150,15,Supplier-C,450.0
+2026-06-16,Copper-CU,Copper Wire,7150,300,0,6850,12,Supplier-C,450.0
+2026-06-19,Copper-CU,Copper Wire,8500,400,0,8100,20,Supplier-C,450.0
+2026-06-22,Rubber-RB,Synthetic Rubber Blend,1927,300,1000,2627,20,Supplier-C,180.75
+2026-06-25,Aluminum-AL,Aluminum Alloy Ingots,7750,300,0,7450,6,Local Vendor,320.2
+2026-06-28,Plastic-PVC,PVC Granules,5390,450,0,4940,6,Supplier-B,150.0
+2026-07-01,Aluminum-AL,Aluminum Alloy Ingots,7450,250,0,7200,5,Local Vendor,320.2
+2026-07-04,Steel-101,Steel Sheet 101,4629,762,0,3867,8,Supplier-A,250.5
+2026-07-07,Copper-CU,Copper Wire,8100,300,0,7800,10,Supplier-C,450.0
+2026-07-10,Steel-101,Steel Sheet 101,4429,775,0,3654,15,Supplier-A,250.5
+2026-07-13,Plastic-PVC,PVC Granules,5190,405,0,4785,10,Supplier-B,150.0
+2026-07-16,Aluminum-AL,Aluminum Alloy Ingots,7200,200,0,7000,4,Local Vendor,320.2
+2026-07-19,Rubber-RB,Synthetic Rubber Blend,2250,330,0,1920,20,Supplier-C,180.75
+2026-07-22,Plastic-PVC,PVC Granules,4890,463,0,4427,8,Supplier-B,150.0
+2026-07-25,Plastic-PVC,PVC Granules,6500,414,0,6086,12,Supplier-B,150.0
+2026-07-28,Plastic-PVC,PVC Granules,4640,460,2000,6180,8,Supplier-B,150.0
+2026-07-31,Aluminum-AL,Aluminum Alloy Ingots,6187,400,0,5787,8,Local Vendor,320.2
