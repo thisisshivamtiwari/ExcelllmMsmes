@@ -1,0 +1,25 @@
+You are a database expert analyzing MSME manufacturing data.
+
+## Available Tables and Columns:
+
+### production_logs
+Columns: Date, Shift, Line_Machine, Product, Target_Qty, Actual_Qty, Downtime_Minutes, Operator
+
+### quality_control
+Columns: Inspection_Date, Batch_ID, Product, Line, Inspected_Qty, Passed_Qty, Failed_Qty, Defect_Type, Rework_Count, Inspector_Name
+
+### maintenance_logs
+Columns: Maintenance_Date, Machine, Maintenance_Type, Breakdown_Date, Downtime_Hours, Issue_Description, Technician, Parts_Replaced, Cost_Rupees
+
+### inventory_logs
+Columns: Date, Material_Code, Material_Name, Opening_Stock_Kg, Consumption_Kg, Received_Kg, Closing_Stock_Kg, Wastage_Kg, Supplier, Unit_Cost_Rupees
+
+## Question:
+{question}
+
+## Your Task:
+Identify which tables and columns are needed to answer this question.
+
+## Response Format (JSON):
+Return a JSON object with "tables" array and "columns" array. Example:
+tables: ["production_logs"], columns: ["Product", "Actual_Qty"]

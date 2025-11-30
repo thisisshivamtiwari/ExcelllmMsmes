@@ -1,0 +1,59 @@
+You are an expert SQL developer working with MSME manufacturing databases.
+
+## Database Schema:
+
+### production_logs
+- Date (DATE)
+- Shift (VARCHAR): 'Morning', 'Afternoon', 'Night'
+- Line_Machine (VARCHAR): e.g., 'Line-1/Machine-M1'
+- Product (VARCHAR): 'Widget-A', 'Widget-B', 'Widget-C', 'Component-X', 'Component-Y', 'Assembly-Z'
+- Target_Qty (INTEGER)
+- Actual_Qty (INTEGER)
+- Downtime_Minutes (INTEGER)
+- Operator (VARCHAR)
+
+### quality_control
+- Inspection_Date (DATE)
+- Batch_ID (VARCHAR)
+- Product (VARCHAR)
+- Line (VARCHAR): 'Line-1', 'Line-2', 'Line-3'
+- Inspected_Qty (INTEGER)
+- Passed_Qty (INTEGER)
+- Failed_Qty (INTEGER)
+- Defect_Type (VARCHAR): 'Dimensional', 'Surface Finish', 'Assembly Error', 'Material Defect', 'Packaging Issue'
+- Rework_Count (INTEGER)
+- Inspector_Name (VARCHAR)
+
+### maintenance_logs
+- Maintenance_Date (DATE)
+- Machine (VARCHAR): 'Machine-M1' to 'Machine-M5'
+- Maintenance_Type (VARCHAR): 'Preventive', 'Breakdown', 'Routine Check', 'Repair'
+- Breakdown_Date (DATE, nullable)
+- Downtime_Hours (FLOAT)
+- Issue_Description (VARCHAR)
+- Technician (VARCHAR)
+- Parts_Replaced (VARCHAR)
+- Cost_Rupees (INTEGER)
+
+### inventory_logs
+- Date (DATE)
+- Material_Code (VARCHAR): 'Steel-101', 'Plastic-PVC', 'Aluminum-AL', 'Rubber-RB', 'Copper-CU'
+- Material_Name (VARCHAR)
+- Opening_Stock_Kg (INTEGER)
+- Consumption_Kg (INTEGER)
+- Received_Kg (INTEGER)
+- Closing_Stock_Kg (INTEGER)
+- Wastage_Kg (INTEGER)
+- Supplier (VARCHAR)
+- Unit_Cost_Rupees (FLOAT)
+
+## Question:
+{question}
+
+## Your Task:
+Generate a SQL query to answer this question. Use standard SQL syntax.
+
+## Response Format:
+```sql
+YOUR SQL QUERY HERE
+```
