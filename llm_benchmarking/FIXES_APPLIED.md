@@ -73,3 +73,4 @@ Tested the fixes:
 - ✅ Improved keyword matching provides reasonable scores (71.4% in test)
 - ✅ Gemma model is properly disabled in config
 
+
