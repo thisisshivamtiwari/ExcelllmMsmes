@@ -16,6 +16,7 @@ import shutil
 import uuid
 import logging
 import traceback
+import gc
 
 # Configure logging
 logging.basicConfig(
@@ -1160,6 +1161,7 @@ async def upload_file(file: UploadFile = File(...)):
             )
         
         # Extract metadata
+        metadata = None
         try:
             logger.info(f"Extracting metadata for {file_id}...")
             metadata = metadata_extractor.extract_metadata(saved_file_path, include_sample=True)
@@ -1181,16 +1183,34 @@ async def upload_file(file: UploadFile = File(...)):
                 "file_size_bytes": len(file_content) if 'file_content' in locals() else 0
             }
         
+        # Ensure metadata is not None
+        if metadata is None:
+            metadata = {
+                "error": "Metadata extraction returned None",
+                "file_name": file.filename,
+                "file_type": file_ext.replace('.', ''),
+                "file_size_bytes": len(file_content) if 'file_content' in locals() else 0
+            }
+        
         # Store in registry
-        file_info = {
-            "file_id": file_id,
-            "original_filename": file.filename,
-            "saved_path": str(saved_file_path),
-            "uploaded_at": datetime.now().isoformat(),
-            "metadata": metadata,
-            "validation": validation_result
-        }
-        uploaded_files_registry[file_id] = file_info
+        try:
+            file_info = {
+                "file_id": file_id,
+                "original_filename": file.filename,
+                "saved_path": str(saved_file_path),
+                "uploaded_at": datetime.now().isoformat(),
+                "metadata": metadata,
+                "validation": validation_result
+            }
+            uploaded_files_registry[file_id] = file_info
+            logger.info(f"File registered: {file_id}")
+        except Exception as e:
+            logger.error(f"Error storing file in registry: {str(e)}")
+            logger.error(traceback.format_exc())
+            # Don't fail upload if registry storage fails, but log it
+        
+        # Force garbage collection after processing to free memory
+        gc.collect()
         
         logger.info(f"File upload successful: {file_id} ({file.filename})")
         
