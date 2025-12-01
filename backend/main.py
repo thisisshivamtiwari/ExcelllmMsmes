@@ -1176,20 +1176,36 @@ async def upload_file(file: UploadFile = File(...)):
             logger.error(f"Error extracting metadata: {str(e)}")
             logger.error(traceback.format_exc())
             # Don't fail upload if metadata extraction fails, but log it
+            # Get file size from disk if available
+            file_size_bytes = 0
+            if saved_file_path and saved_file_path.exists():
+                try:
+                    file_size_bytes = saved_file_path.stat().st_size
+                except:
+                    pass
+            
             metadata = {
                 "error": f"Error extracting metadata: {str(e)}",
                 "file_name": file.filename,
                 "file_type": file_ext.replace('.', ''),
-                "file_size_bytes": len(file_content) if 'file_content' in locals() else 0
+                "file_size_bytes": file_size_bytes
             }
         
         # Ensure metadata is not None
         if metadata is None:
+            # Get file size from disk if available
+            file_size_bytes = 0
+            if saved_file_path and saved_file_path.exists():
+                try:
+                    file_size_bytes = saved_file_path.stat().st_size
+                except:
+                    pass
+            
             metadata = {
                 "error": "Metadata extraction returned None",
                 "file_name": file.filename,
                 "file_type": file_ext.replace('.', ''),
-                "file_size_bytes": len(file_content) if 'file_content' in locals() else 0
+                "file_size_bytes": file_size_bytes
             }
         
         # Store in registry
