@@ -1197,34 +1197,66 @@ async def get_file_metadata(file_id: str):
 @app.post("/api/files/{file_id}/load")
 async def load_file_data(file_id: str, sheet_name: Optional[str] = None):
     """Load the actual data from an uploaded file."""
-    if file_id not in uploaded_files_registry:
-        raise HTTPException(status_code=404, detail="File not found")
+    try:
+        if file_id not in uploaded_files_registry:
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        file_info = uploaded_files_registry[file_id]
+        file_path = Path(file_info["saved_path"])
+        
+        # Check if file still exists
+        if not file_path.exists():
+            logger.error(f"File not found on disk: {file_path}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"File not found on disk: {file_path.name}"
+            )
+        
+        logger.info(f"Loading file data: {file_id} (sheet: {sheet_name})")
+        
+        # Load file
+        result = excel_loader.load_file(file_path, sheet_name=sheet_name)
+        
+        if result['error']:
+            logger.error(f"Error loading file {file_id}: {result['error']}")
+            raise HTTPException(status_code=500, detail=result['error'])
+        
+        # Convert DataFrame(s) to JSON
+        try:
+            if isinstance(result['data'], dict):
+                # Excel file with multiple sheets
+                data = {
+                    sheet: df.head(100).to_dict('records')  # Limit to first 100 rows for preview
+                    for sheet, df in result['data'].items()
+                }
+            else:
+                # CSV file
+                data = result['data'].head(100).to_dict('records')  # Limit to first 100 rows
+            
+            logger.info(f"Successfully loaded data for file {file_id}")
+            
+            return {
+                "file_id": file_id,
+                "data": data,
+                "metadata": result['metadata']
+            }
+        except Exception as e:
+            logger.error(f"Error converting data to JSON for file {file_id}: {str(e)}")
+            logger.error(traceback.format_exc())
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error processing file data: {str(e)}"
+            )
     
-    file_info = uploaded_files_registry[file_id]
-    file_path = Path(file_info["saved_path"])
-    
-    # Load file
-    result = excel_loader.load_file(file_path, sheet_name=sheet_name)
-    
-    if result['error']:
-        raise HTTPException(status_code=500, detail=result['error'])
-    
-    # Convert DataFrame(s) to JSON
-    if isinstance(result['data'], dict):
-        # Excel file with multiple sheets
-        data = {
-            sheet: df.head(100).to_dict('records')  # Limit to first 100 rows for preview
-            for sheet, df in result['data'].items()
-        }
-    else:
-        # CSV file
-        data = result['data'].head(100).to_dict('records')  # Limit to first 100 rows
-    
-    return {
-        "file_id": file_id,
-        "data": data,
-        "metadata": result['metadata']
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error loading file {file_id}: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error loading file: {str(e)}"
+        )
 
 
 @app.delete("/api/files/{file_id}")
