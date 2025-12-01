@@ -41,6 +41,9 @@ const FileUpload = () => {
       const response = await fetch(`${API_BASE_URL}/files/upload`, {
         method: "POST",
         body: formData,
+        headers: {
+          // Don't set Content-Type, let browser set it with boundary for multipart/form-data
+        },
       })
 
       const data = await response.json()

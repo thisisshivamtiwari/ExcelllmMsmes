@@ -24,12 +24,24 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ExcelLLM Data Generator API")
 
+# CORS middleware - MUST be added BEFORE exception handlers
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],  # Vite default ports
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
 # Global exception handler for unhandled errors
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     logger.error(f"Unhandled exception at {request.url.path}: {str(exc)}")
     logger.error(traceback.format_exc())
-    return JSONResponse(
+    
+    # Create response with CORS headers
+    response = JSONResponse(
         status_code=500,
         content={
             "detail": {
@@ -40,15 +52,13 @@ async def global_exception_handler(request, exc):
             }
         }
     )
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite default ports
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    
+    # Add CORS headers manually
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    
+    return response
 
 # Paths - backend/main.py is in backend/, so parent.parent goes to project root
 BASE_DIR = Path(__file__).resolve().parent.parent
