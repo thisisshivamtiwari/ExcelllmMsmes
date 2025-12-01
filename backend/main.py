@@ -168,6 +168,35 @@ async def health():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
+@app.get("/api/files/test")
+async def test_file_endpoints():
+    """Test endpoint to verify file upload system is working."""
+    try:
+        # Test if modules are imported
+        test_results = {
+            "excel_loader": hasattr(excel_loader, 'load_file'),
+            "file_validator": hasattr(file_validator, 'validate_file'),
+            "metadata_extractor": hasattr(metadata_extractor, 'extract_metadata'),
+            "uploaded_files_dir": str(UPLOADED_FILES_DIR),
+            "uploaded_files_dir_exists": UPLOADED_FILES_DIR.exists(),
+            "uploaded_files_dir_writable": os.access(UPLOADED_FILES_DIR, os.W_OK) if UPLOADED_FILES_DIR.exists() else False,
+            "registry_count": len(uploaded_files_registry)
+        }
+        return {
+            "status": "ok",
+            "message": "File upload system is ready",
+            "tests": test_results
+        }
+    except Exception as e:
+        logger.error(f"Error in test endpoint: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {
+            "status": "error",
+            "message": f"Error: {str(e)}",
+            "error_type": type(e).__name__
+        }
+
+
 @app.get("/api/python-status")
 async def python_status():
     """Check Python environment and package availability."""
@@ -1092,15 +1121,24 @@ async def upload_file(file: UploadFile = File(...)):
         
         # Extract metadata
         try:
+            logger.info(f"Extracting metadata for {file_id}...")
             metadata = metadata_extractor.extract_metadata(saved_file_path, include_sample=True)
-            logger.info(f"Metadata extracted successfully for {file_id}")
+            
+            # Check if metadata extraction returned an error
+            if isinstance(metadata, dict) and 'error' in metadata:
+                logger.warning(f"Metadata extraction returned error: {metadata.get('error')}")
+                # Continue with partial metadata
+            else:
+                logger.info(f"Metadata extracted successfully for {file_id}")
         except Exception as e:
             logger.error(f"Error extracting metadata: {str(e)}")
             logger.error(traceback.format_exc())
             # Don't fail upload if metadata extraction fails, but log it
             metadata = {
                 "error": f"Error extracting metadata: {str(e)}",
-                "file_name": file.filename
+                "file_name": file.filename,
+                "file_type": file_ext.replace('.', ''),
+                "file_size_bytes": len(file_content) if 'file_content' in locals() else 0
             }
         
         # Store in registry
@@ -1138,13 +1176,22 @@ async def upload_file(file: UploadFile = File(...)):
             except Exception as cleanup_error:
                 logger.error(f"Error cleaning up file: {str(cleanup_error)}")
         
+        error_detail = {
+            "message": "Error uploading file",
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "file_id": file_id if file_id else None,
+            "filename": file.filename if file and file.filename else None
+        }
+        
+        # Include traceback in development (remove in production)
+        import os
+        if os.getenv("DEBUG", "false").lower() == "true":
+            error_detail["traceback"] = traceback.format_exc()
+        
         raise HTTPException(
             status_code=500,
-            detail={
-                "message": "Error uploading file",
-                "error": str(e),
-                "file_id": file_id if file_id else None
-            }
+            detail=error_detail
         )
 
 
