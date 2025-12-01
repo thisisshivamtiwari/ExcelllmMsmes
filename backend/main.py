@@ -12,6 +12,15 @@ import asyncio
 from datetime import datetime
 import shutil
 import uuid
+import logging
+import traceback
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ExcelLLM Data Generator API")
 
@@ -1000,7 +1009,19 @@ async def upload_file(file: UploadFile = File(...)):
     Returns:
         File ID and metadata
     """
+    file_id = None
+    saved_file_path = None
+    
     try:
+        # Validate filename exists
+        if not file.filename:
+            raise HTTPException(
+                status_code=400,
+                detail="Filename is required"
+            )
+        
+        logger.info(f"Starting file upload: {file.filename}")
+        
         # Generate unique file ID
         file_id = str(uuid.uuid4())
         
@@ -1012,27 +1033,75 @@ async def upload_file(file: UploadFile = File(...)):
                 detail=f"Unsupported file format: {file_ext}. Supported: .xlsx, .xls, .csv"
             )
         
+        # Ensure uploaded_files directory exists
+        UPLOADED_FILES_DIR.mkdir(parents=True, exist_ok=True)
+        
         # Save uploaded file
         saved_file_path = UPLOADED_FILES_DIR / f"{file_id}{file_ext}"
-        with open(saved_file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        
+        try:
+            # Read file content
+            file_content = await file.read()
+            
+            # Check if file is empty
+            if len(file_content) == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Uploaded file is empty"
+                )
+            
+            # Write file
+            with open(saved_file_path, "wb") as buffer:
+                buffer.write(file_content)
+            
+            logger.info(f"File saved: {saved_file_path} ({len(file_content)} bytes)")
+            
+        except IOError as e:
+            logger.error(f"Error saving file: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error saving file to disk: {str(e)}"
+            )
         
         # Validate file
-        validation_result = file_validator.validate_file(saved_file_path)
-        if not validation_result['is_valid']:
-            # Delete invalid file
-            saved_file_path.unlink()
+        try:
+            validation_result = file_validator.validate_file(saved_file_path)
+            if not validation_result['is_valid']:
+                # Delete invalid file
+                if saved_file_path.exists():
+                    saved_file_path.unlink()
+                logger.warning(f"File validation failed: {validation_result['errors']}")
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "message": "File validation failed",
+                        "errors": validation_result['errors'],
+                        "warnings": validation_result['warnings']
+                    }
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error during validation: {str(e)}")
+            if saved_file_path and saved_file_path.exists():
+                saved_file_path.unlink()
             raise HTTPException(
-                status_code=400,
-                detail={
-                    "message": "File validation failed",
-                    "errors": validation_result['errors'],
-                    "warnings": validation_result['warnings']
-                }
+                status_code=500,
+                detail=f"Error validating file: {str(e)}"
             )
         
         # Extract metadata
-        metadata = metadata_extractor.extract_metadata(saved_file_path, include_sample=True)
+        try:
+            metadata = metadata_extractor.extract_metadata(saved_file_path, include_sample=True)
+            logger.info(f"Metadata extracted successfully for {file_id}")
+        except Exception as e:
+            logger.error(f"Error extracting metadata: {str(e)}")
+            logger.error(traceback.format_exc())
+            # Don't fail upload if metadata extraction fails, but log it
+            metadata = {
+                "error": f"Error extracting metadata: {str(e)}",
+                "file_name": file.filename
+            }
         
         # Store in registry
         file_info = {
@@ -1045,6 +1114,8 @@ async def upload_file(file: UploadFile = File(...)):
         }
         uploaded_files_registry[file_id] = file_info
         
+        logger.info(f"File upload successful: {file_id} ({file.filename})")
+        
         return {
             "status": "success",
             "file_id": file_id,
@@ -1056,7 +1127,25 @@ async def upload_file(file: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
+        logger.error(f"Unexpected error uploading file: {str(e)}")
+        logger.error(traceback.format_exc())
+        
+        # Clean up file if it was created
+        if saved_file_path and saved_file_path.exists():
+            try:
+                saved_file_path.unlink()
+                logger.info(f"Cleaned up file: {saved_file_path}")
+            except Exception as cleanup_error:
+                logger.error(f"Error cleaning up file: {str(cleanup_error)}")
+        
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Error uploading file",
+                "error": str(e),
+                "file_id": file_id if file_id else None
+            }
+        )
 
 
 @app.get("/api/files/list")
