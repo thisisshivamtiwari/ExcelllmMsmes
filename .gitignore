@@ -307,3 +307,7 @@ vectorstore/
 *.7z
 !**/sample_data/*.zip
 
+backend/venv/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
