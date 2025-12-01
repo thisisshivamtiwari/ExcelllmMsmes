@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
+import gc
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +86,7 @@ class MetadataExtractor:
             
             # Get full row count (this may be slow for large files)
             # For very large files, we'll estimate
+            df_full = None
             try:
                 # Try to get exact count
                 df_full = pd.read_csv(file_path)
@@ -95,6 +97,11 @@ class MetadataExtractor:
                 logger.warning(f"File too large for full read, estimating row count")
                 row_count = self._estimate_row_count(file_path)
                 is_estimated = True
+            finally:
+                # Explicitly delete DataFrame to free memory
+                if df_full is not None:
+                    del df_full
+                    gc.collect()
             
             metadata = {
                 'file_type': 'csv',
@@ -112,6 +119,12 @@ class MetadataExtractor:
             if include_sample:
                 sample_df = pd.read_csv(file_path, nrows=sample_rows)
                 metadata['sample_data'] = sample_df.to_dict('records')
+                del sample_df  # Free memory
+                gc.collect()
+            
+            # Clean up
+            del df_sample
+            gc.collect()
             
             return metadata
             
@@ -141,6 +154,7 @@ class MetadataExtractor:
                     df_sample = pd.read_excel(file_path, sheet_name=sheet_name, nrows=100)
                     
                     # Get full row count
+                    df_full = None
                     try:
                         df_full = pd.read_excel(file_path, sheet_name=sheet_name)
                         row_count = len(df_full)
@@ -151,6 +165,11 @@ class MetadataExtractor:
                         )
                         row_count = self._estimate_excel_row_count(file_path, sheet_name)
                         is_estimated = True
+                    finally:
+                        # Explicitly delete DataFrame to free memory
+                        if df_full is not None:
+                            del df_full
+                            gc.collect()
                     
                     sheet_metadata = {
                         'row_count': row_count,
@@ -169,6 +188,12 @@ class MetadataExtractor:
                             file_path, sheet_name=sheet_name, nrows=sample_rows
                         )
                         sheet_metadata['sample_data'] = sample_df.to_dict('records')
+                        del sample_df  # Free memory
+                        gc.collect()
+                    
+                    # Clean up
+                    del df_sample
+                    gc.collect()
                     
                     sheets_metadata[sheet_name] = sheet_metadata
                     total_rows += row_count
