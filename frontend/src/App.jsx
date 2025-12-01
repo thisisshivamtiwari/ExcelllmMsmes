@@ -9,6 +9,7 @@ import QuestionGenerator from "@/pages/QuestionGenerator"
 import Benchmarking from "@/pages/Benchmarking"
 import PromptEngineering from "@/pages/PromptEngineering"
 import ComparisonAnalysis from "@/pages/ComparisonAnalysis"
+import FileUpload from "@/pages/FileUpload"
 import Analytics from "@/pages/Analytics"
 import Reports from "@/pages/Reports"
 import Settings from "@/pages/Settings"
@@ -64,6 +65,7 @@ function App() {
           <main className="flex-1 overflow-y-auto overscroll-contain">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/file-upload" element={<FileUpload />} />
               <Route path="/data-generator" element={<DataGenerator />} />
               <Route path="/visualization" element={<Visualization />} />
               <Route path="/question-generator" element={<QuestionGenerator />} />

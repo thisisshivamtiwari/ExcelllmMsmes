@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom"
-import { FiHome, FiBarChart2, FiFileText, FiSettings, FiX, FiChevronLeft, FiChevronRight, FiDatabase, FiTrendingUp, FiHelpCircle, FiCode, FiLayers } from "react-icons/fi"
+import { FiHome, FiBarChart2, FiFileText, FiSettings, FiX, FiChevronLeft, FiChevronRight, FiDatabase, FiTrendingUp, FiHelpCircle, FiCode, FiLayers, FiUpload } from "react-icons/fi"
 
 const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   const location = useLocation()
 
   const menuItems = [
     { path: "/", label: "Dashboard", icon: FiHome },
+    { path: "/file-upload", label: "File Upload", icon: FiUpload },
     { path: "/data-generator", label: "Data Generator", icon: FiDatabase },
     { path: "/visualization", label: "Visualization", icon: FiTrendingUp },
     { path: "/question-generator", label: "Question Generator", icon: FiHelpCircle },
