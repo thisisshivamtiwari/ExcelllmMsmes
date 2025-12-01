@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import subprocess
 import os
 import json
@@ -10,6 +10,8 @@ import csv
 from pathlib import Path
 import asyncio
 from datetime import datetime
+import shutil
+import uuid
 
 app = FastAPI(title="ExcelLLM Data Generator API")
 
@@ -24,6 +26,9 @@ app.add_middleware(
 
 # Paths - backend/main.py is in backend/, so parent.parent goes to project root
 BASE_DIR = Path(__file__).resolve().parent.parent
+UPLOADED_FILES_DIR = BASE_DIR / "uploaded_files"
+UPLOADED_FILES_DIR.mkdir(exist_ok=True)
+
 DATA_GENERATOR_DIR = BASE_DIR / "datagenerator"
 DATA_GENERATOR_SCRIPT = DATA_GENERATOR_DIR / "data_generator.py"
 GENERATED_DATA_DIR = DATA_GENERATOR_DIR / "generated_data"
@@ -964,6 +969,195 @@ async def get_comparison_visualization(image_name: str):
     if not image_path.exists() or not image_path.is_file():
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(str(image_path), media_type="image/png")
+
+
+# ============================================================================
+# Phase 1: Excel Parser API Endpoints
+# ============================================================================
+
+# Import Excel Parser modules
+import sys
+sys.path.insert(0, str(BASE_DIR))
+
+from excel_parser.excel_loader import ExcelLoader
+from excel_parser.file_validator import FileValidator
+from excel_parser.metadata_extractor import MetadataExtractor
+
+# Initialize parser components
+excel_loader = ExcelLoader()
+file_validator = FileValidator()
+metadata_extractor = MetadataExtractor()
+
+# Store file metadata in memory (in production, use database)
+uploaded_files_registry: Dict[str, Dict[str, Any]] = {}
+
+
+@app.post("/api/files/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """
+    Upload an Excel or CSV file.
+    
+    Returns:
+        File ID and metadata
+    """
+    try:
+        # Generate unique file ID
+        file_id = str(uuid.uuid4())
+        
+        # Validate file extension
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in ['.xlsx', '.xls', '.csv']:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file format: {file_ext}. Supported: .xlsx, .xls, .csv"
+            )
+        
+        # Save uploaded file
+        saved_file_path = UPLOADED_FILES_DIR / f"{file_id}{file_ext}"
+        with open(saved_file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Validate file
+        validation_result = file_validator.validate_file(saved_file_path)
+        if not validation_result['is_valid']:
+            # Delete invalid file
+            saved_file_path.unlink()
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "File validation failed",
+                    "errors": validation_result['errors'],
+                    "warnings": validation_result['warnings']
+                }
+            )
+        
+        # Extract metadata
+        metadata = metadata_extractor.extract_metadata(saved_file_path, include_sample=True)
+        
+        # Store in registry
+        file_info = {
+            "file_id": file_id,
+            "original_filename": file.filename,
+            "saved_path": str(saved_file_path),
+            "uploaded_at": datetime.now().isoformat(),
+            "metadata": metadata,
+            "validation": validation_result
+        }
+        uploaded_files_registry[file_id] = file_info
+        
+        return {
+            "status": "success",
+            "file_id": file_id,
+            "filename": file.filename,
+            "metadata": metadata,
+            "warnings": validation_result.get('warnings', [])
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
+
+
+@app.get("/api/files/list")
+async def list_uploaded_files():
+    """List all uploaded files."""
+    files = []
+    for file_id, file_info in uploaded_files_registry.items():
+        files.append({
+            "file_id": file_id,
+            "filename": file_info["original_filename"],
+            "uploaded_at": file_info["uploaded_at"],
+            "file_type": file_info["metadata"].get("file_type"),
+            "row_count": file_info["metadata"].get("row_count") or file_info["metadata"].get("total_row_count", 0),
+            "column_count": file_info["metadata"].get("column_count") or 0
+        })
+    
+    return {
+        "files": files,
+        "total": len(files)
+    }
+
+
+@app.get("/api/files/{file_id}")
+async def get_file_info(file_id: str):
+    """Get detailed information about an uploaded file."""
+    if file_id not in uploaded_files_registry:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    file_info = uploaded_files_registry[file_id]
+    return {
+        "file_id": file_id,
+        "filename": file_info["original_filename"],
+        "uploaded_at": file_info["uploaded_at"],
+        "metadata": file_info["metadata"],
+        "validation": file_info["validation"]
+    }
+
+
+@app.get("/api/files/{file_id}/metadata")
+async def get_file_metadata(file_id: str):
+    """Get metadata for an uploaded file."""
+    if file_id not in uploaded_files_registry:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    file_info = uploaded_files_registry[file_id]
+    return file_info["metadata"]
+
+
+@app.post("/api/files/{file_id}/load")
+async def load_file_data(file_id: str, sheet_name: Optional[str] = None):
+    """Load the actual data from an uploaded file."""
+    if file_id not in uploaded_files_registry:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    file_info = uploaded_files_registry[file_id]
+    file_path = Path(file_info["saved_path"])
+    
+    # Load file
+    result = excel_loader.load_file(file_path, sheet_name=sheet_name)
+    
+    if result['error']:
+        raise HTTPException(status_code=500, detail=result['error'])
+    
+    # Convert DataFrame(s) to JSON
+    if isinstance(result['data'], dict):
+        # Excel file with multiple sheets
+        data = {
+            sheet: df.head(100).to_dict('records')  # Limit to first 100 rows for preview
+            for sheet, df in result['data'].items()
+        }
+    else:
+        # CSV file
+        data = result['data'].head(100).to_dict('records')  # Limit to first 100 rows
+    
+    return {
+        "file_id": file_id,
+        "data": data,
+        "metadata": result['metadata']
+    }
+
+
+@app.delete("/api/files/{file_id}")
+async def delete_file(file_id: str):
+    """Delete an uploaded file."""
+    if file_id not in uploaded_files_registry:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    file_info = uploaded_files_registry[file_id]
+    file_path = Path(file_info["saved_path"])
+    
+    # Delete file
+    if file_path.exists():
+        file_path.unlink()
+    
+    # Remove from registry
+    del uploaded_files_registry[file_id]
+    
+    return {
+        "status": "success",
+        "message": f"File {file_id} deleted successfully"
+    }
 
 
 if __name__ == "__main__":
