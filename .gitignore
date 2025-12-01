@@ -27,6 +27,10 @@ datagenerator/generated_data/*.csv
 question_generator/generated_questions.json
 question_generator/generated_questions.csv
 
+# Uploaded files (Phase 1)
+uploaded_files/
+**/uploaded_files/**
+
 # Model outputs and checkpoints
 models/
 checkpoints/
