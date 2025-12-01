@@ -24,6 +24,23 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ExcelLLM Data Generator API")
 
+# Global exception handler for unhandled errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.error(f"Unhandled exception at {request.url.path}: {str(exc)}")
+    logger.error(traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": {
+                "message": "Internal server error",
+                "error": str(exc),
+                "error_type": type(exc).__name__,
+                "path": str(request.url.path)
+            }
+        }
+    )
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
