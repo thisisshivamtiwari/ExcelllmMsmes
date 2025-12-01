@@ -10,7 +10,7 @@ Validates Excel and CSV files before processing:
 
 import chardet
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Any
 import logging
 
 logger = logging.getLogger(__name__)
