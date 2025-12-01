@@ -29,20 +29,37 @@ app = FastAPI(title="ExcelLLM Data Generator API")
 # CORS middleware - MUST be added BEFORE exception handlers
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],  # Vite default ports
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],  # Vite default ports
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
 
+# Exception handler for HTTPException (to ensure CORS headers)
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    response = JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+    return response
+
+# Exception handler for RequestValidationError
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    response = JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
+    return response
+
 # Global exception handler for unhandled errors
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
+async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception at {request.url.path}: {str(exc)}")
     logger.error(traceback.format_exc())
     
-    # Create response with CORS headers
     response = JSONResponse(
         status_code=500,
         content={
@@ -54,12 +71,6 @@ async def global_exception_handler(request, exc):
             }
         }
     )
-    
-    # Add CORS headers manually
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    
     return response
 
 # Paths - backend/main.py is in backend/, so parent.parent goes to project root
