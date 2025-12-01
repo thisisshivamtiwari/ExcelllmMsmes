@@ -20,9 +20,12 @@ config/secrets.json
 # Generated Data & Output Files
 # ============================================
 # Generated CSV data files
-
+datagenerator/generated_data/*.csv
+**/generated_data/*.csv
 
 # Generated questions
+question_generator/generated_questions.json
+question_generator/generated_questions.csv
 
 # Model outputs and checkpoints
 models/
