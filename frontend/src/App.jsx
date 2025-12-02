@@ -10,9 +10,6 @@ import Benchmarking from "@/pages/Benchmarking"
 import PromptEngineering from "@/pages/PromptEngineering"
 import ComparisonAnalysis from "@/pages/ComparisonAnalysis"
 import FileUpload from "@/pages/FileUpload"
-import Analytics from "@/pages/Analytics"
-import Reports from "@/pages/Reports"
-import Settings from "@/pages/Settings"
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -72,9 +69,6 @@ function App() {
               <Route path="/benchmarking" element={<Benchmarking />} />
               <Route path="/prompt-engineering" element={<PromptEngineering />} />
               <Route path="/comparison" element={<ComparisonAnalysis />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>
         </div>

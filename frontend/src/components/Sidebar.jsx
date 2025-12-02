@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom"
-import { FiHome, FiBarChart2, FiFileText, FiSettings, FiX, FiChevronLeft, FiChevronRight, FiDatabase, FiTrendingUp, FiHelpCircle, FiCode, FiLayers, FiUpload } from "react-icons/fi"
+import { FiHome, FiBarChart2, FiX, FiChevronLeft, FiChevronRight, FiDatabase, FiTrendingUp, FiHelpCircle, FiCode, FiLayers, FiUpload } from "react-icons/fi"
 
 const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   const location = useLocation()
@@ -13,9 +13,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
     { path: "/benchmarking", label: "LLM Benchmarking", icon: FiBarChart2 },
     { path: "/prompt-engineering", label: "Model Optimization", icon: FiCode },
     { path: "/comparison", label: "Comparison Analysis", icon: FiLayers },
-    { path: "/analytics", label: "Analytics", icon: FiBarChart2 },
-    { path: "/reports", label: "Reports", icon: FiFileText },
-    { path: "/settings", label: "Settings", icon: FiSettings },
   ]
 
   const handleKeyDown = (e) => {
