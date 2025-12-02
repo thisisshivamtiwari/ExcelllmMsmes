@@ -1,20 +1,51 @@
 # ============================================
-# Environment Variables & Secrets
+# Environment Variables & Secrets - CRITICAL
 # ============================================
-# Ignore all .env files (but allow .env.example)
+# NEVER commit .env files - they contain API keys and secrets!
+
+# Ignore ALL .env files (but allow .env.example)
 .env
 .env.local
 .env.*.local
+.env.*
 *.env
 !*.env.example
+!**/.env.example
 
-# API Keys and secrets
+# Additional environment file patterns
+.envrc
+.env.backup
+.env.production
+.env.development
+.env.test
+.env.staging
+
+# API Keys and secrets - multiple patterns
 secrets/
 *.key
 *.pem
 *.p12
 *.pfx
+*.secret
+*.token
 config/secrets.json
+**/secrets/**
+**/*secret*
+**/*key*
+**/*token*
+
+# Common API key patterns (extra protection)
+*API_KEY*
+*API_SECRET*
+*SECRET_KEY*
+*ACCESS_TOKEN*
+*PRIVATE_KEY*
+*PASSWORD*
+*CREDENTIALS*
+
+# Relationship cache (may contain sensitive data)
+uploaded_files/metadata/relationship_cache.json
+**/relationship_cache.json
 
 # ============================================
 # Generated Data & Output Files
