@@ -171,35 +171,39 @@ const PromptEngineering = () => {
         )}
 
         {/* Results Display with Visualizations */}
-        {results && Object.keys(results).length > 0 ? (
-          <div className="space-y-6">
+        <div className="space-y-6">
+          {results && Object.keys(results).length > 0 ? (
+            <>
+              <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-100">Optimization Results</h2>
+                  <button
+                    onClick={fetchResults}
+                    className="text-gray-400 hover:text-gray-100 transition-colors"
+                    tabIndex={0}
+                  >
+                    <FiRefreshCw className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              <PromptOptimizationVisualizations results={results} />
+            </>
+          ) : (
             <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-6 shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-100">Optimization Results</h2>
-                <button
-                  onClick={fetchResults}
-                  className="text-gray-400 hover:text-gray-100 transition-colors"
-                  tabIndex={0}
-                >
-                  <FiRefreshCw className="h-5 w-5" />
-                </button>
+              <div className="text-center py-8 text-gray-400">
+                <p>No model optimization results found.</p>
+                <p className="text-sm mt-2">Test enhanced prompts to see results here.</p>
               </div>
             </div>
-            <PromptOptimizationVisualizations results={results} />
-            <VisualizationImages
-              images={visualizationImages}
-              title="Saved Visualizations"
-              loading={loadingVisualizations}
-            />
-          </div>
-        ) : (
-          <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-6 shadow-lg">
-            <div className="text-center py-8 text-gray-400">
-              <p>No model optimization results found.</p>
-              <p className="text-sm mt-2">Test enhanced prompts to see visualizations here.</p>
-            </div>
-          </div>
-        )}
+          )}
+          
+          {/* Always show saved visualizations if they exist */}
+          <VisualizationImages
+            images={visualizationImages}
+            title="Saved Visualizations"
+            loading={loadingVisualizations}
+          />
+        </div>
 
         {/* Output Log */}
         {output && (

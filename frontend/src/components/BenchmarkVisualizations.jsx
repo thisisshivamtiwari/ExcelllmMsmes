@@ -136,9 +136,9 @@ const BenchmarkVisualizations = ({ results }) => {
 
   if (!processedData) {
     return (
-      <div className="text-center py-12 text-gray-400">
+      <div className="py-12 text-center text-gray-400">
         <p>No benchmark data available for visualization.</p>
-        <p className="text-sm mt-2">Run a benchmark to see visualizations here.</p>
+        <p className="mt-2 text-sm">Run a benchmark to see visualizations here.</p>
       </div>
     )
   }
@@ -173,29 +173,29 @@ const BenchmarkVisualizations = ({ results }) => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-4 md:p-6 shadow-lg">
-          <div className="flex items-center gap-3 mb-2">
-            <FiBarChart2 className="h-5 w-5 text-blue-400 shrink-0" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="p-4 rounded-lg border shadow-lg backdrop-blur-xl bg-gray-900/80 border-gray-800/50 md:p-6">
+          <div className="flex gap-3 items-center mb-2">
+            <FiBarChart2 className="w-5 h-5 text-blue-400 shrink-0" />
             <span className="text-sm text-gray-400">Total Evaluations</span>
           </div>
-          <div className="text-2xl md:text-3xl font-bold text-gray-100 break-words">{totalEvaluations.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-gray-100 md:text-3xl wrap-break-word">{totalEvaluations.toLocaleString()}</div>
         </div>
 
-        <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-4 md:p-6 shadow-lg">
-          <div className="flex items-center gap-3 mb-2">
-            <FiTrendingUp className="h-5 w-5 text-green-400 shrink-0" />
+        <div className="p-4 rounded-lg border shadow-lg backdrop-blur-xl bg-gray-900/80 border-gray-800/50 md:p-6">
+          <div className="flex gap-3 items-center mb-2">
+            <FiTrendingUp className="w-5 h-5 text-green-400 shrink-0" />
             <span className="text-sm text-gray-400">Models Evaluated</span>
           </div>
-          <div className="text-2xl md:text-3xl font-bold text-gray-100 break-words">{totalModels}</div>
+          <div className="text-2xl font-bold text-gray-100 md:text-3xl wrap-break-word">{totalModels}</div>
         </div>
 
-        <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-4 md:p-6 shadow-lg">
-          <div className="flex items-center gap-3 mb-2">
-            <FiCheckCircle className="h-5 w-5 text-blue-400 shrink-0" />
+        <div className="p-4 rounded-lg border shadow-lg backdrop-blur-xl bg-gray-900/80 border-gray-800/50 md:p-6">
+          <div className="flex gap-3 items-center mb-2">
+            <FiCheckCircle className="w-5 h-5 text-blue-400 shrink-0" />
             <span className="text-sm text-gray-400">Avg Overall Score</span>
           </div>
-          <div className="text-2xl md:text-3xl font-bold text-gray-100 break-words">
+          <div className="text-2xl font-bold text-gray-100 md:text-3xl wrap-break-word">
             {modelStats.length > 0
               ? (
                   modelStats.reduce((sum, m) => sum + m.avg_overall, 0) / modelStats.length
@@ -205,12 +205,12 @@ const BenchmarkVisualizations = ({ results }) => {
           </div>
         </div>
 
-        <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-4 md:p-6 shadow-lg">
-          <div className="flex items-center gap-3 mb-2">
-            <FiClock className="h-5 w-5 text-purple-400 shrink-0" />
+        <div className="p-4 rounded-lg border shadow-lg backdrop-blur-xl bg-gray-900/80 border-gray-800/50 md:p-6">
+          <div className="flex gap-3 items-center mb-2">
+            <FiClock className="w-5 h-5 text-purple-400 shrink-0" />
             <span className="text-sm text-gray-400">Avg Latency</span>
           </div>
-          <div className="text-2xl md:text-3xl font-bold text-gray-100 break-words">
+          <div className="text-2xl font-bold text-gray-100 md:text-3xl wrap-break-word">
             {modelStats.length > 0
               ? (
                   modelStats.reduce((sum, m) => sum + m.avg_latency_ms, 0) / modelStats.length / 1000
@@ -222,27 +222,27 @@ const BenchmarkVisualizations = ({ results }) => {
       </div>
 
       {/* Model Comparison - Overall Scores */}
-      <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-4 md:p-6 shadow-lg">
-        <h3 className="text-xl font-semibold text-gray-100 mb-6 flex items-center gap-2">
-          <FiBarChart2 className="h-5 w-5 text-blue-400" />
+      <div className="p-4 rounded-lg border shadow-lg backdrop-blur-xl bg-gray-900/80 border-gray-800/50 md:p-6">
+        <h3 className="flex gap-2 items-center mb-6 text-xl font-semibold text-gray-100">
+          <FiBarChart2 className="w-5 h-5 text-blue-400" />
           Model Performance Comparison
         </h3>
         <div className="space-y-4">
           {modelStats.map((model) => (
             <div key={model.model_id} className="space-y-2">
-              <div className="flex items-center justify-between text-sm gap-2">
-                <span className="text-gray-300 font-medium truncate flex-1 min-w-0">{formatModelName(model.model_id)}</span>
+              <div className="flex gap-2 justify-between items-center text-sm">
+                <span className="flex-1 min-w-0 font-medium text-gray-300 truncate">{formatModelName(model.model_id)}</span>
                 <span className={`font-bold ${getScoreColor(model.avg_overall)} shrink-0`}>
                   {model.avg_overall.toFixed(1)}%
                 </span>
               </div>
-              <div className="w-full bg-gray-800/50 rounded-full h-3 overflow-hidden">
+              <div className="overflow-hidden w-full h-3 rounded-full bg-gray-800/50">
                 <div
                   className={`h-full ${getBarColor(model.avg_overall)} transition-all duration-500`}
                   style={{ width: `${Math.min(model.avg_overall, 100)}%` }}
                 />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-400 mt-1">
+              <div className="grid grid-cols-2 gap-2 mt-1 text-xs text-gray-400 md:grid-cols-4">
                 <span className="truncate" title={`SQL: ${model.avg_sql.toFixed(1)}%`}>SQL: {model.avg_sql.toFixed(1)}%</span>
                 <span className="truncate" title={`Table/Col: ${model.avg_table_column.toFixed(1)}%`}>Table/Col: {model.avg_table_column.toFixed(1)}%</span>
                 <span className="truncate" title={`Methodology: ${model.avg_methodology.toFixed(1)}%`}>Methodology: {model.avg_methodology.toFixed(1)}%</span>
@@ -254,29 +254,29 @@ const BenchmarkVisualizations = ({ results }) => {
       </div>
 
       {/* Detailed Model Scores - Radar-like visualization */}
-      <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-4 md:p-6 shadow-lg">
-        <h3 className="text-xl font-semibold text-gray-100 mb-6 flex items-center gap-2">
-          <FiTrendingUp className="h-5 w-5 text-green-400" />
+      <div className="p-4 rounded-lg border shadow-lg backdrop-blur-xl bg-gray-900/80 border-gray-800/50 md:p-6">
+        <h3 className="flex gap-2 items-center mb-6 text-xl font-semibold text-gray-100">
+          <FiTrendingUp className="w-5 h-5 text-green-400" />
           Detailed Score Breakdown by Model
         </h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {modelStats.map((model) => (
             <div
               key={model.model_id}
-              className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4"
+              className="p-4 rounded-lg border bg-gray-800/50 border-gray-700/50"
             >
-              <h4 className="text-lg font-semibold text-gray-100 mb-4">
+              <h4 className="mb-4 text-lg font-semibold text-gray-100">
                 {formatModelName(model.model_id)}
               </h4>
               <div className="space-y-3">
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between mb-1 text-sm">
                     <span className="text-gray-400">Overall Score</span>
                     <span className={`font-bold ${getScoreColor(model.avg_overall)}`}>
                       {model.avg_overall.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full h-2 bg-gray-800 rounded-full">
                     <div
                       className={`h-full ${getBarColor(model.avg_overall)}`}
                       style={{ width: `${Math.min(model.avg_overall, 100)}%` }}
@@ -284,13 +284,13 @@ const BenchmarkVisualizations = ({ results }) => {
                   </div>
                 </div>
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between mb-1 text-sm">
                     <span className="text-gray-400">SQL Score</span>
                     <span className={`font-bold ${getScoreColor(model.avg_sql)}`}>
                       {model.avg_sql.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full h-2 bg-gray-800 rounded-full">
                     <div
                       className={`h-full ${getBarColor(model.avg_sql)}`}
                       style={{ width: `${Math.min(model.avg_sql, 100)}%` }}
@@ -298,13 +298,13 @@ const BenchmarkVisualizations = ({ results }) => {
                   </div>
                 </div>
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between mb-1 text-sm">
                     <span className="text-gray-400">Table/Column Score</span>
                     <span className={`font-bold ${getScoreColor(model.avg_table_column)}`}>
                       {model.avg_table_column.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full h-2 bg-gray-800 rounded-full">
                     <div
                       className={`h-full ${getBarColor(model.avg_table_column)}`}
                       style={{ width: `${Math.min(model.avg_table_column, 100)}%` }}
@@ -312,13 +312,13 @@ const BenchmarkVisualizations = ({ results }) => {
                   </div>
                 </div>
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between mb-1 text-sm">
                     <span className="text-gray-400">Methodology Score</span>
                     <span className={`font-bold ${getScoreColor(model.avg_methodology)}`}>
                       {model.avg_methodology.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full h-2 bg-gray-800 rounded-full">
                     <div
                       className={`h-full ${getBarColor(model.avg_methodology)}`}
                       style={{ width: `${Math.min(model.avg_methodology, 100)}%` }}
@@ -327,13 +327,13 @@ const BenchmarkVisualizations = ({ results }) => {
                 </div>
                 {model.avg_response_quality > 0 && (
                   <div>
-                    <div className="flex justify-between text-sm mb-1">
+                    <div className="flex justify-between mb-1 text-sm">
                       <span className="text-gray-400">Response Quality</span>
                       <span className={`font-bold ${getScoreColor(model.avg_response_quality)}`}>
                         {model.avg_response_quality.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-800 rounded-full h-2">
+                    <div className="w-full h-2 bg-gray-800 rounded-full">
                       <div
                         className={`h-full ${getBarColor(model.avg_response_quality)}`}
                         style={{ width: `${Math.min(model.avg_response_quality, 100)}%` }}
@@ -341,13 +341,13 @@ const BenchmarkVisualizations = ({ results }) => {
                     </div>
                   </div>
                 )}
-                <div className="pt-2 border-t border-gray-700 mt-2">
+                <div className="pt-2 mt-2 border-t border-gray-700">
                   <div className="flex justify-between text-xs text-gray-400">
                     <span>Avg Latency: {(model.avg_latency_ms / 1000).toFixed(2)}s</span>
                     <span>Evaluations: {model.count}</span>
                     {model.errors > 0 && (
-                      <span className="text-red-400 flex items-center gap-1">
-                        <FiXCircle className="h-3 w-3" />
+                      <span className="flex gap-1 items-center text-red-400">
+                        <FiXCircle className="w-3 h-3" />
                         {model.errors} errors
                       </span>
                     )}
@@ -360,27 +360,27 @@ const BenchmarkVisualizations = ({ results }) => {
       </div>
 
       {/* Category Breakdown */}
-      <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-lg p-4 md:p-6 shadow-lg">
-        <h3 className="text-xl font-semibold text-gray-100 mb-6 flex items-center gap-2">
-          <FiBarChart2 className="h-5 w-5 text-purple-400" />
+      <div className="p-4 rounded-lg border shadow-lg backdrop-blur-xl bg-gray-900/80 border-gray-800/50 md:p-6">
+        <h3 className="flex gap-2 items-center mb-6 text-xl font-semibold text-gray-100">
+          <FiBarChart2 className="w-5 h-5 text-purple-400" />
           Performance by Question Category
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {categoryStats.map((cat) => (
             <div
               key={cat.category}
-              className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4"
+              className="p-4 rounded-lg border bg-gray-800/50 border-gray-700/50"
             >
-              <h4 className="text-lg font-semibold text-gray-100 mb-4">{cat.category}</h4>
+              <h4 className="mb-4 text-lg font-semibold text-gray-100">{cat.category}</h4>
               <div className="space-y-3">
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between mb-1 text-sm">
                     <span className="text-gray-400">Overall</span>
                     <span className={`font-bold ${getScoreColor(cat.avg_overall)}`}>
                       {cat.avg_overall.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full h-2 bg-gray-800 rounded-full">
                     <div
                       className={`h-full ${getBarColor(cat.avg_overall)}`}
                       style={{ width: `${Math.min(cat.avg_overall, 100)}%` }}
@@ -388,13 +388,13 @@ const BenchmarkVisualizations = ({ results }) => {
                   </div>
                 </div>
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between mb-1 text-sm">
                     <span className="text-gray-400">SQL</span>
                     <span className={`font-bold ${getScoreColor(cat.avg_sql)}`}>
                       {cat.avg_sql.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full h-2 bg-gray-800 rounded-full">
                     <div
                       className={`h-full ${getBarColor(cat.avg_sql)}`}
                       style={{ width: `${Math.min(cat.avg_sql, 100)}%` }}
@@ -402,13 +402,13 @@ const BenchmarkVisualizations = ({ results }) => {
                   </div>
                 </div>
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between mb-1 text-sm">
                     <span className="text-gray-400">Table/Column</span>
                     <span className={`font-bold ${getScoreColor(cat.avg_table_column)}`}>
                       {cat.avg_table_column.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full h-2 bg-gray-800 rounded-full">
                     <div
                       className={`h-full ${getBarColor(cat.avg_table_column)}`}
                       style={{ width: `${Math.min(cat.avg_table_column, 100)}%` }}
@@ -416,20 +416,20 @@ const BenchmarkVisualizations = ({ results }) => {
                   </div>
                 </div>
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between mb-1 text-sm">
                     <span className="text-gray-400">Methodology</span>
                     <span className={`font-bold ${getScoreColor(cat.avg_methodology)}`}>
                       {cat.avg_methodology.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full h-2 bg-gray-800 rounded-full">
                     <div
                       className={`h-full ${getBarColor(cat.avg_methodology)}`}
                       style={{ width: `${Math.min(cat.avg_methodology, 100)}%` }}
                     />
                   </div>
                 </div>
-                <div className="pt-2 border-t border-gray-700 mt-2">
+                <div className="pt-2 mt-2 border-t border-gray-700">
                   <span className="text-xs text-gray-400">Questions: {cat.count}</span>
                 </div>
               </div>
