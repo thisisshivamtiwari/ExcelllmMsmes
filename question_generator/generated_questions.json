@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "last_updated": "2025-11-28T12:34:58.744326",
-    "total_questions": 104,
+    "last_updated": "2025-12-02T12:46:20.949233",
+    "total_questions": 105,
     "questions_by_category": {
-      "Easy": 34,
+      "Easy": 35,
       "Medium": 35,
       "Complex": 35
     }
@@ -755,6 +755,29 @@
         "id": "Easy_34",
         "created_at": "2025-11-28T12:32:33.453169",
         "correct_answer": "{'Machine-M1': 18, 'Machine-M2': 8, 'Machine-M3': 6, 'Machine-M4': 8, 'Machine-M5': 6}"
+      },
+      {
+        "question": "What is the average downtime in minutes per shift for Machine-M1 across all production lines?",
+        "category": "Easy",
+        "sql_formula": "SELECT AVG(Downtime_Minutes) FROM production_logs WHERE Line_Machine LIKE '%Machine-M1%' GROUP BY Shift",
+        "excel_formula": "=AVERAGEIFS(production_logs[Downtime_Minutes],production_logs[Line_Machine], \"*Machine-M1*\",production_logs[Shift],SHIFT_VALUE)",
+        "calculation_steps": [
+          "Filter production_logs for rows where Line_Machine contains 'Machine-M1'.",
+          "Group the results by shift.",
+          "Calculate the average Downtime_Minutes for each shift."
+        ],
+        "answer_format": "number (average minutes)",
+        "related_tables": [
+          "production_logs"
+        ],
+        "related_columns": [
+          "Downtime_Minutes",
+          "Line_Machine",
+          "Shift"
+        ],
+        "id": "Easy_35",
+        "created_at": "2025-12-02T12:37:26.431361",
+        "correct_answer": "12.93"
       }
     ],
     "Medium": [
