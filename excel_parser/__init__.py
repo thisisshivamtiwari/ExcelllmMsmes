@@ -1,9 +1,8 @@
 """
 Excel Parser Module
-
-This module provides functionality for loading and parsing Excel/CSV files,
-detecting schemas, normalizing column names, and cleaning data.
+Handles loading, validation, and metadata extraction from Excel and CSV files.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
+
 

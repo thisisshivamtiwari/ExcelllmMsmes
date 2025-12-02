@@ -1,38 +1,26 @@
 """
 Excel Loader Module
-
-Handles loading of .xlsx and .csv files with support for:
-- Multiple sheets per Excel file
-- Large files with chunking
-- Data type preservation
-- Error handling
+Loads Excel and CSV files into pandas DataFrames.
 """
 
-import pandas as pd
 from pathlib import Path
-from typing import Dict, Optional, List, Any
+from typing import Dict, Any, Optional, Union
+import pandas as pd
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class ExcelLoader:
-    """Load Excel and CSV files with error handling and metadata extraction."""
+    """Loads Excel and CSV files with support for multiple sheets."""
     
-    # Maximum file size before chunking (in MB)
-    MAX_FILE_SIZE_MB = 100
-    # Chunk size for large files (rows per chunk)
-    CHUNK_SIZE = 10000
-    
-    def __init__(self):
-        """Initialize the Excel loader."""
-        self.supported_formats = ['.xlsx', '.xls', '.csv']
+    CHUNK_SIZE = 10000  # Rows per chunk for large files
     
     def load_file(
         self,
         file_path: Path,
         sheet_name: Optional[str] = None,
-        chunked: bool = False
+        max_rows: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Load an Excel or CSV file.
@@ -40,242 +28,198 @@ class ExcelLoader:
         Args:
             file_path: Path to the file
             sheet_name: Specific sheet name for Excel files (None = all sheets)
-            chunked: Whether to load in chunks for large files
+            max_rows: Maximum rows to load (None = all rows)
             
         Returns:
-            Dictionary containing:
-            - 'data': Dict[str, pd.DataFrame] for Excel (sheet_name -> DataFrame)
-                     or pd.DataFrame for CSV
-            - 'metadata': File metadata
-            - 'error': Error message if loading failed
+            Dictionary with:
+            {
+                'data': DataFrame or Dict[str, DataFrame],
+                'error': Optional[str],
+                'metadata': {
+                    'file_type': str,
+                    'sheet_names': List[str],
+                    'row_count': int or Dict[str, int],
+                    'column_count': int or Dict[str, int],
+                    'columns': List[str] or Dict[str, List[str]]
+                }
+            }
         """
+        file_ext = file_path.suffix.lower()
+        
         try:
-            # Validate file exists
-            if not file_path.exists():
-                return {
-                    'data': None,
-                    'metadata': None,
-                    'error': f"File not found: {file_path}"
-                }
-            
-            # Validate file format
-            if file_path.suffix.lower() not in self.supported_formats:
-                return {
-                    'data': None,
-                    'metadata': None,
-                    'error': f"Unsupported file format: {file_path.suffix}"
-                }
-            
-            # Load based on file type
-            if file_path.suffix.lower() == '.csv':
-                return self._load_csv(file_path, chunked)
+            if file_ext in ['.xlsx', '.xls']:
+                return self._load_excel(file_path, sheet_name, max_rows)
+            elif file_ext == '.csv':
+                return self._load_csv(file_path, max_rows)
             else:
-                return self._load_excel(file_path, sheet_name, chunked)
-                
+                return {
+                    'data': None,
+                    'error': f"Unsupported file format: {file_ext}",
+                    'metadata': {}
+                }
         except Exception as e:
             logger.error(f"Error loading file {file_path}: {str(e)}")
             return {
                 'data': None,
-                'metadata': None,
-                'error': f"Error loading file: {str(e)}"
-            }
-    
-    def _load_csv(
-        self,
-        file_path: Path,
-        chunked: bool = False
-    ) -> Dict[str, Any]:
-        """Load a CSV file."""
-        try:
-            # Check file size
-            file_size_mb = file_path.stat().st_size / (1024 * 1024)
-            
-            if chunked or file_size_mb > self.MAX_FILE_SIZE_MB:
-                # Load in chunks
-                chunks = []
-                for chunk in pd.read_csv(file_path, chunksize=self.CHUNK_SIZE):
-                    chunks.append(chunk)
-                df = pd.concat(chunks, ignore_index=True)
-            else:
-                # Load entire file
-                df = pd.read_csv(file_path)
-            
-            metadata = {
-                'file_name': file_path.name,
-                'file_path': str(file_path),
-                'file_type': 'csv',
-                'row_count': len(df),
-                'column_count': len(df.columns),
-                'columns': list(df.columns),
-                'file_size_mb': file_size_mb
-            }
-            
-            return {
-                'data': df,
-                'metadata': metadata,
-                'error': None
-            }
-            
-        except Exception as e:
-            logger.error(f"Error loading CSV {file_path}: {str(e)}")
-            return {
-                'data': None,
-                'metadata': None,
-                'error': f"CSV loading error: {str(e)}"
+                'error': f"Error loading file: {str(e)}",
+                'metadata': {}
             }
     
     def _load_excel(
         self,
         file_path: Path,
         sheet_name: Optional[str] = None,
-        chunked: bool = False
+        max_rows: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Load an Excel file."""
+        """Load Excel file."""
         try:
-            # Get all sheet names
-            excel_file = pd.ExcelFile(file_path)
-            all_sheets = excel_file.sheet_names
-            
-            # Check file size
-            file_size_mb = file_path.stat().st_size / (1024 * 1024)
-            
-            dataframes = {}
-            
-            # Load specific sheet or all sheets
-            sheets_to_load = [sheet_name] if sheet_name else all_sheets
-            
-            for sheet in sheets_to_load:
-                if sheet not in all_sheets:
-                    logger.warning(f"Sheet '{sheet}' not found in {file_path}")
-                    continue
+            # Read all sheets if sheet_name is None
+            if sheet_name is None:
+                excel_file = pd.ExcelFile(file_path)
+                sheet_names = excel_file.sheet_names
                 
-                if chunked or file_size_mb > self.MAX_FILE_SIZE_MB:
-                    # Load in chunks (Excel doesn't support chunking directly,
-                    # so we load the whole sheet but warn for large files)
-                    if file_size_mb > self.MAX_FILE_SIZE_MB:
-                        logger.warning(
-                            f"Large Excel file ({file_size_mb:.2f} MB). "
-                            f"Consider converting to CSV for better performance."
-                        )
-                    df = pd.read_excel(file_path, sheet_name=sheet)
-                else:
-                    df = pd.read_excel(file_path, sheet_name=sheet)
+                data = {}
+                metadata = {
+                    'file_type': 'excel',
+                    'sheet_names': sheet_names,
+                    'row_count': {},
+                    'column_count': {},
+                    'columns': {}
+                }
                 
-                dataframes[sheet] = df
-            
-            # Calculate total rows across all sheets
-            total_rows = sum(len(df) for df in dataframes.values())
-            
-            metadata = {
-                'file_name': file_path.name,
-                'file_path': str(file_path),
-                'file_type': 'excel',
-                'sheet_names': list(dataframes.keys()),
-                'total_row_count': total_rows,
-                'sheets': {
-                    sheet: {
-                        'row_count': len(df),
-                        'column_count': len(df.columns),
-                        'columns': list(df.columns)
-                    }
-                    for sheet, df in dataframes.items()
-                },
-                'file_size_mb': file_size_mb
-            }
-            
-            return {
-                'data': dataframes,
-                'metadata': metadata,
-                'error': None
-            }
-            
+                for sheet in sheet_names:
+                    df = pd.read_excel(excel_file, sheet_name=sheet, nrows=max_rows)
+                    data[sheet] = df
+                    metadata['row_count'][sheet] = len(df)
+                    metadata['column_count'][sheet] = len(df.columns)
+                    metadata['columns'][sheet] = df.columns.tolist()
+                
+                excel_file.close()
+                
+                return {
+                    'data': data,
+                    'error': None,
+                    'metadata': metadata
+                }
+            else:
+                # Load specific sheet
+                df = pd.read_excel(file_path, sheet_name=sheet_name, nrows=max_rows)
+                
+                metadata = {
+                    'file_type': 'excel',
+                    'sheet_names': [sheet_name],
+                    'row_count': len(df),
+                    'column_count': len(df.columns),
+                    'columns': df.columns.tolist()
+                }
+                
+                return {
+                    'data': df,
+                    'error': None,
+                    'metadata': metadata
+                }
         except Exception as e:
-            logger.error(f"Error loading Excel {file_path}: {str(e)}")
             return {
                 'data': None,
-                'metadata': None,
-                'error': f"Excel loading error: {str(e)}"
+                'error': f"Error loading Excel file: {str(e)}",
+                'metadata': {}
             }
     
-    def load_excel_file(
+    def _load_csv(
         self,
-        file_path: Path
-    ) -> Dict[str, pd.DataFrame]:
-        """
-        Load an Excel file and return all sheets as DataFrames.
-        
-        Args:
-            file_path: Path to the Excel file
+        file_path: Path,
+        max_rows: Optional[int] = None,
+        encoding: str = 'utf-8'
+    ) -> Dict[str, Any]:
+        """Load CSV file."""
+        try:
+            # Try different encodings
+            encodings = [encoding, 'utf-8', 'latin-1', 'iso-8859-1', 'cp1252']
             
-        Returns:
-            Dictionary mapping sheet names to DataFrames
-        """
-        result = self.load_file(file_path)
-        if result['error']:
-            raise ValueError(result['error'])
-        return result['data']
-    
-    def load_csv_file(
-        self,
-        file_path: Path
-    ) -> pd.DataFrame:
-        """
-        Load a CSV file and return as DataFrame.
-        
-        Args:
-            file_path: Path to the CSV file
+            df = None
+            last_error = None
             
-        Returns:
-            DataFrame containing the CSV data
-        """
-        result = self.load_file(file_path)
-        if result['error']:
-            raise ValueError(result['error'])
-        return result['data']
+            for enc in encodings:
+                try:
+                    df = pd.read_csv(file_path, encoding=enc, nrows=max_rows)
+                    break
+                except UnicodeDecodeError as e:
+                    last_error = e
+                    continue
+            
+            if df is None:
+                return {
+                    'data': None,
+                    'error': f"Could not decode CSV file with any encoding. Last error: {str(last_error)}",
+                    'metadata': {}
+                }
+            
+            metadata = {
+                'file_type': 'csv',
+                'sheet_names': ['Sheet1'],  # CSV has single "sheet"
+                'row_count': len(df),
+                'column_count': len(df.columns),
+                'columns': df.columns.tolist()
+            }
+            
+            return {
+                'data': df,
+                'error': None,
+                'metadata': metadata
+            }
+        except Exception as e:
+            return {
+                'data': None,
+                'error': f"Error loading CSV file: {str(e)}",
+                'metadata': {}
+            }
     
-    def get_file_metadata(
+    def load_chunked(
         self,
-        file_path: Path
+        file_path: Path,
+        sheet_name: Optional[str] = None,
+        chunk_size: int = None
     ) -> Dict[str, Any]:
         """
-        Get metadata for a file without loading the full data.
+        Load large file in chunks.
         
         Args:
             file_path: Path to the file
+            sheet_name: Specific sheet name (for Excel)
+            chunk_size: Number of rows per chunk
             
         Returns:
-            Dictionary containing file metadata
+            Generator yielding chunks of data
         """
-        if not file_path.exists():
-            return {'error': f"File not found: {file_path}"}
+        chunk_size = chunk_size or self.CHUNK_SIZE
+        file_ext = file_path.suffix.lower()
         
-        metadata = {
-            'file_name': file_path.name,
-            'file_path': str(file_path),
-            'file_size_bytes': file_path.stat().st_size,
-            'file_size_mb': file_path.stat().st_size / (1024 * 1024),
-            'file_extension': file_path.suffix.lower(),
-            'is_supported': file_path.suffix.lower() in self.supported_formats
-        }
-        
-        # Try to get more detailed metadata
         try:
-            if file_path.suffix.lower() == '.csv':
-                # Quick peek at CSV
-                sample = pd.read_csv(file_path, nrows=1)
-                metadata.update({
-                    'column_count': len(sample.columns),
-                    'columns': list(sample.columns)
-                })
-            elif file_path.suffix.lower() in ['.xlsx', '.xls']:
-                # Get sheet names from Excel
-                excel_file = pd.ExcelFile(file_path)
-                metadata.update({
-                    'sheet_names': excel_file.sheet_names,
-                    'sheet_count': len(excel_file.sheet_names)
-                })
+            if file_ext == '.csv':
+                for chunk in pd.read_csv(file_path, chunksize=chunk_size):
+                    yield {
+                        'data': chunk,
+                        'error': None
+                    }
+            elif file_ext in ['.xlsx', '.xls']:
+                # For Excel, load entire sheet (pandas doesn't support chunked Excel reading easily)
+                result = self._load_excel(file_path, sheet_name)
+                if result['error']:
+                    yield result
+                else:
+                    df = result['data']
+                    if isinstance(df, dict):
+                        df = list(df.values())[0]  # Get first sheet
+                    
+                    for i in range(0, len(df), chunk_size):
+                        yield {
+                            'data': df.iloc[i:i + chunk_size],
+                            'error': None
+                        }
         except Exception as e:
-            logger.warning(f"Could not extract detailed metadata: {str(e)}")
-        
-        return metadata
+            yield {
+                'data': None,
+                'error': f"Error loading file in chunks: {str(e)}"
+            }
+
 
