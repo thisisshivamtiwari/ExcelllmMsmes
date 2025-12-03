@@ -299,7 +299,7 @@ def create_trend_analyzer_tool(trend_analyzer) -> Tool:
     )
 
 
-def create_comparative_analyzer_tool(comparative_analyzer) -> Tool:
+def create_comparative_analyzer_tool(comparative_analyzer, excel_retriever=None, semantic_retriever=None) -> Tool:
     """Create LangChain tool for comparative analysis."""
     
     def compare(query: str) -> str:
@@ -332,7 +332,7 @@ def create_comparative_analyzer_tool(comparative_analyzer) -> Tool:
                 else:
                     return json.dumps({
                         "success": False,
-                        "error": f"Invalid JSON format: {error_msg}. Expected JSON with 'data' (array), 'compare_by' (string), 'value_column' (string), 'operation' (sum/avg/count/min/max), and optional 'top_n' (integer)."
+                        "error": f"Invalid JSON format: {error_msg}. Expected JSON with 'data' (array or query string), 'compare_by' (string), 'value_column' (string), 'operation' (sum/avg/count/min/max), and optional 'top_n' (integer)."
                     })
             
             data = params.get("data", [])
@@ -341,9 +341,60 @@ def create_comparative_analyzer_tool(comparative_analyzer) -> Tool:
             operation = params.get("operation", "sum")
             top_n = params.get("top_n")
             
-            # Check if data array is too large
-            if isinstance(data, list) and len(data) > 1000:
-                logger.warning(f"Large dataset passed to comparative analyzer: {len(data)} rows. This may cause performance issues.")
+            # If data is a string (query), fetch data using excel_retriever
+            if isinstance(data, str) and excel_retriever:
+                logger.info(f"Data is a query string, fetching data: {data}")
+                # Use excel_retriever to fetch the data
+                file_id = excel_retriever.find_file_by_name(data)
+                if not file_id:
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Could not find file matching query: '{data}'. Use excel_data_retriever first to get the data, then pass the 'data' array to comparative_analyzer."
+                    })
+                
+                # Get columns from semantic search if available
+                columns = []
+                if semantic_retriever:
+                    columns = semantic_retriever.retrieve_columns(data, n_results=10)
+                    columns = [col.get("column_name") for col in columns if col.get("file_id") == file_id]
+                
+                # Retrieve data - for comparisons, we need all data (no limit)
+                # But we'll handle large datasets in the analyzer
+                retrieve_result = excel_retriever.retrieve_data(
+                    file_id=file_id,
+                    columns=columns if columns else None,
+                    limit=None  # Get all data for accurate comparisons
+                )
+                
+                if not retrieve_result.get("success"):
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Failed to retrieve data: {retrieve_result.get('error', 'Unknown error')}"
+                    })
+                
+                data = retrieve_result.get("data", [])
+                original_row_count = retrieve_result.get("row_count", 0)
+                
+                # For large datasets, warn but proceed (comparative_analyzer can handle grouping efficiently)
+                if original_row_count > 1000:
+                    logger.warning(f"Large dataset for comparison: {original_row_count} rows. This may take longer.")
+            
+            # Validate data is a list
+            if not isinstance(data, list):
+                return json.dumps({
+                    "success": False,
+                    "error": f"Data must be an array of objects or a query string. Got: {type(data).__name__}. If you passed a query string, make sure excel_retriever is available."
+                })
+            
+            if not data:
+                return json.dumps({
+                    "success": False,
+                    "error": "No data provided. Use excel_data_retriever first to get data, then pass the 'data' array to comparative_analyzer."
+                })
+            
+            # Check if data array is too large (but allow up to 2000 rows for comparisons)
+            if len(data) > 2000:
+                logger.warning(f"Very large dataset passed to comparative analyzer: {len(data)} rows. This may cause performance issues.")
             
             result = comparative_analyzer.compare(
                 data=data,
@@ -357,6 +408,8 @@ def create_comparative_analyzer_tool(comparative_analyzer) -> Tool:
             
         except Exception as e:
             logger.error(f"Error in compare tool: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return json.dumps({
                 "success": False,
                 "error": str(e)
@@ -364,7 +417,7 @@ def create_comparative_analyzer_tool(comparative_analyzer) -> Tool:
     
     return Tool(
         name="comparative_analyzer",
-        description="Compare entities (products, lines, etc.) by a value column. Input should be JSON string with 'data' (array), 'compare_by' (string), 'value_column' (string), 'operation' (sum/avg/count/min/max), and optional 'top_n' (integer).",
+        description="Compare entities (products, lines, etc.) by a value column. Input should be JSON string with 'data' (array from excel_data_retriever OR a query string like 'quality control data'), 'compare_by' (string like 'Product'), 'value_column' (string like 'Failed_Qty'), 'operation' (sum/avg/count/min/max), and optional 'top_n' (integer). If 'data' is a query string, the tool will fetch the data automatically.",
         func=compare
     )
 

@@ -2907,7 +2907,7 @@ def get_agent_tools():
         tools.append(create_excel_retriever_tool(excel_retriever, semantic_retriever))
     tools.append(create_data_calculator_tool(data_calculator))
     tools.append(create_trend_analyzer_tool(trend_analyzer))
-    tools.append(create_comparative_analyzer_tool(comparative_analyzer))
+    tools.append(create_comparative_analyzer_tool(comparative_analyzer, excel_retriever, semantic_retriever))
     tools.append(create_kpi_calculator_tool(kpi_calculator))
     
     return tools
