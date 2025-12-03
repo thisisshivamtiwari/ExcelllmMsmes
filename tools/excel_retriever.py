@@ -76,12 +76,25 @@ class ExcelRetriever:
         # Normalize query
         query_lower = query.lower().strip()
         
-        # Common file name patterns
+        # Common file name patterns with priority (higher priority = checked first)
+        # Quality-related queries should take precedence over production
         file_patterns = {
-            "production": ["production", "prod"],
-            "quality": ["quality", "qc", "inspection"],
-            "maintenance": ["maintenance", "breakdown", "repair"],
-            "inventory": ["inventory", "stock", "material"]
+            "quality": {
+                "keywords": ["quality", "qc", "inspection", "defect", "defects", "failed", "passed", "inspected", "rework"],
+                "filename_patterns": ["quality", "qc", "inspection"]
+            },
+            "maintenance": {
+                "keywords": ["maintenance", "breakdown", "repair", "cost", "downtime", "issue"],
+                "filename_patterns": ["maintenance", "breakdown"]
+            },
+            "inventory": {
+                "keywords": ["inventory", "stock", "material", "consumption", "wastage", "received"],
+                "filename_patterns": ["inventory", "stock", "material"]
+            },
+            "production": {
+                "keywords": ["production", "prod", "quantity", "actual", "target"],
+                "filename_patterns": ["production", "prod"]
+            }
         }
         
         # Try exact filename match first
@@ -90,13 +103,25 @@ class ExcelRetriever:
             if query_lower in filename or filename in query_lower:
                 return file_info.get("file_id")
         
-        # Try pattern matching
+        # Try pattern matching with priority (check quality/maintenance/inventory before production)
+        matched_files = []
         for file_info in files:
             filename = file_info.get("original_filename", "").lower()
-            for pattern_key, patterns in file_patterns.items():
-                if any(p in query_lower for p in patterns):
-                    if pattern_key in filename:
-                        return file_info.get("file_id")
+            for pattern_key, pattern_info in file_patterns.items():
+                keywords = pattern_info["keywords"]
+                filename_patterns = pattern_info["filename_patterns"]
+                
+                # Check if query contains keywords AND filename matches pattern
+                if any(kw in query_lower for kw in keywords) and any(fp in filename for fp in filename_patterns):
+                    matched_files.append((pattern_key, file_info))
+                    break
+        
+        # Return first match (priority order: quality > maintenance > inventory > production)
+        if matched_files:
+            # Sort by priority
+            priority_order = ["quality", "maintenance", "inventory", "production"]
+            matched_files.sort(key=lambda x: priority_order.index(x[0]) if x[0] in priority_order else 999)
+            return matched_files[0][1].get("file_id")
         
         # Try partial match
         query_words = set(re.findall(r'\w+', query_lower))

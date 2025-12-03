@@ -33,6 +33,14 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
             if semantic_retriever:
                 columns = semantic_retriever.retrieve_columns(query, n_results=10)
             
+            # Step 2.5: If semantic search found columns from wrong file, prioritize file found by name
+            if file_id and columns:
+                # Filter columns to only those from the file we found by name
+                columns = [col for col in columns if col.get("file_id") == file_id]
+                # If no columns match, get all columns from the file we found
+                if not columns:
+                    columns = []  # Will trigger Step 3
+            
             # Step 3: If we found a file by name but no columns, get all columns from that file
             if file_id and not columns:
                 # Load metadata to get column names
@@ -65,18 +73,46 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
             # Step 6: Determine which columns to retrieve
             columns_to_retrieve = None
             if columns:
-                # Extract column names from semantic search results
-                columns_to_retrieve = [col.get("column_name") for col in columns[:10] if col.get("file_id") == file_id]
+                # Extract column names from semantic search results that match the file we found
+                matching_columns = [col.get("column_name") for col in columns[:10] if col.get("file_id") == file_id]
+                # Only use semantic search columns if we found matching ones
+                if matching_columns:
+                    columns_to_retrieve = matching_columns
+            
+            # If no columns from semantic search, get all columns from the file (for calculations)
+            # This ensures we have all data needed for accurate calculations
+            if not columns_to_retrieve and file_id:
+                metadata = excel_retriever.load_file_metadata(file_id)
+                if metadata and "schema" in metadata:
+                    schema = metadata["schema"]
+                    if "sheets" in schema:
+                        for sheet_name, sheet_info in schema["sheets"].items():
+                            if "columns" in sheet_info:
+                                # Get all column names from the file
+                                columns_to_retrieve = list(sheet_info["columns"].keys())
+                                logger.info(f"No semantic columns found, using all columns from file: {columns_to_retrieve[:5]}...")
+                                break
             
             # Step 7: Retrieve data
             # Check if query is asking for a calculation (sum, total, average, etc.)
             # If so, don't limit data - we need all rows for accurate calculations
-            calculation_keywords = ["total", "sum", "average", "avg", "mean", "count", "how many"]
-            is_calculation_query = any(keyword in query.lower() for keyword in calculation_keywords)
+            query_lower = query.lower()
+            calculation_keywords = [
+                "total", "sum", "average", "avg", "mean", "count", "how many",
+                "calculate", "what is", "what are", "how much", "aggregate"
+            ]
+            is_calculation_query = any(keyword in query_lower for keyword in calculation_keywords)
             
-            # For calculation queries, get all data (no limit)
+            # Also check if query asks for specific numeric operations
+            numeric_operations = ["quantity", "amount", "cost", "defects", "failed", "passed", 
+                                 "inspected", "consumption", "wastage", "downtime"]
+            has_numeric_operation = any(op in query_lower for op in numeric_operations)
+            
+            # For calculation queries OR numeric operations, get all data (no limit)
             # For display queries, limit to 50 rows to prevent token overflow
-            limit_value = None if is_calculation_query else 50
+            limit_value = None if (is_calculation_query or has_numeric_operation) else 50
+            
+            logger.info(f"Query: '{query}' | Calculation query: {is_calculation_query} | Numeric operation: {has_numeric_operation} | Limit: {limit_value}")
             
             result = excel_retriever.retrieve_data(
                 file_id=file_id,
@@ -84,12 +120,16 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
                 limit=limit_value
             )
             
-            # Step 8: If result is too large, truncate data but keep summary
+            # Step 8: For calculation queries, keep all data but add note about using calculator
+            # For display queries, truncate to 50 rows
             if result.get("success"):
                 original_row_count = result.get("row_count", 0)
                 data_rows = result.get("data", [])
                 
-                if len(data_rows) > 50:
+                if is_calculation_query or has_numeric_operation:
+                    # Keep all data for calculations
+                    result["note"] = f"Retrieved all {original_row_count} rows for calculation. Use data_calculator tool with this data."
+                elif len(data_rows) > 50:
                     # Keep only first 50 rows for display
                     result["data"] = data_rows[:50]
                     result["truncated"] = True
