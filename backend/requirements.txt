@@ -13,3 +13,15 @@ chardet>=5.0.0
 # Phase 2: Schema Detection & Gemini Integration
 google-generativeai>=0.3.0
 
+# Phase 3: Semantic Indexing & RAG
+sentence-transformers>=2.2.0
+chromadb>=0.4.0
+numpy>=1.24.0
+
+# Phase 4: LangChain Agent System
+langchain>=0.1.0
+langchain-community>=0.0.20
+langchain-groq>=0.1.0
+langchain-google-genai>=1.0.0
+groq>=0.4.0
+
