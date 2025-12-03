@@ -1104,7 +1104,16 @@ metadata_extractor = MetadataExtractor()
 
 # Initialize schema detector with Gemini support
 gemini_api_key = os.getenv('GEMINI_API_KEY')
-gemini_analyzer = GeminiSchemaAnalyzer(gemini_api_key) if gemini_api_key else None
+# Initialize Gemini analyzer, but don't fail if it doesn't work
+gemini_analyzer = None
+if gemini_api_key:
+    try:
+        gemini_analyzer = GeminiSchemaAnalyzer(gemini_api_key)
+        logger.info("✓ Gemini Schema Analyzer initialized successfully")
+    except Exception as e:
+        logger.warning(f"⚠ Gemini Schema Analyzer initialization failed (non-critical): {str(e)}")
+        logger.warning("   Schema analysis will continue without Gemini enhancements")
+        gemini_analyzer = None
 schema_detector = SchemaDetector(
     use_gemini=gemini_api_key is not None,
     gemini_api_key=gemini_api_key
