@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react"
-import { FiSend, FiLoader, FiAlertCircle, FiCheckCircle, FiMessageSquare } from "react-icons/fi"
+import { FiSend, FiLoader, FiAlertCircle, FiCheckCircle, FiMessageSquare, FiChevronDown, FiChevronUp, FiHelpCircle } from "react-icons/fi"
+import ChartDisplay from "../components/ChartDisplay"
+import SuggestionsPanel from "../components/SuggestionsPanel"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
 
@@ -8,7 +10,8 @@ const AgentChat = () => {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [agentStatus, setAgentStatus] = useState(null)
-  const [provider, setProvider] = useState("groq") // "groq" or "gemini"
+  const [provider, setProvider] = useState("gemini") // "groq" or "gemini" - Gemini as default
+  const [showExamples, setShowExamples] = useState(false) // Collapsed by default
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
@@ -23,6 +26,66 @@ const AgentChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
+  const extractChartConfig = (rawAnswer) => {
+    if (!rawAnswer) {
+      return { chartConfig: null, textContent: "" }
+    }
+
+    let textContent = rawAnswer
+    let chartConfig = null
+    let parseError = null
+
+    const tryParse = (candidate) => {
+      try {
+        const parsed = JSON.parse(candidate)
+        if (parsed && typeof parsed === "object") {
+          if ((parsed.type || parsed.chart_type) && parsed.data) {
+            chartConfig = parsed
+            textContent = ""
+            return true
+          }
+        }
+      } catch (error) {
+        parseError = error
+      }
+      return false
+    }
+
+    if (typeof rawAnswer === "object") {
+      if ((rawAnswer.type || rawAnswer.chart_type) && rawAnswer.data) {
+        chartConfig = rawAnswer
+        textContent = ""
+        return { chartConfig, textContent, parseError }
+      }
+      return { chartConfig: null, textContent: JSON.stringify(rawAnswer, null, 2) }
+    }
+
+    if (typeof rawAnswer === "string") {
+      const trimmed = rawAnswer.trim()
+
+      if (trimmed.startsWith("{")) {
+        if (tryParse(trimmed)) {
+          return { chartConfig, textContent, parseError: null }
+        }
+      }
+
+      const successIndex = trimmed.indexOf('{"success"')
+      const chartIndex = trimmed.indexOf('{"chart_type"')
+      const startIndex = successIndex !== -1 ? successIndex : chartIndex
+
+      if (startIndex !== -1) {
+        const candidate = trimmed.substring(startIndex)
+        if (tryParse(candidate)) {
+          return { chartConfig, textContent, parseError: null }
+        }
+      }
+
+      return { chartConfig: null, textContent: rawAnswer, parseError }
+    }
+
+    return { chartConfig: null, textContent: String(rawAnswer), parseError }
+  }
+
   const checkAgentStatus = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/agent/status`)
@@ -34,21 +97,26 @@ const AgentChat = () => {
     }
   }
 
-  const handleSend = async (e) => {
-    e.preventDefault()
-    if (!input.trim() || loading) return
+  const handleSend = async (e, questionText = null, options = {}) => {
+    const { isFallback = false, fallbackDepth = 0, providerOverride = null } = options
+    if (e) e.preventDefault()
 
-    const userMessage = {
-      role: "user",
-      content: input.trim(),
-      timestamp: new Date().toISOString(),
-      provider: provider
+    const activeProvider = providerOverride || provider
+    const messageText = questionText || input.trim()
+    if (!messageText || (loading && !isFallback)) return
+
+    if (!isFallback) {
+      const userMessage = {
+        role: "user",
+        content: messageText,
+        timestamp: new Date().toISOString(),
+        provider: activeProvider
+      }
+
+      setMessages((prev) => [...prev, userMessage])
+      setInput("")
+      setLoading(true)
     }
-
-    setMessages((prev) => [...prev, userMessage])
-    const currentInput = input.trim()
-    setInput("")
-    setLoading(true)
 
     try {
       const response = await fetch(`${API_BASE_URL}/agent/query`, {
@@ -57,36 +125,69 @@ const AgentChat = () => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ 
-          question: currentInput,
-          provider: provider
+          question: messageText,
+          provider: activeProvider
         })
       })
 
       const data = await response.json()
+      const rawAnswer = data.answer || data.error || "No response received"
+
+      const { chartConfig, textContent, parseError } = extractChartConfig(rawAnswer)
 
       const assistantMessage = {
         role: "assistant",
-        content: data.answer || data.error || "No response received",
+        content: textContent,
+        chartConfig: chartConfig,
         success: data.success,
         intermediateSteps: data.intermediate_steps || [],
-        provider: data.provider || provider,
+        provider: data.provider || activeProvider,
         modelName: data.model_name,
         timestamp: new Date().toISOString()
       }
 
       setMessages((prev) => [...prev, assistantMessage])
+
+      const jsonErrorMessage = parseError?.message || ""
+      const looksLikeTruncation = jsonErrorMessage.includes("Unexpected end") || jsonErrorMessage.includes("Unterminated") || (typeof rawAnswer === "string" && rawAnswer.length > 3500)
+
+      if (!chartConfig && looksLikeTruncation && fallbackDepth < 1) {
+        const fallbackQuestion = `${messageText} (limit to the last 60 days)`
+        const fallbackNotice = {
+          role: "assistant",
+          content: "The chart data was too large to render. Fetching a focused view for the last 60 days...",
+          success: false,
+          provider: activeProvider,
+          timestamp: new Date().toISOString()
+        }
+
+        setMessages((prev) => [...prev, fallbackNotice])
+
+        await handleSend(null, fallbackQuestion, {
+          isFallback: true,
+          fallbackDepth: fallbackDepth + 1,
+          providerOverride: activeProvider
+        })
+      }
     } catch (error) {
       const errorMessage = {
         role: "assistant",
         content: `Error: ${error.message}`,
         success: false,
-        provider: provider,
+        provider: activeProvider,
         timestamp: new Date().toISOString()
       }
       setMessages((prev) => [...prev, errorMessage])
     } finally {
-      setLoading(false)
+      if (!isFallback) {
+        setLoading(false)
+      }
     }
+  }
+
+  const handleSuggestionSelect = (question) => {
+    setInput(question)
+    handleSend(null, question)
   }
 
   const exampleQueries = [
@@ -171,7 +272,7 @@ const AgentChat = () => {
         </div>
 
         {/* Chat Container */}
-        <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800/50 rounded-xl shadow-2xl flex flex-col h-[calc(100vh-250px)]">
+        <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800/50 rounded-xl shadow-2xl flex flex-col h-[calc(100vh-300px)]">
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {messages.length === 0 ? (
@@ -181,22 +282,9 @@ const AgentChat = () => {
                 <p className="text-sm text-center max-w-md">
                   Ask questions about your data, request calculations, analyze trends, or compare entities.
                 </p>
-                
-                {/* Example Queries */}
-                <div className="mt-6 w-full max-w-2xl">
-                  <p className="text-sm text-gray-500 mb-3">Example queries:</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {exampleQueries.map((query, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setInput(query)}
-                        className="text-left p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 transition-colors text-sm text-gray-300 hover:text-white"
-                      >
-                        {query}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  💡 Tip: Check the collapsible sections below for examples and graph suggestions
+                </p>
               </div>
             ) : (
               <>
@@ -218,7 +306,14 @@ const AgentChat = () => {
                     >
                       <div className="flex items-start gap-2">
                         <div className="flex-1">
-                          <p className="text-white whitespace-pre-wrap">{message.content}</p>
+                          {message.content && (
+                            <p className="text-white whitespace-pre-wrap">{message.content}</p>
+                          )}
+                          
+                          {/* Chart Display */}
+                          {message.chartConfig && (
+                            <ChartDisplay chartConfig={message.chartConfig} />
+                          )}
                           
                           {/* Provider Badge */}
                           {message.provider && (
@@ -293,6 +388,64 @@ const AgentChat = () => {
                 )}
               </button>
             </form>
+          </div>
+        </div>
+
+        {/* Collapsible Sections at Bottom */}
+        <div className="mt-4 space-y-3">
+          {/* Graph Suggestions Panel */}
+          <SuggestionsPanel 
+            onSelectQuestion={handleSuggestionSelect}
+            disabled={loading || !agentStatus?.providers?.[provider]?.available}
+          />
+
+          {/* Example Queries Panel */}
+          <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-xl overflow-hidden">
+            {/* Header */}
+            <button
+              onClick={() => setShowExamples(!showExamples)}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-800/70 transition-colors"
+              disabled={loading}
+            >
+              <div className="flex items-center gap-2">
+                <FiHelpCircle className="text-green-400" />
+                <span className="text-white font-medium">Example Queries</span>
+                <span className="text-xs text-gray-500 bg-gray-700/50 px-2 py-1 rounded">
+                  {exampleQueries.length} examples
+                </span>
+              </div>
+              {showExamples ? (
+                <FiChevronUp className="text-gray-400" />
+              ) : (
+                <FiChevronDown className="text-gray-400" />
+              )}
+            </button>
+
+            {/* Expanded Content */}
+            {showExamples && (
+              <div className="border-t border-gray-700/50 p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {exampleQueries.map((query, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setInput(query)
+                        handleSend(null, query)
+                      }}
+                      className="text-left p-3 rounded-lg bg-gray-700/30 hover:bg-gray-700/60 border border-gray-600/30 hover:border-green-500/50 transition-all text-sm text-gray-300 hover:text-white group"
+                      disabled={loading || !agentStatus?.providers?.[provider]?.available}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-green-400 opacity-50 group-hover:opacity-100 transition-opacity">
+                          •
+                        </span>
+                        <span className="flex-1">{query}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
