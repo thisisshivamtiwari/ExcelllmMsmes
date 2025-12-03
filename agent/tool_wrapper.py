@@ -120,15 +120,28 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
                 limit=limit_value
             )
             
-            # Step 8: For calculation queries, keep all data but add note about using calculator
+            # Step 8: For calculation queries, provide summary statistics for large datasets
             # For display queries, truncate to 50 rows
             if result.get("success"):
                 original_row_count = result.get("row_count", 0)
                 data_rows = result.get("data", [])
                 
                 if is_calculation_query or has_numeric_operation:
-                    # Keep all data for calculations
-                    result["note"] = f"Retrieved all {original_row_count} rows for calculation. Use data_calculator tool with this data."
+                    # For large datasets, provide summary statistics instead of all data
+                    # This prevents JSON parsing errors when passing to calculator
+                    if original_row_count > 500:
+                        # Keep summary statistics and first 100 rows for reference
+                        summary = result.get("summary", {})
+                        numeric_cols = summary.get("numeric_columns", {})
+                        
+                        result["data"] = data_rows[:100]  # Keep first 100 rows for reference
+                        result["truncated"] = True
+                        result["total_rows_available"] = original_row_count
+                        result["note"] = f"Retrieved {original_row_count} rows. For calculations, use summary statistics below or data_calculator with summary.mean * summary.count. Summary: {numeric_cols}"
+                        result["calculation_hint"] = "For large datasets, use summary statistics: mean * count = total"
+                    else:
+                        # Small dataset - keep all data
+                        result["note"] = f"Retrieved all {original_row_count} rows for calculation. Use data_calculator tool with this data."
                 elif len(data_rows) > 50:
                     # Keep only first 50 rows for display
                     result["data"] = data_rows[:50]
