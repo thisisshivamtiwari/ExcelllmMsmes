@@ -39,7 +39,14 @@ const AgentChat = () => {
       try {
         const parsed = JSON.parse(candidate)
         if (parsed && typeof parsed === "object") {
+          // Check for chart data structure
           if ((parsed.type || parsed.chart_type) && parsed.data) {
+            chartConfig = parsed
+            textContent = ""
+            return true
+          }
+          // Check for success wrapper with chart data
+          if (parsed.success && parsed.chart_type && parsed.data) {
             chartConfig = parsed
             textContent = ""
             return true
@@ -51,8 +58,14 @@ const AgentChat = () => {
       return false
     }
 
+    // If already an object
     if (typeof rawAnswer === "object") {
       if ((rawAnswer.type || rawAnswer.chart_type) && rawAnswer.data) {
+        chartConfig = rawAnswer
+        textContent = ""
+        return { chartConfig, textContent, parseError }
+      }
+      if (rawAnswer.success && rawAnswer.chart_type && rawAnswer.data) {
         chartConfig = rawAnswer
         textContent = ""
         return { chartConfig, textContent, parseError }
@@ -60,23 +73,45 @@ const AgentChat = () => {
       return { chartConfig: null, textContent: JSON.stringify(rawAnswer, null, 2) }
     }
 
+    // If it's a string, try to parse it
     if (typeof rawAnswer === "string") {
       const trimmed = rawAnswer.trim()
 
+      // Try parsing the entire string first
       if (trimmed.startsWith("{")) {
         if (tryParse(trimmed)) {
           return { chartConfig, textContent, parseError: null }
         }
       }
 
-      const successIndex = trimmed.indexOf('{"success"')
-      const chartIndex = trimmed.indexOf('{"chart_type"')
-      const startIndex = successIndex !== -1 ? successIndex : chartIndex
+      // Look for JSON objects in the string
+      const patterns = [
+        /\{"success"\s*:\s*true.*?"chart_type".*?\}/s,
+        /\{"chart_type".*?\}/s,
+        /\{"type".*?"data".*?\}/s
+      ]
 
-      if (startIndex !== -1) {
-        const candidate = trimmed.substring(startIndex)
-        if (tryParse(candidate)) {
-          return { chartConfig, textContent, parseError: null }
+      for (const pattern of patterns) {
+        const match = trimmed.match(pattern)
+        if (match) {
+          // Try to find the complete JSON by counting braces
+          let braceCount = 0
+          let startIdx = match.index
+          let endIdx = startIdx
+          
+          for (let i = startIdx; i < trimmed.length; i++) {
+            if (trimmed[i] === '{') braceCount++
+            if (trimmed[i] === '}') braceCount--
+            if (braceCount === 0 && trimmed[i] === '}') {
+              endIdx = i + 1
+              break
+            }
+          }
+          
+          const candidate = trimmed.substring(startIdx, endIdx)
+          if (tryParse(candidate)) {
+            return { chartConfig, textContent, parseError: null }
+          }
         }
       }
 
