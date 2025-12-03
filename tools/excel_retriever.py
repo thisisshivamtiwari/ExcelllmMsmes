@@ -84,7 +84,7 @@ class ExcelRetriever:
                 "filename_patterns": ["quality", "qc", "inspection"]
             },
             "maintenance": {
-                "keywords": ["maintenance", "breakdown", "repair", "cost", "downtime", "issue"],
+                "keywords": ["maintenance", "breakdown", "repair", "cost", "downtime", "issue", "technician"],
                 "filename_patterns": ["maintenance", "breakdown"]
             },
             "inventory": {
@@ -92,7 +92,7 @@ class ExcelRetriever:
                 "filename_patterns": ["inventory", "stock", "material"]
             },
             "production": {
-                "keywords": ["production", "prod", "quantity", "actual", "target"],
+                "keywords": ["production", "prod", "quantity", "actual", "target", "oee", "efficiency", "line", "machine"],
                 "filename_patterns": ["production", "prod"]
             }
         }

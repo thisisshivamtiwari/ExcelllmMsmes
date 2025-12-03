@@ -305,6 +305,7 @@ def create_trend_analyzer_tool(trend_analyzer, excel_retriever=None, semantic_re
             value_column = params.get("value_column", "")
             period = params.get("period", "daily")
             group_by = params.get("group_by")
+            time_range = params.get("time_range")  # For filtering like "last month"
             
             # If data is a string (query), fetch data using excel_retriever
             if isinstance(data, str) and excel_retriever:
@@ -396,7 +397,8 @@ def create_trend_analyzer_tool(trend_analyzer, excel_retriever=None, semantic_re
                 date_column=date_column,
                 value_column=value_column,
                 period=period,
-                group_by=group_by_list
+                group_by=group_by_list,
+                time_range=time_range
             )
             
             return json.dumps(result, default=str)
@@ -470,17 +472,39 @@ def create_comparative_analyzer_tool(comparative_analyzer, excel_retriever=None,
                         "error": f"Could not find file matching query: '{data}'. Use excel_data_retriever first to get the data, then pass the 'data' array to comparative_analyzer."
                     })
                 
-                # Get columns from semantic search if available
-                columns = []
-                if semantic_retriever:
-                    columns = semantic_retriever.retrieve_columns(data, n_results=10)
-                    columns = [col.get("column_name") for col in columns if col.get("file_id") == file_id]
+                # For comparisons, ALWAYS get ALL columns to ensure compare_by and value_column are included
+                # Don't rely on semantic search which might miss important columns
+                columns_to_retrieve = None  # None means get all columns
                 
-                # Retrieve data - for comparisons, we need all data (no limit)
-                # But we'll handle large datasets in the analyzer
+                # Load metadata to verify columns exist
+                metadata = excel_retriever.load_file_metadata(file_id)
+                if metadata and "schema" in metadata:
+                    schema = metadata["schema"]
+                    if "sheets" in schema:
+                        for sheet_name, sheet_info in schema["sheets"].items():
+                            if "columns" in sheet_info:
+                                all_cols = list(sheet_info["columns"].keys())
+                                logger.info(f"Available columns in file: {all_cols}")
+                                
+                                # Verify compare_by column exists
+                                if compare_by and compare_by not in all_cols:
+                                    return json.dumps({
+                                        "success": False,
+                                        "error": f"Compare by column '{compare_by}' not found. Available columns: {all_cols}"
+                                    })
+                                
+                                # Verify value_column exists
+                                if value_column and value_column not in all_cols:
+                                    return json.dumps({
+                                        "success": False,
+                                        "error": f"Value column '{value_column}' not found. Available columns: {all_cols}"
+                                    })
+                                break
+                
+                # Retrieve data - get ALL columns (None = all columns)
                 retrieve_result = excel_retriever.retrieve_data(
                     file_id=file_id,
-                    columns=columns if columns else None,
+                    columns=columns_to_retrieve,  # None = all columns
                     limit=None  # Get all data for accurate comparisons
                 )
                 
@@ -540,7 +564,7 @@ def create_comparative_analyzer_tool(comparative_analyzer, excel_retriever=None,
     )
 
 
-def create_kpi_calculator_tool(kpi_calculator) -> Tool:
+def create_kpi_calculator_tool(kpi_calculator, excel_retriever=None, semantic_retriever=None) -> Tool:
     """Create LangChain tool for KPI calculation."""
     
     def calculate_kpi(query: str) -> str:
@@ -554,9 +578,51 @@ def create_kpi_calculator_tool(kpi_calculator) -> Tool:
             JSON string with KPI calculation
         """
         try:
-            params = json.loads(query)
+            try:
+                params = json.loads(query)
+            except json.JSONDecodeError as e:
+                return json.dumps({
+                    "success": False,
+                    "error": f"Invalid JSON format: {str(e)}. Expected JSON with 'kpi_name' (string), 'data' (array or query string), and KPI-specific parameters."
+                })
+            
             kpi_name = params.get("kpi_name", "")
             data = params.get("data", [])
+            
+            # If data is a string (query), fetch data using excel_retriever
+            if isinstance(data, str) and excel_retriever:
+                logger.info(f"Data is a query string for KPI calculation, fetching data: {data}")
+                file_id = excel_retriever.find_file_by_name(data)
+                if not file_id:
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Could not find file matching query: '{data}'. Use excel_data_retriever first to get the data."
+                    })
+                
+                # For KPI calculations, get ALL columns to ensure all required columns are available
+                columns_to_retrieve = None  # None means get all columns
+                
+                # Retrieve data
+                retrieve_result = excel_retriever.retrieve_data(
+                    file_id=file_id,
+                    columns=columns_to_retrieve,  # None = all columns
+                    limit=None  # Get all data for KPI calculations
+                )
+                
+                if not retrieve_result.get("success"):
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Failed to retrieve data: {retrieve_result.get('error', 'Unknown error')}"
+                    })
+                
+                data = retrieve_result.get("data", [])
+            
+            # Validate data
+            if not isinstance(data, list) or not data:
+                return json.dumps({
+                    "success": False,
+                    "error": f"Data must be an array of objects. Got: {type(data).__name__}. Use excel_data_retriever first to get the data."
+                })
             
             if kpi_name.upper() == "OEE":
                 result = kpi_calculator.calculate_oee(data=data, **{k: v for k, v in params.items() if k not in ["kpi_name", "data"]})
@@ -582,6 +648,8 @@ def create_kpi_calculator_tool(kpi_calculator) -> Tool:
             
         except Exception as e:
             logger.error(f"Error in calculate_kpi tool: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return json.dumps({
                 "success": False,
                 "error": str(e)
@@ -589,7 +657,7 @@ def create_kpi_calculator_tool(kpi_calculator) -> Tool:
     
     return Tool(
         name="kpi_calculator",
-        description="Calculate manufacturing KPIs (OEE, FPY, defect_rate). Input should be JSON string with 'kpi_name' (string), 'data' (array), and KPI-specific parameters.",
+        description="Calculate manufacturing KPIs (OEE, FPY, defect_rate). Input should be JSON string with 'kpi_name' (string), 'data' (array from excel_data_retriever OR a query string like 'production_logs'), and KPI-specific parameters. If 'data' is a query string, the tool will fetch the data automatically.",
         func=calculate_kpi
     )
 
