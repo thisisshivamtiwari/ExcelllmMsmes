@@ -26,6 +26,9 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
             JSON string with retrieved data
         """
         try:
+            # Normalize query for keyword detection
+            query_lower = query.lower()
+            
             # Step 1: Try to find file by name first (more reliable)
             file_id = excel_retriever.find_file_by_name(query)
             
