@@ -168,6 +168,13 @@ def create_data_calculator_tool(data_calculator) -> Tool:
             JSON string with calculation result
         """
         try:
+            # Check input size to prevent JSON parsing errors with huge datasets
+            if len(query) > 500000:  # ~500KB limit
+                return json.dumps({
+                    "success": False,
+                    "error": f"Input data too large ({len(query)} chars). For large datasets, use summary statistics from excel_data_retriever instead of raw data. Try retrieving data with summary statistics or use a smaller subset."
+                })
+            
             # Parse query to extract parameters
             # For now, expect JSON input format: {"data": [...], "operation": "...", "column": "...", "group_by": "..."}
             # In production, this would use LLM to parse natural language
@@ -179,6 +186,10 @@ def create_data_calculator_tool(data_calculator) -> Tool:
                 operation = params.get("operation", "sum")
                 column = params.get("column", "")
                 group_by = params.get("group_by")
+                
+                # Check if data array is too large
+                if isinstance(data, list) and len(data) > 1000:
+                    logger.warning(f"Large dataset passed to calculator: {len(data)} rows. This may cause performance issues.")
                 
                 group_by_list = None
                 if group_by:
@@ -192,12 +203,20 @@ def create_data_calculator_tool(data_calculator) -> Tool:
                 )
                 
                 return json.dumps(result, default=str)
-            except json.JSONDecodeError:
-                # If not JSON, return error message
-                return json.dumps({
-                    "success": False,
-                    "error": "Invalid input format. Expected JSON with 'data', 'operation', 'column', and optional 'group_by' fields."
-                })
+            except json.JSONDecodeError as e:
+                # Provide more helpful error message
+                error_msg = str(e)
+                if "line 1 column" in error_msg:
+                    # JSON parsing error at specific position - likely truncated or malformed
+                    return json.dumps({
+                        "success": False,
+                        "error": f"JSON parsing error: {error_msg}. The data may be too large. Try using summary statistics from excel_data_retriever instead of passing all raw data. For calculations, you can use: mean * count from summary statistics."
+                    })
+                else:
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Invalid JSON format: {error_msg}. Expected JSON with 'data' (array), 'operation' (string), 'column' (string), and optional 'group_by' (comma-separated string)."
+                    })
             
         except Exception as e:
             logger.error(f"Error in calculate tool: {str(e)}")
@@ -276,12 +295,37 @@ def create_comparative_analyzer_tool(comparative_analyzer) -> Tool:
             JSON string with comparison results
         """
         try:
-            params = json.loads(query)
+            # Check input size to prevent JSON parsing errors with huge datasets
+            if len(query) > 500000:  # ~500KB limit
+                return json.dumps({
+                    "success": False,
+                    "error": f"Input data too large ({len(query)} chars). For large datasets, use summary statistics from excel_data_retriever or retrieve a smaller subset of data."
+                })
+            
+            try:
+                params = json.loads(query)
+            except json.JSONDecodeError as e:
+                error_msg = str(e)
+                if "line 1 column" in error_msg:
+                    return json.dumps({
+                        "success": False,
+                        "error": f"JSON parsing error: {error_msg}. The data may be too large or truncated. Try using summary statistics or a smaller data subset."
+                    })
+                else:
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Invalid JSON format: {error_msg}. Expected JSON with 'data' (array), 'compare_by' (string), 'value_column' (string), 'operation' (sum/avg/count/min/max), and optional 'top_n' (integer)."
+                    })
+            
             data = params.get("data", [])
             compare_by = params.get("compare_by", "")
             value_column = params.get("value_column", "")
             operation = params.get("operation", "sum")
             top_n = params.get("top_n")
+            
+            # Check if data array is too large
+            if isinstance(data, list) and len(data) > 1000:
+                logger.warning(f"Large dataset passed to comparative analyzer: {len(data)} rows. This may cause performance issues.")
             
             result = comparative_analyzer.compare(
                 data=data,
