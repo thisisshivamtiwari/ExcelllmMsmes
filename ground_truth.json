@@ -1,0 +1,172 @@
+{
+  "total_production": 237525,
+  "avg_production_per_day": 272.39105504587155,
+  "product_most_defects": {
+    "product": "Assembly-Z",
+    "defects": 333
+  },
+  "product_highest_production": {
+    "product": "Widget-B",
+    "quantity": 47118
+  },
+  "production_trend_last_month": {
+    "start_date": "2028-02-21",
+    "end_date": "2028-03-22",
+    "total_quantity": 7668,
+    "avg_daily": 247.3548387096774,
+    "days_count": 31
+  },
+  "line_efficiency": [
+    {
+      "Line": "Line-1",
+      "Actual_Qty": 88693,
+      "Target_Qty": 104760,
+      "Downtime_Minutes": 4381,
+      "Efficiency": 84.66,
+      "Efficiency_Pct": 84.66
+    },
+    {
+      "Line": "Line-2",
+      "Actual_Qty": 84508,
+      "Target_Qty": 99630,
+      "Downtime_Minutes": 3913,
+      "Efficiency": 84.82,
+      "Efficiency_Pct": 84.82
+    },
+    {
+      "Line": "Line-3",
+      "Actual_Qty": 64324,
+      "Target_Qty": 75430,
+      "Downtime_Minutes": 2982,
+      "Efficiency": 85.28,
+      "Efficiency_Pct": 85.28
+    }
+  ],
+  "line_highest_production": {
+    "line": "Line-1",
+    "quantity": 88693
+  },
+  "maintenance_costs": {
+    "highest_cost_machine": "Machine-M1",
+    "total_cost": 1030300.0,
+    "by_machine": {
+      "Machine-M1": 401850.0,
+      "Machine-M5": 209100.0,
+      "Machine-M4": 147200.0,
+      "Machine-M3": 137200.0,
+      "Machine-M2": 134950.0
+    }
+  },
+  "total_maintenance_events": 132,
+  "total_material_consumption": 136428.0,
+  "material_consumption_trend": {
+    "total_consumption": 136428.0,
+    "avg_daily": 348.03061224489795,
+    "max_daily": 1890.0,
+    "min_daily": 0.0
+  },
+  "defect_rate_by_product": [
+    {
+      "Product": "Assembly-Z",
+      "Failed_Qty": 333,
+      "Inspected_Qty": 5755,
+      "Defect_Rate": 5.79,
+      "FPY": 94.21
+    },
+    {
+      "Product": "Component-X",
+      "Failed_Qty": 327,
+      "Inspected_Qty": 8670,
+      "Defect_Rate": 3.77,
+      "FPY": 96.23
+    },
+    {
+      "Product": "Component-Y",
+      "Failed_Qty": 268,
+      "Inspected_Qty": 7866,
+      "Defect_Rate": 3.41,
+      "FPY": 96.59
+    },
+    {
+      "Product": "Widget-A",
+      "Failed_Qty": 256,
+      "Inspected_Qty": 9593,
+      "Defect_Rate": 2.67,
+      "FPY": 97.33
+    },
+    {
+      "Product": "Widget-B",
+      "Failed_Qty": 231,
+      "Inspected_Qty": 8655,
+      "Defect_Rate": 2.67,
+      "FPY": 97.33
+    },
+    {
+      "Product": "Widget-C",
+      "Failed_Qty": 272,
+      "Inspected_Qty": 8568,
+      "Defect_Rate": 3.17,
+      "FPY": 96.83
+    }
+  ],
+  "oee_by_machine": [
+    {
+      "machine": "Line-1/Machine-M1",
+      "availability": 0.4929,
+      "performance": 0.8323,
+      "quality": 0.9616,
+      "oee": 0.3945,
+      "actual_qty": 43288,
+      "target_qty": 52010
+    },
+    {
+      "machine": "Line-1/Machine-M2",
+      "availability": 0.6696,
+      "performance": 0.8608,
+      "quality": 0.9659,
+      "oee": 0.5567,
+      "actual_qty": 45405,
+      "target_qty": 52750
+    },
+    {
+      "machine": "Line-2/Machine-M1",
+      "availability": 0.458,
+      "performance": 0.838,
+      "quality": 0.9611,
+      "oee": 0.3689,
+      "actual_qty": 37719,
+      "target_qty": 45010
+    },
+    {
+      "machine": "Line-2/Machine-M2",
+      "availability": 0.7304,
+      "performance": 0.8566,
+      "quality": 0.9625,
+      "oee": 0.6022,
+      "actual_qty": 46789,
+      "target_qty": 54620
+    },
+    {
+      "machine": "Line-3/Machine-M1",
+      "availability": 0.518,
+      "performance": 0.8415,
+      "quality": 0.9584,
+      "oee": 0.4178,
+      "actual_qty": 25656,
+      "target_qty": 30490
+    },
+    {
+      "machine": "Line-3/Machine-M2",
+      "availability": 0.6636,
+      "performance": 0.8604,
+      "quality": 0.9607,
+      "oee": 0.5485,
+      "actual_qty": 38668,
+      "target_qty": 44940
+    }
+  ],
+  "machine_most_downtime": {
+    "machine": "Line-1/Machine-M1",
+    "downtime_minutes": 2638
+  }
+}
