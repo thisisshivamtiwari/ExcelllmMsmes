@@ -75,8 +75,9 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
             columns_to_retrieve = None
             
             # Check if this is a trend/time-based query
+            query_lower_for_trend = query.lower()
             trend_keywords = ["trend", "over time", "last month", "last week", "over the", "time series", "period", "daily", "weekly", "monthly"]
-            is_trend_query = any(keyword in query_lower for keyword in trend_keywords)
+            is_trend_query = any(keyword in query_lower_for_trend for keyword in trend_keywords)
             
             if columns:
                 # Extract column names from semantic search results that match the file we found
