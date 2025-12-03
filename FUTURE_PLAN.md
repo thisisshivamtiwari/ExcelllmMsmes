@@ -1,5 +1,179 @@
 # ExcelLLM - Future Development Plan
 
+
+
+Reviewing FUTURE_PLAN.md and ACTION_PLAN.md to outline next steps:
+
+
+[3 tools called]
+
+
+Reviewing the plan to identify next steps:
+
+
+[2 tools called]
+
+
+Summarizing completed work and outlining next steps:
+
+
+[1 tool called]
+
+
+## Current status
+
+### Completed
+1. Phase 1: Excel/CSV file parser
+   - File upload and storage
+   - Multi-sheet support
+   - Metadata extraction
+
+2. Phase 2: Schema detection and type inference
+   - Automatic type detection (date, numeric, categorical, ID, text, boolean)
+   - Gemini AI integration for semantic analysis
+   - Column definitions management (CRUD)
+   - Cross-file relationship analysis
+   - Relationship caching and optimization
+
+3. Backend infrastructure
+   - FastAPI with CORS
+   - Error handling and logging
+   - File management endpoints
+
+4. Frontend infrastructure
+   - React + Vite + Tailwind CSS
+   - File upload UI
+   - Column definitions management
+   - Enhanced relationship visualization
+
+---
+
+## Next steps (recommended order)
+
+### Phase 3: Semantic indexing and RAG (priority: high)
+Goal: Enable semantic search over Excel data for RAG-based query answering
+
+Why next:
+- Foundation for the LangChain agent
+- Enables natural language queries
+- Uses existing schema and relationships
+
+Tasks:
+1. Embedding pipeline (`embeddings/`)
+   - Generate embeddings for:
+     - Column names and descriptions
+     - User-provided column definitions
+     - Sample data rows (top 10–20 per column)
+     - Relationship descriptions
+   - Use lightweight model: `sentence-transformers/all-MiniLM-L6-v2`
+   - Store in ChromaDB or FAISS
+
+2. Vector store integration
+   - Index all uploaded files' schemas
+   - Index relationships and metadata
+   - Fast similarity search
+
+3. Retrieval system
+   - Semantic search for relevant columns/files
+   - Context-aware retrieval using relationships
+   - Return top-k relevant data for queries
+
+Estimated time: 1–2 weeks
+
+---
+
+### Phase 4: LangChain agent system (priority: high)
+Goal: Build a ReAct-style agent that orchestrates tools to answer queries
+
+Why next:
+- Uses semantic indexing from Phase 3
+- Enables natural language query answering
+- Core intelligence layer
+
+Tasks:
+1. Core tools (`tools/`)
+   - `excel_retriever.py` — Retrieve filtered data
+   - `data_calculator.py` — Aggregations (sum, avg, count)
+   - `trend_analyzer.py` — Time-based trends
+   - `comparative_analyzer.py` — Compare entities
+   - `kpi_calculator.py` — Manufacturing KPIs
+   - `chart_recommender.py` — Visualization recommendations
+
+2. ReAct agent (`agent/`)
+   - Use Llama 4 Maverick (already benchmarked)
+   - Multi-step reasoning
+   - Tool orchestration
+   - Explainable answers
+
+Estimated time: 2–3 weeks
+
+---
+
+### Phase 5: KPI calculation library (priority: medium)
+Goal: Implement canonical manufacturing KPIs
+
+Why next:
+- Supports agent queries
+- Business value for users
+- Uses existing schema relationships
+
+KPIs to implement:
+- OEE (Overall Equipment Effectiveness)
+- FPY (First Pass Yield)
+- Rework Rate
+- Defect Rate (PPM)
+- Production Efficiency
+- Downtime Percentage
+- Material Wastage Rate
+
+Estimated time: 1 week
+
+---
+
+### Phase 6: Visualization generation (priority: medium)
+Goal: Generate chart specifications for frontend rendering
+
+Why next:
+- Completes the query-to-visualization pipeline
+- Enhances user experience
+
+Tasks:
+- Chart type recommendation
+- Vega-Lite/Chart.js spec generation
+- Pre-defined templates
+
+Estimated time: 1 week
+
+---
+
+## Recommended immediate next step
+
+Start Phase 3: Semantic indexing and RAG
+
+Reasons:
+1. Builds on existing schema and relationships
+2. Enables natural language queries
+3. Foundation for the agent system
+4. Can be tested independently
+
+Quick start:
+1. Install dependencies: `sentence-transformers`, `chromadb`
+2. Create `embeddings/` module
+3. Index existing uploaded files
+4. Build retrieval API endpoint
+5. Test with sample queries
+
+Should I start implementing Phase 3: Semantic Indexing & RAG? I can:
+- Set up the embedding pipeline
+- Integrate ChromaDB
+- Create retrieval endpoints
+- Build a semantic search UI
+
+Or would you prefer to focus on a different phase first?
+
+# - Stop all servers - ./STOP_SERVERS.sh
+
+
 ## Current State Assessment
 
 ### ✅ Completed Components

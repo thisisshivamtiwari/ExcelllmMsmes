@@ -21,7 +21,8 @@ class TrendAnalyzer:
         date_column: str,
         value_column: str,
         period: str = 'daily',
-        group_by: Optional[List[str]] = None
+        group_by: Optional[List[str]] = None,
+        time_range: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Analyze trend over time.

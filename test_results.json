@@ -1,0 +1,340 @@
+[
+  {
+    "query": "What is the total production quantity?",
+    "expected": 237525,
+    "actual": "The total production quantity is approximately 237525.0.",
+    "passed": true,
+    "error": null,
+    "timestamp": "2025-12-03T13:24:49.474968"
+  },
+  {
+    "query": "Calculate the total maintenance cost",
+    "expected": 1030300.0,
+    "actual": "The total maintenance cost is approximately 1,030,300.00 Rupees.",
+    "passed": true,
+    "error": null,
+    "timestamp": "2025-12-03T13:25:02.018465"
+  },
+  {
+    "query": "What is the total inventory consumption?",
+    "expected": 136428.0,
+    "actual": "The total inventory consumption is 136390.00 Kg.",
+    "passed": true,
+    "error": null,
+    "timestamp": "2025-12-03T13:25:11.097346"
+  },
+  {
+    "query": "What is the average production per day?",
+    "expected": 272.39105504587155,
+    "actual": "The average production per day is approximately 272.39 units.",
+    "passed": true,
+    "error": null,
+    "timestamp": "2025-12-03T13:25:25.766764"
+  },
+  {
+    "query": "Calculate total downtime in hours",
+    "expected": 495.3833333333334,
+    "actual": "The total downtime is approximately 307.45 hours.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:25:35.925029"
+  },
+  {
+    "query": "Which product has the most defects?",
+    "expected": {
+      "product": "Assembly-Z",
+      "defects": 333
+    },
+    "actual": "The available `quality_control` data does not contain a 'Product' column, so I cannot identify which specific product has the most defects. However, based on the 'Defect_Type' column, the defect type with the most failures is \"Dimensional\" with a total of 659 failed units.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:26:26.332302"
+  },
+  {
+    "query": "What is the most common defect type?",
+    "expected": {
+      "type": "Dimensional",
+      "count": 659
+    },
+    "actual": "The most common defect type is \"Dimensional\" with 213 occurrences.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:26:29.933738"
+  },
+  {
+    "query": "Which production line has the highest production?",
+    "expected": {
+      "line": "Line-2/Machine-M2",
+      "production": 46789
+    },
+    "actual": "Production Line 1 has the highest total production with 88693.0 units.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:26:46.628523"
+  },
+  {
+    "query": "Compare production efficiency across different lines",
+    "expected": null,
+    "actual": null,
+    "passed": false,
+    "error": "No generation chunks were returned",
+    "timestamp": "2025-12-03T13:27:31.602655"
+  },
+  {
+    "query": "Which material has the highest wastage?",
+    "expected": {
+      "material": "Steel Sheet 101",
+      "wastage": 1217.0
+    },
+    "actual": "Supplier-A has the highest wastage with a total of 1580.0 Kg.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:27:46.049744"
+  },
+  {
+    "query": "Show me production trends over the last month",
+    "expected": null,
+    "actual": null,
+    "passed": false,
+    "error": "No generation chunks were returned",
+    "timestamp": "2025-12-03T13:28:40.923581"
+  },
+  {
+    "query": "What is the production trend over time?",
+    "expected": null,
+    "actual": "I am unable to determine the production trend over time. The `excel_data_retriever` tool is not providing the 'Date' column from the 'production_logs' data, which is necessary for time-based trend analysis. Additionally, the `trend_analyzer` tool is encountering an internal error.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:29:09.695261"
+  },
+  {
+    "query": "Show quality control trends",
+    "expected": null,
+    "actual": "I cannot show quality control trends over time because the 'quality_control' data does not contain a date column. The available columns are 'Defect_Type', 'Inspected_Qty', and 'Failed_Qty'.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:29:20.311925"
+  },
+  {
+    "query": "Analyze maintenance frequency trends",
+    "expected": null,
+    "actual": null,
+    "passed": false,
+    "error": "No generation chunks were returned",
+    "timestamp": "2025-12-03T13:29:38.690049"
+  },
+  {
+    "query": "Show inventory consumption trends",
+    "expected": null,
+    "actual": "I cannot show inventory consumption trends because the `inventory_logs` file does not contain a 'Date' column, which is essential for analyzing trends over time. The available columns are 'Opening_Stock_Kg', 'Supplier', and 'Closing_Stock_Kg'.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:30:40.140233"
+  },
+  {
+    "query": "Calculate OEE for all machines",
+    "expected": null,
+    "actual": "The Overall Equipment Effectiveness (OEE) for all machines is 100.0%. This is broken down into:\n- Availability: 100.0%\n- Performance: 100.0%\n- Quality: 100.0%",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:30:45.135015"
+  },
+  {
+    "query": "What is the quality pass rate?",
+    "expected": 96.56464455169325,
+    "actual": "The overall quality pass rate is 96.58%. This is calculated from a total of 49100 inspected units and 47420 passed units.",
+    "passed": true,
+    "error": null,
+    "timestamp": "2025-12-03T13:30:59.318342"
+  },
+  {
+    "query": "Calculate FPY (First Pass Yield)",
+    "expected": null,
+    "actual": "The First Pass Yield (FPY) is calculated as (Total Passed Quantity / Total Inspected Quantity) * 100.\nBased on the provided quality control data:\nTotal Inspected Quantity = 72.75111111111111 (mean) * 675 (row count) = 49101\nTotal Passed Quantity = 70.25185185185185 (mean) * 675 (row count) = 47420\n\nFPY = (47420 / 49101) * 100 = 96.576%",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:31:21.444632"
+  },
+  {
+    "query": "What is the defect rate?",
+    "expected": null,
+    "actual": "The defect rate is approximately 3.44%.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:31:29.499391"
+  },
+  {
+    "query": "Calculate production efficiency",
+    "expected": {
+      "line": "Line-1/Machine-M2",
+      "efficiency": 85.95721765738904
+    },
+    "actual": "The Production Efficiency (OEE) is 100.0%. This is broken down into Availability: 100.0%, Performance: 100.0%, and Quality: 100.0%.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:31:33.276551"
+  },
+  {
+    "query": "Which products have the highest defect rates?",
+    "expected": null,
+    "actual": "Based on the analysis of quality control data, the defect types with the highest defect rates are:\n\n1.  **Assembly Error**: 6.10%\n2.  **Dimensional**: 4.15%\n3.  **Material Defect**: 2.93%\n4.  **Surface Finish**: 2.88%\n5.  **Packaging Issue**: 2.36%",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:31:55.604869"
+  },
+  {
+    "query": "How does maintenance downtime affect production?",
+    "expected": null,
+    "actual": null,
+    "passed": false,
+    "error": "No generation chunks were returned",
+    "timestamp": "2025-12-03T13:32:48.169495"
+  },
+  {
+    "query": "Which machines have the most breakdowns?",
+    "expected": null,
+    "actual": "The machines or components experiencing the most breakdowns, based on the issue descriptions in the maintenance logs, are:\n1. Hydraulic pump failure (5 occurrences)\n2. Motor overheating and shutdown (3 occurrences)\n3. Belt tension adjustment (3 occurrences)\n4. Conveyor belt slippage (2 occurrences)\n5. Bearing failure (2 occurrences)",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:33:04.387571"
+  },
+  {
+    "query": "What is the relationship between material consumption and production?",
+    "expected": null,
+    "actual": "Based on the available data:\n- The total material consumption across all recorded inventory logs is approximately 136,400 Kg.\n- The total actual production quantity across all recorded production logs is approximately 237,525 units.\n\nWithout a common date or product identifier in both datasets, a direct, granular correlation (e.g., material consumed per unit of a specific product on a specific day) cannot be established. However, at an aggregate level, we can observe the total material input relative to the total production output over the periods covered by these logs. This suggests that, on average, approximately 0.57 Kg of material is consumed for every unit produced (136400 Kg / 237525 units). This ratio can serve as a high-level indicator of material efficiency.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:33:25.893099"
+  },
+  {
+    "query": "Which supplier provides the most materials?",
+    "expected": {
+      "supplier": "Supplier-C",
+      "count": 5
+    },
+    "actual": "I cannot determine which supplier provides the most materials as the `inventory_logs` data does not contain supplier information. The available columns are \"Opening_Stock_Kg\", \"Closing_Stock_Kg\", \"Received_Kg\", and \"Wastage_Kg\".",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:33:39.857889"
+  },
+  {
+    "query": "Find products with zero defects",
+    "expected": null,
+    "actual": "Based on the analysis of the quality control data, all products recorded have a sum of 'Failed_Qty' greater than zero. Therefore, there are no products with zero defects.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:33:51.864529"
+  },
+  {
+    "query": "Which machines have never had maintenance?",
+    "expected": null,
+    "actual": "Based on the analysis of `production_logs` and `maintenance_logs`:\nThe machines identified in `production_logs` are \"Machine-M1\" and \"Machine-M2\" (derived from \"Line-X/Machine-MX\" entries).\nThe machines identified in `maintenance_logs` are \"Machine-M1\", \"Machine-M2\", \"Machine-M3\", \"Machine-M4\", and \"Machine-M5\".\n\nBoth \"Machine-M1\" and \"Machine-M2\" (the machines actively producing) have records in the `maintenance_logs`. Therefore, there are no machines that are actively producing that have never had maintenance.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:34:26.709098"
+  },
+  {
+    "query": "What is the production on weekends?",
+    "expected": null,
+    "actual": "I am unable to determine the production on weekends because the `excel_data_retriever` tool did not return the 'Date' column, which is necessary to identify weekend days. The available data only includes 'Actual_Qty' and 'Target_Qty'.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:34:42.971817"
+  },
+  {
+    "query": "Show me data for a specific date range",
+    "expected": null,
+    "actual": "I need more information to retrieve data for a specific date range. Please tell me:\n\n1.  **What specific data are you interested in?** (e.g., \"production logs\", \"quality control data\", \"maintenance logs\", \"inventory logs\", or specific columns like \"production quantity\", \"defect count\")\n2.  **What is the start date?** (Please provide in YYYY-MM-DD format)\n3.  **What is the end date?** (Please provide in YYYY-MM-DD format)",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:35:30.967844"
+  },
+  {
+    "query": "What is the production by shift?",
+    "expected": null,
+    "actual": "I am unable to calculate the total production by shift directly. The `excel_data_retriever` tool indicated that the dataset is too large (872 rows) to return in full, and truncated the data. The `data_calculator` tool requires the full dataset as an array to perform grouped aggregations, which I cannot provide due to the truncation. The summary statistics provided by `excel_data_retriever` include the count of each shift but only the overall mean for `Actual_Qty`, not the mean per shift, preventing me from calculating the total production per shift using summary statistics.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:35:59.027249"
+  },
+  {
+    "query": "Which products have both high production and high defect rates?",
+    "expected": null,
+    "actual": "Based on the analysis, the products that exhibit both relatively high production and high defect rates are:\n*   **Component-X**: Has the 2nd highest defect rate (3.772%) and the 5th highest production (39,482 units).\n*   **Component-Y**: Has the 3rd highest defect rate (3.407%) and the 4th highest production (40,995 units).\n*   **Widget-C**: Has the 3rd highest production (42,085 units) and the 4th highest defect rate (3.175%).\n\nWhile no single product is at the very top of both lists, these three products show a combination of significant production volume and elevated defect rates.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:36:28.400785"
+  },
+  {
+    "query": "What is the correlation between maintenance cost and production downtime?",
+    "expected": null,
+    "actual": "I cannot directly calculate the correlation between maintenance cost and production downtime with the available tools and data.\n\nThe `maintenance_logs` file contains `Downtime_Hours` (average 2.33 hours per event over 132 events), but it does not have a specific 'maintenance cost' column. While 'Parts_Replaced' is available, there's no associated cost data for these parts.\n\nMy tools do not support direct correlation coefficient calculation. I can retrieve and aggregate data, analyze trends, compare entities, and calculate specific KPIs, but not statistical correlations between arbitrary columns.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:36:38.611829"
+  },
+  {
+    "query": "Which materials are consumed most for high-production products?",
+    "expected": null,
+    "actual": "I have identified the top 5 high-production products: Widget-B, Widget-A, Widget-C, Component-Y, and Component-X. However, the `inventory_logs` data, which contains material consumption, does not have a 'Product' column. Therefore, I cannot directly link material consumption to specific products to determine which materials are consumed most for these high-production products. The available data does not provide a Bill of Materials or a similar linkage between products and their consumed materials.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:36:54.426335"
+  },
+  {
+    "query": "Show me machines with frequent breakdowns and their production impact",
+    "expected": null,
+    "actual": null,
+    "passed": false,
+    "error": "No generation chunks were returned",
+    "timestamp": "2025-12-03T13:37:05.073883"
+  },
+  {
+    "query": "What is the quality pass rate by production line?",
+    "expected": null,
+    "actual": "I cannot calculate the quality pass rate by production line as the provided `quality_control` data does not contain a 'production line' column. The available columns are 'Defect_Type', 'Inspected_Qty', and 'Failed_Qty'.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:37:13.638801"
+  },
+  {
+    "query": "Verify that Closing_Stock = Opening_Stock + Received - Consumption - Wastage",
+    "expected": null,
+    "actual": "The formula `Closing_Stock = Opening_Stock + Received - Consumption - Wastage` does not consistently hold true based on the provided inventory logs.\nFor example, in the first entry:\nOpening_Stock = 5000, Received = 0, Consumption = 645, Wastage = 15, Closing_Stock = 4355\nCalculated Closing_Stock = 5000 + 0 - 645 - 15 = 4340.\nThe actual Closing_Stock (4355) is not equal to the calculated Closing_Stock (4340), showing a difference of 15 Kg.\nSimilar discrepancies are observed in other entries and when aggregating totals across the entire dataset.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:37:30.553685"
+  },
+  {
+    "query": "Verify that Inspected_Qty = Passed_Qty + Failed_Qty",
+    "expected": null,
+    "actual": "The relationship `Inspected_Qty = Passed_Qty + Failed_Qty` is verified to be true based on the provided quality control data. The sum of the mean `Passed_Qty` (70.25) and mean `Failed_Qty` (2.50) equals the mean `Inspected_Qty` (72.75) across all 675 records, confirming the relationship.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:37:45.733177"
+  },
+  {
+    "query": "Calculate production efficiency as Actual_Qty / Target_Qty * 100",
+    "expected": null,
+    "actual": "The overall production efficiency is approximately 84.92%.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:37:54.339472"
+  },
+  {
+    "query": "What is the defect rate percentage?",
+    "expected": null,
+    "actual": "The defect rate percentage is approximately 3.44%.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:38:44.924418"
+  },
+  {
+    "query": "Calculate total inventory value",
+    "expected": null,
+    "actual": "I cannot calculate the total inventory value because the `excel_data_retriever` tool returned data from `maintenance_logs.csv` which does not contain 'quantity' and 'unit_cost' columns from `inventory_logs` that are required for this calculation.",
+    "passed": false,
+    "error": null,
+    "timestamp": "2025-12-03T13:38:50.458109"
+  }
+]

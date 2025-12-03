@@ -1,18 +1,51 @@
 import { Link, useLocation } from "react-router-dom"
-import { FiHome, FiBarChart2, FiX, FiChevronLeft, FiChevronRight, FiDatabase, FiTrendingUp, FiHelpCircle, FiCode, FiLayers, FiUpload } from "react-icons/fi"
+import { FiHome, FiBarChart2, FiX, FiChevronLeft, FiChevronRight, FiDatabase, FiTrendingUp, FiHelpCircle, FiCode, FiLayers, FiUpload, FiSearch, FiMessageCircle, FiFileText } from "react-icons/fi"
 
 const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   const location = useLocation()
 
-  const menuItems = [
-    { path: "/", label: "Dashboard", icon: FiHome },
-    { path: "/file-upload", label: "File Upload", icon: FiUpload },
-    { path: "/data-generator", label: "Data Generator", icon: FiDatabase },
-    { path: "/visualization", label: "Visualization", icon: FiTrendingUp },
-    { path: "/question-generator", label: "Question Generator", icon: FiHelpCircle },
-    { path: "/benchmarking", label: "LLM Benchmarking", icon: FiBarChart2 },
-    { path: "/prompt-engineering", label: "Model Optimization", icon: FiCode },
-    { path: "/comparison", label: "Comparison Analysis", icon: FiLayers },
+  const menuSections = [
+    {
+      title: "General",
+      items: [
+        { path: "/", label: "Dashboard", icon: FiHome },
+      ],
+    },
+    {
+      title: "Phase 1: Excel Processing",
+      items: [
+        { path: "/file-upload", label: "File Upload", icon: FiUpload },
+      ],
+    },
+    {
+      title: "Phase 2: Schema Analysis",
+      items: [
+        { path: "/schema-analysis", label: "Schema Analysis", icon: FiFileText },
+      ],
+    },
+    {
+      title: "Phase 3: Semantic Search",
+      items: [
+        { path: "/semantic-search", label: "Semantic Search", icon: FiSearch },
+      ],
+    },
+    {
+      title: "Phase 4: AI Agent",
+      items: [
+        { path: "/agent-chat", label: "AI Agent Chat", icon: FiMessageCircle },
+      ],
+    },
+    {
+      title: "Tools & Utilities",
+      items: [
+        { path: "/data-generator", label: "Data Generator", icon: FiDatabase },
+        { path: "/visualization", label: "Visualization", icon: FiTrendingUp },
+        { path: "/question-generator", label: "Question Generator", icon: FiHelpCircle },
+        { path: "/benchmarking", label: "LLM Benchmarking", icon: FiBarChart2 },
+        { path: "/prompt-engineering", label: "Model Optimization", icon: FiCode },
+        { path: "/comparison", label: "Comparison Analysis", icon: FiLayers },
+      ],
+    },
   ]
 
   const handleKeyDown = (e) => {
@@ -86,43 +119,63 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
           </div>
 
           {/* Navigation Menu */}
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {menuItems.map((item) => {
-              const Icon = item.icon
-              const isActive = location.pathname === item.path
+          <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+            {menuSections.map((section, sectionIndex) => (
+              <div key={section.title} className="space-y-2">
+                {/* Section Header */}
+                {!isCollapsed && (
+                  <div className="px-4 py-2">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      {section.title}
+                    </h3>
+                  </div>
+                )}
+                {/* Section Items */}
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const Icon = item.icon
+                    const isActive = location.pathname === item.path || 
+                      (item.path !== "/" && location.pathname.startsWith(item.path + "/"))
 
-              return (
-                <div key={item.path} className="relative">
-                  <Link
-                    to={item.path}
-                    onClick={() => {
-                      // Only close sidebar on mobile devices
-                      if (window.innerWidth < 1024) {
-                        onClose()
-                      }
-                    }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 transition-all duration-200 group ${
-                      isActive
-                        ? "bg-white/10 text-white shadow-lg backdrop-blur-sm border border-white/20"
-                        : "hover:bg-white/5 hover:text-gray-100"
-                    } ${isCollapsed ? "justify-center" : ""}`}
-                    tabIndex={0}
-                    title={isCollapsed ? item.label : ""}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                    {!isCollapsed && (
-                      <span className="font-medium whitespace-nowrap">{item.label}</span>
-                    )}
-                  </Link>
-                  {/* Tooltip for collapsed state */}
-                  {isCollapsed && (
-                    <span className="absolute left-full ml-2 px-3 py-2 bg-gray-800/95 backdrop-blur-sm text-gray-100 text-sm rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity border border-gray-700">
-                      {item.label}
-                    </span>
-                  )}
+                    return (
+                      <div key={item.path} className="relative">
+                        <Link
+                          to={item.path}
+                          onClick={() => {
+                            // Only close sidebar on mobile devices
+                            if (window.innerWidth < 1024) {
+                              onClose()
+                            }
+                          }}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 transition-all duration-200 group ${
+                            isActive
+                              ? "bg-white/10 text-white shadow-lg backdrop-blur-sm border border-white/20"
+                              : "hover:bg-white/5 hover:text-gray-100"
+                          } ${isCollapsed ? "justify-center" : ""}`}
+                          tabIndex={0}
+                          title={isCollapsed ? item.label : ""}
+                        >
+                          <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                          {!isCollapsed && (
+                            <span className="font-medium whitespace-nowrap">{item.label}</span>
+                          )}
+                        </Link>
+                        {/* Tooltip for collapsed state */}
+                        {isCollapsed && (
+                          <span className="absolute left-full ml-2 px-3 py-2 bg-gray-800/95 backdrop-blur-sm text-gray-100 text-sm rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity border border-gray-700">
+                            {item.label}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
+                {/* Section Separator */}
+                {sectionIndex < menuSections.length - 1 && !isCollapsed && (
+                  <div className="pt-2 border-b border-gray-800/50" />
+                )}
+              </div>
+            ))}
           </nav>
 
           {/* Sidebar Footer */}

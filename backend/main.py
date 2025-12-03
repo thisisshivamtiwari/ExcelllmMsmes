@@ -117,14 +117,15 @@ except ImportError as e:
 
 # Phase 4: LangChain Agent System imports
 try:
-    from tools import ExcelRetriever, DataCalculator, TrendAnalyzer, ComparativeAnalyzer, KPICalculator
+    from tools import ExcelRetriever, DataCalculator, TrendAnalyzer, ComparativeAnalyzer, KPICalculator, GraphGenerator
     from agent import ExcelAgent
     from agent.tool_wrapper import (
         create_excel_retriever_tool,
         create_data_calculator_tool,
         create_trend_analyzer_tool,
         create_comparative_analyzer_tool,
-        create_kpi_calculator_tool
+        create_kpi_calculator_tool,
+        create_graph_generator_tool
     )
     AGENT_AVAILABLE = True
     
@@ -2909,6 +2910,10 @@ def get_agent_tools():
     tools.append(create_trend_analyzer_tool(trend_analyzer, excel_retriever, semantic_retriever))
     tools.append(create_comparative_analyzer_tool(comparative_analyzer, excel_retriever, semantic_retriever))
     tools.append(create_kpi_calculator_tool(kpi_calculator, excel_retriever, semantic_retriever))
+    
+    # Add graph generator tool
+    graph_generator = GraphGenerator()
+    tools.append(create_graph_generator_tool(graph_generator, excel_retriever, semantic_retriever))
     
     return tools
 

@@ -10,6 +10,9 @@ import Benchmarking from "@/pages/Benchmarking"
 import PromptEngineering from "@/pages/PromptEngineering"
 import ComparisonAnalysis from "@/pages/ComparisonAnalysis"
 import FileUpload from "@/pages/FileUpload"
+import SemanticSearch from "@/pages/SemanticSearch"
+import AgentChat from "@/pages/AgentChat"
+import SchemaAnalysis from "@/pages/SchemaAnalysis"
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -63,6 +66,10 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/file-upload" element={<FileUpload />} />
+              <Route path="/schema-analysis" element={<SchemaAnalysis />} />
+              <Route path="/schema-analysis/:fileId" element={<SchemaAnalysis />} />
+              <Route path="/semantic-search" element={<SemanticSearch />} />
+              <Route path="/agent-chat" element={<AgentChat />} />
               <Route path="/data-generator" element={<DataGenerator />} />
               <Route path="/visualization" element={<Visualization />} />
               <Route path="/question-generator" element={<QuestionGenerator />} />

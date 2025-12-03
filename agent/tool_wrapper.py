@@ -661,3 +661,161 @@ def create_kpi_calculator_tool(kpi_calculator, excel_retriever=None, semantic_re
         func=calculate_kpi
     )
 
+
+def create_graph_generator_tool(graph_generator, excel_retriever=None, semantic_retriever=None) -> Tool:
+    """Create LangChain tool for graph/chart generation."""
+    
+    def generate_graph(query: str) -> str:
+        """
+        Generate chart/graph data for visualization.
+        
+        Supports chart types:
+        - line: Time series data (x=date/time, y=value)
+        - bar: Categorical data (x=categories, y=values)
+        - pie: Distribution data (labels, values)
+        - scatter: Correlation data (x, y coordinates)
+        - area: Filled line chart
+        - heatmap: 2D matrix visualization
+        
+        Input should be JSON string with:
+        {
+            "chart_type": "line|bar|pie|scatter|area|heatmap",
+            "data": <array from excel_data_retriever OR query string>,
+            "x_column": "column_name",
+            "y_column": "column_name",
+            "group_by": "optional_column",
+            "title": "optional_title",
+            ... (chart-specific parameters)
+        }
+        
+        If 'data' is a query string (e.g., "production_logs"), the tool will fetch data automatically.
+        """
+        try:
+            # Parse query
+            if isinstance(query, str):
+                try:
+                    params = json.loads(query)
+                except json.JSONDecodeError:
+                    return json.dumps({
+                        "success": False,
+                        "error": "Invalid JSON. Input must be a JSON string with chart_type, data, x_column, y_column, etc."
+                    })
+            else:
+                params = query
+            
+            chart_type = params.get("chart_type", "").lower()
+            data = params.get("data")
+            
+            # Handle data parameter - can be array or query string
+            if isinstance(data, str):
+                # It's a query string - fetch data using excel_retriever
+                if not excel_retriever:
+                    return json.dumps({
+                        "success": False,
+                        "error": "excel_retriever not available. Cannot fetch data from query string."
+                    })
+                
+                # Find file
+                file_id = excel_retriever.find_file_by_name(data)
+                if not file_id:
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Could not find file matching query: '{data}'"
+                    })
+                
+                # Get all columns for graph generation
+                retrieve_result = excel_retriever.retrieve_data(
+                    file_id=file_id,
+                    columns=None,  # Get all columns
+                    limit=None  # Get all data
+                )
+                
+                if not retrieve_result.get("success"):
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Failed to retrieve data: {retrieve_result.get('error', 'Unknown error')}"
+                    })
+                
+                data = retrieve_result.get("data", [])
+            
+            # Validate data
+            if not isinstance(data, list) or not data:
+                return json.dumps({
+                    "success": False,
+                    "error": "Data must be an array of objects or a query string"
+                })
+            
+            # Generate chart based on type
+            if chart_type == "line":
+                result = graph_generator.generate_line_chart(
+                    data=data,
+                    x_column=params.get("x_column"),
+                    y_column=params.get("y_column"),
+                    group_by=params.get("group_by"),
+                    title=params.get("title")
+                )
+            elif chart_type == "bar":
+                result = graph_generator.generate_bar_chart(
+                    data=data,
+                    x_column=params.get("x_column"),
+                    y_column=params.get("y_column"),
+                    group_by=params.get("group_by"),
+                    aggregation=params.get("aggregation", "sum"),
+                    title=params.get("title")
+                )
+            elif chart_type == "pie":
+                result = graph_generator.generate_pie_chart(
+                    data=data,
+                    label_column=params.get("label_column") or params.get("x_column"),
+                    value_column=params.get("value_column") or params.get("y_column"),
+                    title=params.get("title")
+                )
+            elif chart_type == "scatter":
+                result = graph_generator.generate_scatter_chart(
+                    data=data,
+                    x_column=params.get("x_column"),
+                    y_column=params.get("y_column"),
+                    size_column=params.get("size_column"),
+                    color_column=params.get("color_column"),
+                    title=params.get("title")
+                )
+            elif chart_type == "area":
+                result = graph_generator.generate_area_chart(
+                    data=data,
+                    x_column=params.get("x_column"),
+                    y_column=params.get("y_column"),
+                    group_by=params.get("group_by"),
+                    title=params.get("title")
+                )
+            elif chart_type == "heatmap":
+                result = graph_generator.generate_heatmap(
+                    data=data,
+                    x_column=params.get("x_column"),
+                    y_column=params.get("y_column"),
+                    value_column=params.get("value_column") or params.get("y_column"),
+                    aggregation=params.get("aggregation", "sum"),
+                    title=params.get("title")
+                )
+            else:
+                result = {
+                    "success": False,
+                    "error": f"Unknown chart type: {chart_type}. Supported types: line, bar, pie, scatter, area, heatmap"
+                }
+            
+            return json.dumps(result, default=str)
+            
+        except Exception as e:
+            logger.error(f"Error in generate_graph tool: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    return Tool(
+        name="graph_generator",
+        description="Generate chart/graph data for visualization. Supports line, bar, pie, scatter, area, and heatmap charts. Input should be JSON string with 'chart_type', 'data' (array or query string), 'x_column', 'y_column', and chart-specific parameters. If 'data' is a query string (e.g., 'production_logs'), the tool will fetch data automatically.",
+        func=generate_graph
+    )
+
