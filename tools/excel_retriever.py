@@ -291,16 +291,15 @@ class ExcelRetriever:
             # Preprocess data
             df = self.preprocess_dataframe(df, schema)
             
-            # Select columns
+            # Select columns (if None, use all columns)
             if columns:
                 available_cols = [col for col in columns if col in df.columns]
                 if available_cols:
                     df = df[available_cols]
                 else:
-                    return {
-                        "success": False,
-                        "error": f"None of the requested columns found: {columns}"
-                    }
+                    # If none of the requested columns found, log warning but continue with all columns
+                    logger.warning(f"None of the requested columns found: {columns}. Using all available columns.")
+                    # Don't fail - just use all columns instead (for calculations)
             
             # Apply filters
             if filters:
