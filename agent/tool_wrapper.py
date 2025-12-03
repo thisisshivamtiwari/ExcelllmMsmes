@@ -95,7 +95,6 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
             
             # Step 7: Retrieve data
             # Check if query is asking for a calculation (sum, total, average, etc.)
-            # If so, don't limit data - we need all rows for accurate calculations
             query_lower = query.lower()
             calculation_keywords = [
                 "total", "sum", "average", "avg", "mean", "count", "how many",
@@ -108,11 +107,12 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
                                  "inspected", "consumption", "wastage", "downtime"]
             has_numeric_operation = any(op in query_lower for op in numeric_operations)
             
-            # For calculation queries OR numeric operations, get all data (no limit)
-            # For display queries, limit to 50 rows to prevent token overflow
-            limit_value = None if (is_calculation_query or has_numeric_operation) else 50
+            # IMPORTANT: For large datasets, we need to retrieve all data to get accurate summary statistics
+            # BUT we'll truncate the returned data to prevent JSON parsing errors
+            # The summary statistics will have the accurate mean/count for calculations
+            limit_value = None  # Always retrieve all data to get accurate summary stats
             
-            logger.info(f"Query: '{query}' | Calculation query: {is_calculation_query} | Numeric operation: {has_numeric_operation} | Limit: {limit_value}")
+            logger.info(f"Query: '{query}' | Calculation query: {is_calculation_query} | Numeric operation: {has_numeric_operation} | Retrieving all data for summary stats")
             
             result = excel_retriever.retrieve_data(
                 file_id=file_id,
@@ -120,25 +120,27 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
                 limit=limit_value
             )
             
-            # Step 8: For calculation queries, provide summary statistics for large datasets
-            # For display queries, truncate to 50 rows
+            # Step 8: For calculation queries, ALWAYS truncate data but keep summary statistics
+            # This prevents JSON parsing errors when agent tries to pass data to calculator
             if result.get("success"):
                 original_row_count = result.get("row_count", 0)
                 data_rows = result.get("data", [])
+                summary = result.get("summary", {})
+                numeric_cols = summary.get("numeric_columns", {})
                 
                 if is_calculation_query or has_numeric_operation:
-                    # For large datasets, provide summary statistics instead of all data
-                    # This prevents JSON parsing errors when passing to calculator
-                    if original_row_count > 500:
-                        # Keep summary statistics and first 100 rows for reference
-                        summary = result.get("summary", {})
-                        numeric_cols = summary.get("numeric_columns", {})
-                        
-                        result["data"] = data_rows[:100]  # Keep first 100 rows for reference
+                    # For calculation queries, ALWAYS truncate to prevent JSON errors
+                    # Use summary statistics for accurate calculations
+                    max_rows_for_calculation = 100  # Safe limit to prevent JSON parsing errors
+                    
+                    if original_row_count > max_rows_for_calculation:
+                        # Truncate data but keep summary statistics
+                        result["data"] = data_rows[:max_rows_for_calculation]
                         result["truncated"] = True
                         result["total_rows_available"] = original_row_count
-                        result["note"] = f"Retrieved {original_row_count} rows. For calculations, use summary statistics below or data_calculator with summary.mean * summary.count. Summary: {numeric_cols}"
-                        result["calculation_hint"] = "For large datasets, use summary statistics: mean * count = total"
+                        result["note"] = f"Retrieved {original_row_count} rows. Data truncated to {max_rows_for_calculation} rows to prevent JSON errors. Use summary statistics for accurate calculations: mean * count = total. Summary statistics: {numeric_cols}"
+                        result["calculation_hint"] = f"For accurate calculations, use summary statistics: mean * count = total. Example: {numeric_cols.get(list(numeric_cols.keys())[0] if numeric_cols else {}, {}).get('mean', 0)} * {original_row_count} = total"
+                        result["use_summary_stats"] = True
                     else:
                         # Small dataset - keep all data
                         result["note"] = f"Retrieved all {original_row_count} rows for calculation. Use data_calculator tool with this data."

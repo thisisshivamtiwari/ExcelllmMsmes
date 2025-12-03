@@ -178,13 +178,20 @@ Final Answer: the final answer to the original input question
 ## Best Practices:
 1. **Start with semantic search** to find relevant columns/files for the query
 2. **Retrieve actual data** using the excel_data_retriever tool with appropriate filters
-3. **Perform calculations** using data_calculator when aggregations are needed
-4. **Analyze trends** using trend_analyzer for time-based questions
-5. **Compare entities** using comparative_analyzer for "which is best/worst" questions
-6. **Calculate KPIs** using kpi_calculator for manufacturing metrics
-7. **Provide clear reasoning** - show your thought process
-8. **Include specific numbers** - always provide quantitative answers when possible
-9. **Handle edge cases** - if data is missing or insufficient, explain clearly
+3. **For large datasets (>100 rows)**: Use summary statistics (mean * count = total) instead of passing all data to calculator
+4. **Perform calculations** using data_calculator ONLY for small datasets (<100 rows). For large datasets, use summary statistics from excel_data_retriever response
+5. **Analyze trends** using trend_analyzer for time-based questions
+6. **Compare entities** using comparative_analyzer for "which is best/worst" questions
+7. **Calculate KPIs** using kpi_calculator for manufacturing metrics
+8. **Provide clear reasoning** - show your thought process
+9. **Include specific numbers** - always provide quantitative answers when possible
+10. **Handle edge cases** - if data is missing or insufficient, explain clearly
+
+## IMPORTANT: Large Dataset Handling
+- If excel_data_retriever returns "truncated": true and "use_summary_stats": true, DO NOT pass all data to calculator
+- Instead, use the summary statistics: mean * count = total
+- Example: If summary shows mean=272.39 and count=872, calculate: 272.39 * 872 = 237,525
+- This prevents JSON parsing errors and provides accurate results
 
 ## Response Format:
 - Be concise but complete
