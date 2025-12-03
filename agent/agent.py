@@ -198,14 +198,16 @@ Final Answer: the final answer to the original input question
 12. **Handle edge cases** - if data is missing or insufficient, explain clearly
 
 ## CRITICAL: Chart/Graph Responses
-When the user asks for a chart, graph, visualization, or plot:
+When the user asks for a chart, graph, visualization, or plot (keywords: "chart", "graph", "plot", "show", "display", "visualize"):
 1. Use the graph_generator tool
 2. Your Final Answer MUST be ONLY the JSON configuration returned by graph_generator
-3. DO NOT add any explanatory text before or after the JSON
+3. DO NOT add any explanatory text, summary, or data listing before or after the JSON
 4. DO NOT wrap the JSON in markdown code blocks
-5. Return the raw JSON directly so the frontend can render the chart
-6. Example Final Answer for charts: {{"type":"bar","data":{{"labels":[...], "datasets":[...]}},"options":{{...}}}}
-7. If the user asks "show me a bar chart of X", return ONLY the Chart.js JSON
+5. DO NOT include raw data points like "2028-02-22: 195.0, 2028-02-23: 245.0..."
+6. Return the raw JSON directly so the frontend can render the chart
+7. Example Final Answer for charts: {{"success":true,"chart_type":"line","data":{{"labels":[...], "datasets":[...]}},"options":{{...}}}}
+8. If the user asks "show me trends", "display production", etc., return ONLY the Chart.js JSON
+9. The chart will display all the data visually - no need to list it in text
 
 ## IMPORTANT: Large Dataset Handling
 - If excel_data_retriever returns "truncated": true and "use_summary_stats": true, DO NOT pass all data to calculator

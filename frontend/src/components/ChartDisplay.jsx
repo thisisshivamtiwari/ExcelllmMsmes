@@ -216,19 +216,37 @@ const ChartDisplay = ({ chartConfig }) => {
 
   try {
     return (
-      <div className="w-full bg-gray-800/30 border border-gray-700/50 rounded-lg p-4 my-3">
-        <div className="w-full" style={{ minHeight: '300px', maxHeight: '500px' }}>
+      <div className="w-full bg-gradient-to-br from-gray-900 to-gray-850 border border-gray-700/50 rounded-2xl p-6 my-4 shadow-2xl">
+        {/* Chart Title */}
+        {config.title && (
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <span className="text-2xl">📊</span>
+            {config.title}
+          </h3>
+        )}
+        
+        {/* Chart Container - Bigger */}
+        <div className="w-full bg-gray-800/30 rounded-xl p-4" style={{ minHeight: '450px', maxHeight: '650px' }}>
           {renderChart()}
         </div>
         
         {/* Chart metadata */}
-        <div className="mt-3 pt-3 border-t border-gray-700/50 flex items-center justify-between text-xs text-gray-500">
-          <span>Chart Type: {chartType}</span>
+        <div className="mt-4 pt-4 border-t border-gray-700/30 flex items-center justify-between text-xs text-gray-400">
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+            Chart Type: <span className="text-blue-300 font-medium">{chartType}</span>
+          </span>
           {chartData.datasets && (
-            <span>{chartData.datasets.length} dataset{chartData.datasets.length !== 1 ? 's' : ''}</span>
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+              {chartData.datasets.length} dataset{chartData.datasets.length !== 1 ? 's' : ''}
+            </span>
           )}
           {chartData.labels && (
-            <span>{chartData.labels.length} data point{chartData.labels.length !== 1 ? 's' : ''}</span>
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400"></span>
+              {chartData.labels.length} data point{chartData.labels.length !== 1 ? 's' : ''}
+            </span>
           )}
         </div>
       </div>

@@ -328,32 +328,40 @@ const AgentChat = () => {
                     key={idx}
                     className={`flex gap-4 ${
                       message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    } animate-fade-in`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg p-4 ${
+                      className={`${
+                        message.chartConfig ? "max-w-[90%]" : "max-w-[80%]"
+                      } rounded-xl p-5 shadow-lg ${
                         message.role === "user"
-                          ? "bg-blue-600/20 border border-blue-500/30"
+                          ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white"
                           : message.success === false
-                          ? "bg-red-900/20 border border-red-700/30"
-                          : "bg-gray-800/50 border border-gray-700/50"
+                          ? "bg-red-900/30 border border-red-700/50"
+                          : "bg-gradient-to-br from-gray-800 to-gray-850 border border-gray-700/50"
                       }`}
                     >
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-start gap-3">
                         <div className="flex-1">
-                          {message.content && (
-                            <p className="text-white whitespace-pre-wrap">{message.content}</p>
+                          {message.content && !message.chartConfig && (
+                            <p className="text-white whitespace-pre-wrap leading-relaxed">{message.content}</p>
                           )}
                           
-                          {/* Chart Display */}
+                          {/* Chart Display - Bigger and More Beautiful */}
                           {message.chartConfig && (
-                            <ChartDisplay chartConfig={message.chartConfig} />
+                            <div className="space-y-3">
+                              <ChartDisplay chartConfig={message.chartConfig} />
+                            </div>
                           )}
                           
                           {/* Provider Badge */}
                           {message.provider && (
-                            <div className="mt-2 inline-block">
-                              <span className="text-xs px-2 py-1 rounded bg-gray-700/50 text-gray-300">
+                            <div className="mt-3 flex items-center gap-2">
+                              <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${
+                                message.provider === "groq" 
+                                  ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" 
+                                  : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                              }`}>
                                 {message.provider === "groq" ? "🤖 Groq" : "✨ Gemini"}
                                 {message.modelName && ` • ${message.modelName}`}
                               </span>
@@ -362,18 +370,23 @@ const AgentChat = () => {
                           
                           {/* Intermediate Steps */}
                           {message.intermediateSteps && message.intermediateSteps.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-gray-700/50">
-                              <p className="text-xs text-gray-400 mb-2">Reasoning steps:</p>
-                              {message.intermediateSteps.map((step, stepIdx) => (
-                                <div key={stepIdx} className="text-xs text-gray-500 mb-1">
-                                  <span className="text-gray-400">•</span> {step.action || "N/A"}: {step.action_input || "N/A"}
-                                </div>
-                              ))}
-                            </div>
+                            <details className="mt-3 pt-3 border-t border-gray-700/50">
+                              <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-300 mb-2">
+                                🔍 View reasoning steps ({message.intermediateSteps.length})
+                              </summary>
+                              <div className="mt-2 space-y-1">
+                                {message.intermediateSteps.map((step, stepIdx) => (
+                                  <div key={stepIdx} className="text-xs text-gray-500 pl-3 border-l-2 border-gray-700">
+                                    <span className="text-gray-400">Step {stepIdx + 1}:</span> {step.action || "N/A"}: {step.action_input || "N/A"}
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
                           )}
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-gray-500 mt-3 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
                         {new Date(message.timestamp).toLocaleTimeString()}
                       </p>
                     </div>
