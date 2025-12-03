@@ -7,6 +7,7 @@ from langchain.tools import Tool
 from typing import Dict, Any, List, Optional
 import logging
 import json
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -72,15 +73,38 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
             
             # Step 6: Determine which columns to retrieve
             columns_to_retrieve = None
+            
+            # Check if this is a trend/time-based query
+            trend_keywords = ["trend", "over time", "last month", "last week", "over the", "time series", "period", "daily", "weekly", "monthly"]
+            is_trend_query = any(keyword in query_lower for keyword in trend_keywords)
+            
             if columns:
                 # Extract column names from semantic search results that match the file we found
                 matching_columns = [col.get("column_name") for col in columns[:10] if col.get("file_id") == file_id]
                 # Only use semantic search columns if we found matching ones
                 if matching_columns:
                     columns_to_retrieve = matching_columns
+                    
+                    # For trend queries, ensure date columns are included
+                    if is_trend_query and file_id:
+                        metadata = excel_retriever.load_file_metadata(file_id)
+                        if metadata and "schema" in metadata:
+                            schema = metadata["schema"]
+                            if "sheets" in schema:
+                                for sheet_name, sheet_info in schema["sheets"].items():
+                                    if "columns" in sheet_info:
+                                        all_columns = list(sheet_info["columns"].keys())
+                                        # Find date columns
+                                        date_columns = [col for col in all_columns if any(keyword in col.lower() for keyword in ["date", "time", "timestamp"])]
+                                        # Add date columns if not already included
+                                        for date_col in date_columns:
+                                            if date_col not in columns_to_retrieve:
+                                                columns_to_retrieve.append(date_col)
+                                                logger.info(f"Added date column for trend query: {date_col}")
+                                        break
             
-            # If no columns from semantic search, get all columns from the file (for calculations)
-            # This ensures we have all data needed for accurate calculations
+            # If no columns from semantic search, get all columns from the file (for calculations/trends)
+            # This ensures we have all data needed for accurate calculations and trend analysis
             if not columns_to_retrieve and file_id:
                 metadata = excel_retriever.load_file_metadata(file_id)
                 if metadata and "schema" in metadata:
@@ -250,7 +274,7 @@ def create_data_calculator_tool(data_calculator) -> Tool:
     )
 
 
-def create_trend_analyzer_tool(trend_analyzer) -> Tool:
+def create_trend_analyzer_tool(trend_analyzer, excel_retriever=None, semantic_retriever=None) -> Tool:
     """Create LangChain tool for trend analysis."""
     
     def analyze_trend(query: str) -> str:
@@ -264,12 +288,85 @@ def create_trend_analyzer_tool(trend_analyzer) -> Tool:
             JSON string with trend analysis
         """
         try:
-            params = json.loads(query)
+            try:
+                params = json.loads(query)
+            except json.JSONDecodeError as e:
+                return json.dumps({
+                    "success": False,
+                    "error": f"Invalid JSON format: {str(e)}. Expected JSON with 'data' (array or query string), 'date_column' (string), 'value_column' (string), 'period' (daily/weekly/monthly/quarterly/yearly), and optional 'group_by' (comma-separated string)."
+                })
+            
             data = params.get("data", [])
             date_column = params.get("date_column", "")
             value_column = params.get("value_column", "")
             period = params.get("period", "daily")
             group_by = params.get("group_by")
+            
+            # If data is a string (query), fetch data using excel_retriever
+            if isinstance(data, str) and excel_retriever:
+                logger.info(f"Data is a query string, fetching data: {data}")
+                file_id = excel_retriever.find_file_by_name(data)
+                if not file_id:
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Could not find file matching query: '{data}'. Use excel_data_retriever first to get the data."
+                    })
+                
+                # Get columns - include date columns for trend analysis
+                columns = []
+                if semantic_retriever:
+                    columns = semantic_retriever.retrieve_columns(data, n_results=10)
+                    columns = [col.get("column_name") for col in columns if col.get("file_id") == file_id]
+                
+                # Ensure date column is included
+                if not columns:
+                    metadata = excel_retriever.load_file_metadata(file_id)
+                    if metadata and "schema" in metadata:
+                        schema = metadata["schema"]
+                        if "sheets" in schema:
+                            for sheet_name, sheet_info in schema["sheets"].items():
+                                if "columns" in sheet_info:
+                                    all_cols = list(sheet_info["columns"].keys())
+                                    # Find date columns
+                                    date_cols = [col for col in all_cols if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
+                                    columns = date_cols + [col for col in all_cols if col not in date_cols]
+                                    break
+                
+                # Retrieve data
+                retrieve_result = excel_retriever.retrieve_data(
+                    file_id=file_id,
+                    columns=columns if columns else None,
+                    limit=None  # Get all data for trend analysis
+                )
+                
+                if not retrieve_result.get("success"):
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Failed to retrieve data: {retrieve_result.get('error', 'Unknown error')}"
+                    })
+                
+                data = retrieve_result.get("data", [])
+                
+                # Auto-detect date column if not specified
+                if not date_column and data:
+                    df_temp = pd.DataFrame(data[:1]) if isinstance(data, list) else pd.DataFrame([data])
+                    date_cols = [col for col in df_temp.columns if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
+                    if date_cols:
+                        date_column = date_cols[0]
+                        logger.info(f"Auto-detected date column: {date_column}")
+            
+            # Validate data
+            if not isinstance(data, list) or not data:
+                return json.dumps({
+                    "success": False,
+                    "error": f"Data must be an array of objects. Got: {type(data).__name__}. Use excel_data_retriever first to get the data."
+                })
+            
+            if not date_column:
+                return json.dumps({
+                    "success": False,
+                    "error": "date_column is required. Common date column names: 'Date', 'Inspection_Date', 'Maintenance_Date'. Use excel_data_retriever to see available columns."
+                })
             
             group_by_list = None
             if group_by:
@@ -287,6 +384,8 @@ def create_trend_analyzer_tool(trend_analyzer) -> Tool:
             
         except Exception as e:
             logger.error(f"Error in analyze_trend tool: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return json.dumps({
                 "success": False,
                 "error": str(e)
@@ -294,7 +393,7 @@ def create_trend_analyzer_tool(trend_analyzer) -> Tool:
     
     return Tool(
         name="trend_analyzer",
-        description="Analyze trends over time periods. Input should be JSON string with 'data' (array), 'date_column' (string), 'value_column' (string), 'period' (daily/weekly/monthly/quarterly/yearly), and optional 'group_by' (comma-separated string).",
+        description="Analyze trends over time periods. Input should be JSON string with 'data' (array from excel_data_retriever OR a query string like 'production_logs'), 'date_column' (string like 'Date'), 'value_column' (string like 'Actual_Qty'), 'period' (daily/weekly/monthly/quarterly/yearly), and optional 'group_by' (comma-separated string). If 'data' is a query string, the tool will fetch the data automatically and auto-detect the date column.",
         func=analyze_trend
     )
 
