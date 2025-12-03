@@ -6,49 +6,54 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
 
   const menuSections = [
     {
-      title: "Dashboard",
+      title: "🏠 Dashboard",
       items: [
         { path: "/", label: "Home", icon: FiHome }
       ]
     },
     {
-      title: "Phase 1: Data Generation",
+      title: "📊 Phase 1: Data Generation",
       items: [
         { path: "/data-generator", label: "Data Generator", icon: FiDatabase }
       ]
     },
     {
-      title: "Phase 2: File Management",
+      title: "❓ Phase 2: Question Generator",
       items: [
-        { path: "/file-upload", label: "File Upload", icon: FiUpload }
+        { path: "/question-generator", label: "Question Generator", icon: FiHelpCircle }
       ]
     },
     {
-      title: "Phase 4: Semantic Search",
+      title: "🤖 Phase 3: Model Selection & Optimization",
       items: [
+        { path: "/benchmarking", label: "LLM Benchmarking", icon: FiBarChart2 },
+        { path: "/prompt-engineering", label: "Prompt Engineering", icon: FiCode }
+      ]
+    },
+    {
+      title: "🔍 Phase 4: Data Management & Search",
+      items: [
+        { path: "/file-upload", label: "File Upload", icon: FiUpload },
         { path: "/semantic-search", label: "Semantic Search", icon: FiSearch }
       ]
     },
     {
-      title: "Phase 5: AI Agent",
+      title: "💬 Phase 5: AI Agent & Visualization",
       items: [
-        { path: "/agent-chat", label: "AI Agent Chat", icon: FiMessageCircle }
+        { path: "/agent-chat", label: "AI Agent Chat", icon: FiMessageCircle },
+        { path: "/visualization", label: "Visualizations", icon: FiTrendingUp }
       ]
     },
     {
-      title: "System & Reports",
+      title: "📈 Phase 6: Evaluation & Analysis",
+      items: [
+        { path: "/comparison", label: "Comparison Analysis", icon: FiLayers }
+      ]
+    },
+    {
+      title: "⚙️ System Management",
       items: [
         { path: "/system-report", label: "System Report", icon: FiFileText }
-      ]
-    },
-    {
-      title: "Development Tools",
-      items: [
-        { path: "/visualization", label: "Visualization", icon: FiTrendingUp },
-        { path: "/question-generator", label: "Question Generator", icon: FiHelpCircle },
-        { path: "/benchmarking", label: "LLM Benchmarking", icon: FiBarChart2 },
-        { path: "/prompt-engineering", label: "Model Optimization", icon: FiCode },
-        { path: "/comparison", label: "Comparison Analysis", icon: FiLayers }
       ]
     }
   ]
