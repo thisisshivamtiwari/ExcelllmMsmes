@@ -316,30 +316,45 @@ def create_trend_analyzer_tool(trend_analyzer, excel_retriever=None, semantic_re
                         "error": f"Could not find file matching query: '{data}'. Use excel_data_retriever first to get the data."
                     })
                 
-                # Get columns - include date columns for trend analysis
-                columns = []
-                if semantic_retriever:
-                    columns = semantic_retriever.retrieve_columns(data, n_results=10)
-                    columns = [col.get("column_name") for col in columns if col.get("file_id") == file_id]
+                # For trend analysis, ALWAYS get ALL columns to ensure Date and value columns are included
+                # Don't rely on semantic search which might miss important columns
+                columns_to_retrieve = None  # None means get all columns
                 
-                # Ensure date column is included
-                if not columns:
-                    metadata = excel_retriever.load_file_metadata(file_id)
-                    if metadata and "schema" in metadata:
-                        schema = metadata["schema"]
-                        if "sheets" in schema:
-                            for sheet_name, sheet_info in schema["sheets"].items():
-                                if "columns" in sheet_info:
-                                    all_cols = list(sheet_info["columns"].keys())
-                                    # Find date columns
-                                    date_cols = [col for col in all_cols if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
-                                    columns = date_cols + [col for col in all_cols if col not in date_cols]
-                                    break
+                # Load metadata to verify columns exist
+                metadata = excel_retriever.load_file_metadata(file_id)
+                if metadata and "schema" in metadata:
+                    schema = metadata["schema"]
+                    if "sheets" in schema:
+                        for sheet_name, sheet_info in schema["sheets"].items():
+                            if "columns" in sheet_info:
+                                all_cols = list(sheet_info["columns"].keys())
+                                logger.info(f"Available columns in file: {all_cols}")
+                                
+                                # Verify date column exists
+                                date_cols = [col for col in all_cols if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
+                                if not date_cols:
+                                    return json.dumps({
+                                        "success": False,
+                                        "error": f"No date column found in file. Available columns: {all_cols}. Please specify a date column name."
+                                    })
+                                
+                                # Auto-detect date column if not specified
+                                if not date_column:
+                                    date_column = date_cols[0]
+                                    logger.info(f"Auto-detected date column: {date_column}")
+                                
+                                # Verify value column exists
+                                if value_column and value_column not in all_cols:
+                                    return json.dumps({
+                                        "success": False,
+                                        "error": f"Value column '{value_column}' not found. Available columns: {all_cols}"
+                                    })
+                                break
                 
-                # Retrieve data
+                # Retrieve data - get ALL columns (None = all columns)
                 retrieve_result = excel_retriever.retrieve_data(
                     file_id=file_id,
-                    columns=columns if columns else None,
+                    columns=columns_to_retrieve,  # None = all columns
                     limit=None  # Get all data for trend analysis
                 )
                 
