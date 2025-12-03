@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom"
-import { FiHome, FiBarChart2, FiX, FiChevronLeft, FiChevronRight, FiDatabase, FiTrendingUp, FiHelpCircle, FiCode, FiLayers, FiUpload, FiSearch, FiMessageCircle } from "react-icons/fi"
+import { FiHome, FiBarChart2, FiX, FiChevronLeft, FiChevronRight, FiDatabase, FiTrendingUp, FiHelpCircle, FiCode, FiLayers, FiUpload, FiSearch, FiMessageCircle, FiFileText } from "react-icons/fi"
 
 const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   const location = useLocation()
@@ -33,6 +33,12 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
       title: "Phase 5: AI Agent",
       items: [
         { path: "/agent-chat", label: "AI Agent Chat", icon: FiMessageCircle }
+      ]
+    },
+    {
+      title: "System & Reports",
+      items: [
+        { path: "/system-report", label: "System Report", icon: FiFileText }
       ]
     },
     {

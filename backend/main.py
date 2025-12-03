@@ -2895,6 +2895,7 @@ def get_agent_tools():
     trend_analyzer = TrendAnalyzer()
     comparative_analyzer = ComparativeAnalyzer()
     kpi_calculator = KPICalculator()
+    graph_generator = GraphGenerator()
     
     # Get semantic retriever
     semantic_retriever = get_retriever()
@@ -2910,9 +2911,6 @@ def get_agent_tools():
     tools.append(create_trend_analyzer_tool(trend_analyzer, excel_retriever, semantic_retriever))
     tools.append(create_comparative_analyzer_tool(comparative_analyzer, excel_retriever, semantic_retriever))
     tools.append(create_kpi_calculator_tool(kpi_calculator, excel_retriever, semantic_retriever))
-    
-    # Add graph generator tool
-    graph_generator = GraphGenerator()
     tools.append(create_graph_generator_tool(graph_generator, excel_retriever, semantic_retriever))
     
     return tools
@@ -3081,3 +3079,144 @@ async def get_agent_status():
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
+
+# ============================================================================
+# PHASE 6: System Reports & Testing API
+# ============================================================================
+
+@app.get("/api/system/report")
+async def get_system_report():
+    """Get comprehensive system report from SYSTEM_REPORT.md"""
+    try:
+        report_file = BASE_DIR / "SYSTEM_REPORT.md"
+        if not report_file.exists():
+            raise HTTPException(status_code=404, detail="System report not found")
+        
+        with open(report_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        return {
+            "success": True,
+            "content": content,
+            "last_updated": datetime.fromtimestamp(report_file.stat().st_mtime).isoformat(),
+            "size_bytes": len(content)
+        }
+    except Exception as e:
+        logger.error(f"Error reading system report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/system/stats")
+async def get_system_stats():
+    """Get real-time system statistics"""
+    try:
+        # Count files
+        uploaded_files = len(list((BASE_DIR / "uploaded_files").glob("*.csv"))) if (BASE_DIR / "uploaded_files").exists() else 0
+        metadata_files = len(list((BASE_DIR / "uploaded_files" / "metadata").glob("*.json"))) if (BASE_DIR / "uploaded_files" / "metadata").exists() else 0
+        
+        # Get test results if available
+        test_results_file = BASE_DIR / "unified_test_results.json"
+        test_stats = None
+        if test_results_file.exists():
+            with open(test_results_file, 'r') as f:
+                test_data = json.load(f)
+                test_stats = test_data.get('summary', {})
+        
+        # Agent status
+        agent_status = {
+            "groq": {
+                "available": _agent_instances.get("groq") is not None,
+                "model": _agent_instances["groq"].model_name if _agent_instances.get("groq") else None
+            },
+            "gemini": {
+                "available": _agent_instances.get("gemini") is not None,
+                "model": _agent_instances["gemini"].model_name if _agent_instances.get("gemini") else None
+            }
+        }
+        
+        return {
+            "success": True,
+            "timestamp": datetime.now().isoformat(),
+            "files": {
+                "uploaded": uploaded_files,
+                "with_metadata": metadata_files - 1 if metadata_files > 0 else 0
+            },
+            "agent": agent_status,
+            "testing": test_stats,
+            "version": "1.0.0"
+        }
+    except Exception as e:
+        logger.error(f"Error getting system stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class TestRunRequest(BaseModel):
+    provider: Optional[str] = "gemini"
+
+@app.post("/api/testing/run")
+async def run_tests(request: TestRunRequest):
+    """Run unified test suite"""
+    try:
+        import subprocess
+        
+        cmd = [sys.executable, "unified_test_suite.py", request.provider]
+        process = subprocess.Popen(
+            cmd,
+            cwd=BASE_DIR,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        
+        return {
+            "success": True,
+            "message": "Test suite started",
+            "provider": request.provider,
+            "process_id": process.pid
+        }
+    except Exception as e:
+        logger.error(f"Error starting tests: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/testing/results")
+async def get_test_results():
+    """Get latest test results"""
+    try:
+        results_file = BASE_DIR / "unified_test_results.json"
+        if not results_file.exists():
+            return {"success": False, "message": "No test results found"}
+        
+        with open(results_file, 'r') as f:
+            results = json.load(f)
+        
+        return {
+            "success": True,
+            "results": results,
+            "last_updated": datetime.fromtimestamp(results_file.stat().st_mtime).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error reading test results: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/system/logs")
+async def get_system_logs(lines: int = 100):
+    """Get recent backend logs"""
+    try:
+        log_file = BASE_DIR / "backend.log"
+        if not log_file.exists():
+            return {"success": False, "message": "Log file not found"}
+        
+        with open(log_file, 'r') as f:
+            all_lines = f.readlines()
+            recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
+        
+        return {
+            "success": True,
+            "logs": ''.join(recent_lines),
+            "lines_returned": len(recent_lines),
+            "total_lines": len(all_lines)
+        }
+    except Exception as e:
+        logger.error(f"Error reading logs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
