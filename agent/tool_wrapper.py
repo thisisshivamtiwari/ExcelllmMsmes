@@ -1,0 +1,315 @@
+"""
+Tool wrappers for LangChain integration.
+Wraps our custom tools to work with LangChain.
+"""
+
+from langchain.tools import Tool
+from typing import Dict, Any, List, Optional
+import logging
+import json
+
+logger = logging.getLogger(__name__)
+
+
+def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
+    """Create LangChain tool for Excel data retrieval."""
+    
+    def retrieve_data(query: str) -> str:
+        """
+        Retrieve data from Excel files based on semantic search and file name matching.
+        
+        Args:
+            query: Natural language query describing what data to retrieve
+            
+        Returns:
+            JSON string with retrieved data
+        """
+        try:
+            # Step 1: Try to find file by name first (more reliable)
+            file_id = excel_retriever.find_file_by_name(query)
+            
+            # Step 2: Use semantic search to find relevant columns
+            columns = []
+            if semantic_retriever:
+                columns = semantic_retriever.retrieve_columns(query, n_results=10)
+            
+            # Step 3: If we found a file by name but no columns, get all columns from that file
+            if file_id and not columns:
+                # Load metadata to get column names
+                metadata = excel_retriever.load_file_metadata(file_id)
+                if metadata and "schema" in metadata:
+                    schema = metadata["schema"]
+                    if "sheets" in schema:
+                        for sheet_name, sheet_info in schema["sheets"].items():
+                            if "columns" in sheet_info:
+                                for col_name in sheet_info["columns"]:
+                                    columns.append({
+                                        "file_id": file_id,
+                                        "file_name": metadata.get("original_filename", "unknown"),
+                                        "column_name": col_name,
+                                        "relevance_score": 0.5  # Default score
+                                    })
+                                break  # Use first sheet
+            
+            # Step 4: If no file found by name, use semantic search results
+            if not file_id and columns:
+                file_id = columns[0].get("file_id")
+            
+            # Step 5: If still no file found, return error
+            if not file_id:
+                return json.dumps({
+                    "success": False,
+                    "error": f"Could not find file matching query: '{query}'. Available files: {[f.get('original_filename') for f in excel_retriever.list_all_files()]}"
+                })
+            
+            # Step 6: Determine which columns to retrieve
+            columns_to_retrieve = None
+            if columns:
+                # Extract column names from semantic search results
+                columns_to_retrieve = [col.get("column_name") for col in columns[:10] if col.get("file_id") == file_id]
+            
+            # Step 7: Retrieve data
+            # For display purposes, limit to 50 rows to prevent token overflow
+            # But include summary statistics for calculations
+            result = excel_retriever.retrieve_data(
+                file_id=file_id,
+                columns=columns_to_retrieve,
+                limit=50  # Limit displayed rows to prevent token overflow
+            )
+            
+            # Step 8: If result is too large, truncate data but keep summary
+            if result.get("success"):
+                original_row_count = result.get("row_count", 0)
+                data_rows = result.get("data", [])
+                
+                if len(data_rows) > 50:
+                    # Keep only first 50 rows for display
+                    result["data"] = data_rows[:50]
+                    result["truncated"] = True
+                    result["total_rows_available"] = original_row_count
+                    result["note"] = "Data truncated for display. Use summary statistics for full calculations."
+            
+            return json.dumps(result, default=str)
+            
+        except Exception as e:
+            logger.error(f"Error in retrieve_data tool: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    return Tool(
+        name="excel_data_retriever",
+        description="Retrieve data from Excel/CSV files. Use this to get actual data rows. Input should be a natural language description of what data you need (e.g., 'production_logs', 'production quantity', 'quality control data'). The tool will automatically find the correct file and relevant columns.",
+        func=retrieve_data
+    )
+
+
+def create_data_calculator_tool(data_calculator) -> Tool:
+    """Create LangChain tool for data calculations."""
+    
+    def calculate(query: str) -> str:
+        """
+        Perform calculations on data.
+        
+        Args:
+            query: Natural language query describing the calculation needed
+            
+        Returns:
+            JSON string with calculation result
+        """
+        try:
+            # Parse query to extract parameters
+            # For now, expect JSON input format: {"data": [...], "operation": "...", "column": "...", "group_by": "..."}
+            # In production, this would use LLM to parse natural language
+            
+            # Try to parse as JSON first
+            try:
+                params = json.loads(query)
+                data = params.get("data", [])
+                operation = params.get("operation", "sum")
+                column = params.get("column", "")
+                group_by = params.get("group_by")
+                
+                group_by_list = None
+                if group_by:
+                    group_by_list = [col.strip() for col in group_by.split(",")] if isinstance(group_by, str) else group_by
+                
+                result = data_calculator.calculate(
+                    data=data,
+                    operation=operation,
+                    column=column,
+                    group_by=group_by_list
+                )
+                
+                return json.dumps(result, default=str)
+            except json.JSONDecodeError:
+                # If not JSON, return error message
+                return json.dumps({
+                    "success": False,
+                    "error": "Invalid input format. Expected JSON with 'data', 'operation', 'column', and optional 'group_by' fields."
+                })
+            
+        except Exception as e:
+            logger.error(f"Error in calculate tool: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    return Tool(
+        name="data_calculator",
+        description="Perform aggregations and calculations on data. Operations: sum, avg, count, min, max, median, std. Input should be JSON string with 'data' (array), 'operation' (string), 'column' (string), and optional 'group_by' (comma-separated string).",
+        func=calculate
+    )
+
+
+def create_trend_analyzer_tool(trend_analyzer) -> Tool:
+    """Create LangChain tool for trend analysis."""
+    
+    def analyze_trend(query: str) -> str:
+        """
+        Analyze trends over time.
+        
+        Args:
+            query: JSON string with parameters
+            
+        Returns:
+            JSON string with trend analysis
+        """
+        try:
+            params = json.loads(query)
+            data = params.get("data", [])
+            date_column = params.get("date_column", "")
+            value_column = params.get("value_column", "")
+            period = params.get("period", "daily")
+            group_by = params.get("group_by")
+            
+            group_by_list = None
+            if group_by:
+                group_by_list = [col.strip() for col in group_by.split(",")] if isinstance(group_by, str) else group_by
+            
+            result = trend_analyzer.analyze_trend(
+                data=data,
+                date_column=date_column,
+                value_column=value_column,
+                period=period,
+                group_by=group_by_list
+            )
+            
+            return json.dumps(result, default=str)
+            
+        except Exception as e:
+            logger.error(f"Error in analyze_trend tool: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    return Tool(
+        name="trend_analyzer",
+        description="Analyze trends over time periods. Input should be JSON string with 'data' (array), 'date_column' (string), 'value_column' (string), 'period' (daily/weekly/monthly/quarterly/yearly), and optional 'group_by' (comma-separated string).",
+        func=analyze_trend
+    )
+
+
+def create_comparative_analyzer_tool(comparative_analyzer) -> Tool:
+    """Create LangChain tool for comparative analysis."""
+    
+    def compare(query: str) -> str:
+        """
+        Compare entities.
+        
+        Args:
+            query: JSON string with parameters
+            
+        Returns:
+            JSON string with comparison results
+        """
+        try:
+            params = json.loads(query)
+            data = params.get("data", [])
+            compare_by = params.get("compare_by", "")
+            value_column = params.get("value_column", "")
+            operation = params.get("operation", "sum")
+            top_n = params.get("top_n")
+            
+            result = comparative_analyzer.compare(
+                data=data,
+                compare_by=compare_by,
+                value_column=value_column,
+                operation=operation,
+                top_n=top_n
+            )
+            
+            return json.dumps(result, default=str)
+            
+        except Exception as e:
+            logger.error(f"Error in compare tool: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    return Tool(
+        name="comparative_analyzer",
+        description="Compare entities (products, lines, etc.) by a value column. Input should be JSON string with 'data' (array), 'compare_by' (string), 'value_column' (string), 'operation' (sum/avg/count/min/max), and optional 'top_n' (integer).",
+        func=compare
+    )
+
+
+def create_kpi_calculator_tool(kpi_calculator) -> Tool:
+    """Create LangChain tool for KPI calculation."""
+    
+    def calculate_kpi(query: str) -> str:
+        """
+        Calculate KPIs.
+        
+        Args:
+            query: JSON string with parameters
+            
+        Returns:
+            JSON string with KPI calculation
+        """
+        try:
+            params = json.loads(query)
+            kpi_name = params.get("kpi_name", "")
+            data = params.get("data", [])
+            
+            if kpi_name.upper() == "OEE":
+                result = kpi_calculator.calculate_oee(data=data, **{k: v for k, v in params.items() if k not in ["kpi_name", "data"]})
+            elif kpi_name.upper() == "FPY":
+                result = kpi_calculator.calculate_fpy(
+                    data=data,
+                    good_units_column=params.get("good_units_column"),
+                    total_units_column=params.get("total_units_column")
+                )
+            elif kpi_name.lower() == "defect_rate":
+                result = kpi_calculator.calculate_defect_rate(
+                    data=data,
+                    defect_column=params.get("defect_column"),
+                    total_column=params.get("total_column")
+                )
+            else:
+                result = {
+                    "success": False,
+                    "error": f"Unknown KPI: {kpi_name}"
+                }
+            
+            return json.dumps(result, default=str)
+            
+        except Exception as e:
+            logger.error(f"Error in calculate_kpi tool: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    return Tool(
+        name="kpi_calculator",
+        description="Calculate manufacturing KPIs (OEE, FPY, defect_rate). Input should be JSON string with 'kpi_name' (string), 'data' (array), and KPI-specific parameters.",
+        func=calculate_kpi
+    )
+
