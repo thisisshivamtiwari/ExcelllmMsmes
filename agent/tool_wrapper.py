@@ -202,9 +202,12 @@ def create_data_calculator_tool(data_calculator) -> Tool:
                 column = params.get("column", "")
                 group_by = params.get("group_by")
                 
-                # Check if data array is too large
-                if isinstance(data, list) and len(data) > 1000:
-                    logger.warning(f"Large dataset passed to calculator: {len(data)} rows. This may cause performance issues.")
+                # Check if data array is too large - reject immediately
+                if isinstance(data, list) and len(data) > 100:
+                    return json.dumps({
+                        "success": False,
+                        "error": f"Dataset too large ({len(data)} rows). For large datasets, use summary statistics from excel_data_retriever instead. The retriever provides 'mean' and 'count' in summary statistics - use mean * count = total for accurate calculations."
+                    })
                 
                 group_by_list = None
                 if group_by:
