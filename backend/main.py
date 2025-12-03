@@ -20,11 +20,15 @@ import gc
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-# Load from project root (parent of backend directory)
+# Try backend/.env first, then project root .env
+BACKEND_ENV = Path(__file__).resolve().parent / ".env"
 BASE_DIR = Path(__file__).resolve().parent.parent
-env_file = BASE_DIR / ".env"
-if env_file.exists():
-    load_dotenv(env_file)
+ROOT_ENV = BASE_DIR / ".env"
+
+if BACKEND_ENV.exists():
+    load_dotenv(BACKEND_ENV)
+elif ROOT_ENV.exists():
+    load_dotenv(ROOT_ENV)
 else:
     # Try loading from current directory as fallback
     load_dotenv()
@@ -37,8 +41,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Log that environment variables were loaded
-if env_file.exists():
-    logger.info(f"Loaded environment variables from {env_file}")
+if BACKEND_ENV.exists():
+    logger.info(f"Loaded environment variables from {BACKEND_ENV}")
+elif ROOT_ENV.exists():
+    logger.info(f"Loaded environment variables from {ROOT_ENV}")
 else:
     logger.info("Environment variables loaded from system/default location")
 
@@ -95,6 +101,45 @@ async def global_exception_handler(request: Request, exc: Exception):
 # BASE_DIR is already defined above for loading .env file
 UPLOADED_FILES_DIR = BASE_DIR / "uploaded_files"
 UPLOADED_FILES_DIR.mkdir(exist_ok=True)
+
+# Phase 3: Semantic Indexing imports (after BASE_DIR is defined)
+import sys
+sys.path.insert(0, str(BASE_DIR))  # Add project root to path for embeddings module
+try:
+    from embeddings import Embedder, VectorStore, Retriever
+    EMBEDDINGS_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Embeddings module not available: {str(e)}")
+    EMBEDDINGS_AVAILABLE = False
+    Embedder = None
+    VectorStore = None
+    Retriever = None
+
+# Phase 4: LangChain Agent System imports
+try:
+    from tools import ExcelRetriever, DataCalculator, TrendAnalyzer, ComparativeAnalyzer, KPICalculator
+    from agent import ExcelAgent
+    from agent.tool_wrapper import (
+        create_excel_retriever_tool,
+        create_data_calculator_tool,
+        create_trend_analyzer_tool,
+        create_comparative_analyzer_tool,
+        create_kpi_calculator_tool
+    )
+    AGENT_AVAILABLE = True
+    
+    # Check if prompt_engineering is available
+    try:
+        from prompt_engineering.llama4_maverick_optimizer import EnhancedPromptEngineer
+        PROMPT_ENGINEERING_AVAILABLE = True
+        logger.info("✓ Prompt engineering module available")
+    except ImportError as e:
+        PROMPT_ENGINEERING_AVAILABLE = False
+        logger.warning(f"Prompt engineering module not available: {e}")
+except ImportError as e:
+    logger.warning(f"Agent module not available: {str(e)}")
+    AGENT_AVAILABLE = False
+    PROMPT_ENGINEERING_AVAILABLE = False
 
 DATA_GENERATOR_DIR = BASE_DIR / "datagenerator"
 DATA_GENERATOR_SCRIPT = DATA_GENERATOR_DIR / "data_generator.py"
@@ -1083,6 +1128,57 @@ uploaded_files_registry: Dict[str, Dict[str, Any]] = {}
 METADATA_DIR = UPLOADED_FILES_DIR / "metadata"
 METADATA_DIR.mkdir(parents=True, exist_ok=True)
 
+# Phase 3: Semantic Indexing setup
+VECTOR_STORE_DIR = BASE_DIR / "vectorstore"
+VECTOR_STORE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Initialize embeddings components (lazy initialization)
+_embedder = None
+_vector_store = None
+_retriever = None
+
+def get_embedder():
+    """Get or create embedder instance."""
+    global _embedder
+    if not EMBEDDINGS_AVAILABLE:
+        return None
+    if _embedder is None:
+        try:
+            _embedder = Embedder()
+            logger.info("✓ Embedder initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize embedder: {str(e)}")
+            _embedder = None
+    return _embedder
+
+def get_vector_store():
+    """Get or create vector store instance."""
+    global _vector_store
+    if not EMBEDDINGS_AVAILABLE:
+        return None
+    if _vector_store is None:
+        try:
+            _vector_store = VectorStore(persist_directory=VECTOR_STORE_DIR)
+            logger.info("✓ Vector store initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize vector store: {str(e)}")
+            _vector_store = None
+    return _vector_store
+
+def get_retriever():
+    """Get or create retriever instance."""
+    global _retriever
+    embedder = get_embedder()
+    vector_store = get_vector_store()
+    if _retriever is None and embedder and vector_store:
+        try:
+            _retriever = Retriever(embedder=embedder, vector_store=vector_store)
+            logger.info("✓ Retriever initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize retriever: {str(e)}")
+            _retriever = None
+    return _retriever
+
 
 def load_file_metadata(file_id: str) -> Optional[Dict[str, Any]]:
     """Load file metadata from JSON file."""
@@ -1302,6 +1398,15 @@ async def upload_file(file: UploadFile = File(...)):
         
         # Save metadata to JSON file
         save_file_metadata(file_id, file_info)
+        
+        # Phase 3: Index file in vector store (async, non-blocking)
+        try:
+            if EMBEDDINGS_AVAILABLE:
+                # Index in background (don't block upload response)
+                index_file_in_vector_store(file_id, file_info)
+        except Exception as e:
+            logger.warning(f"Failed to index file {file_id} in vector store: {str(e)}")
+            # Don't fail upload if indexing fails
         
         logger.info(f"File upload successful: {file_id} ({file.filename})")
         
@@ -1644,13 +1749,33 @@ async def detect_schema(
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="File not found on disk")
         
-        # Get user definitions
-        user_definitions = file_info.get("user_definitions", {})
+        # Get user definitions and transform to format expected by schema_detector
+        # schema_detector expects: {column_name: {definition: "...", type: "..."}}
+        # but we store: {"file_id::sheet::column": {definition: "..."}}
+        raw_user_defs = file_info.get("user_definitions", {})
+        schema_user_defs = {}
+        
+        for col_key, col_def in raw_user_defs.items():
+            if isinstance(col_def, dict):
+                # Extract column name from key (format: "file_id::sheet::column")
+                parts = col_key.split("::")
+                if len(parts) >= 3:
+                    column_name = parts[2]
+                    # If analyzing specific sheet, only include definitions for that sheet
+                    if sheet_name is None or parts[1] == sheet_name:
+                        schema_user_defs[column_name] = col_def
+            elif isinstance(col_def, str):
+                # Legacy format: just definition string
+                parts = col_key.split("::")
+                if len(parts) >= 3:
+                    column_name = parts[2]
+                    if sheet_name is None or parts[1] == sheet_name:
+                        schema_user_defs[column_name] = {"definition": col_def}
         
         # Detect schema
         schema_result = schema_detector.detect_schema(
             file_path=file_path,
-            user_definitions=user_definitions,
+            user_definitions=schema_user_defs if schema_user_defs else None,
             sheet_name=sheet_name
         )
         
@@ -1661,21 +1786,47 @@ async def detect_schema(
                 import pandas as pd
                 file_ext = file_path.suffix.lower()
                 
+                # Load dataframes for all sheets
+                dfs = {}
                 if file_ext in ['.xlsx', '.xls']:
-                    df = pd.read_excel(file_path, sheet_name=sheet_name or 0, nrows=100)
+                    excel_file = pd.ExcelFile(file_path)
+                    for sheet in excel_file.sheet_names:
+                        dfs[sheet] = pd.read_excel(excel_file, sheet_name=sheet, nrows=100)
+                    excel_file.close()
                 else:
-                    df = pd.read_csv(file_path, nrows=100)
+                    dfs['Sheet1'] = pd.read_csv(file_path, nrows=100)
                 
                 # Enhance each column with Gemini analysis
                 for sheet_name_key, sheet_schema in schema_result.get('sheets', {}).items():
+                    df = dfs.get(sheet_name_key)
+                    if df is None:
+                        continue
+                    
+                    # Get user definitions for this specific sheet
+                    sheet_user_defs = {}
+                    for col_key, col_def in raw_user_defs.items():
+                        parts = col_key.split("::")
+                        if len(parts) >= 3 and parts[1] == sheet_name_key:
+                            column_name = parts[2]
+                            if isinstance(col_def, dict):
+                                sheet_user_defs[column_name] = col_def
+                            else:
+                                sheet_user_defs[column_name] = {"definition": str(col_def)}
+                    
                     for col_name, col_schema in sheet_schema.get('columns', {}).items():
+                        if col_name not in df.columns:
+                            continue
+                            
                         sample_values = df[col_name].dropna().head(20).tolist()
+                        
+                        # Get user definition for this column from sheet-specific definitions
+                        user_def_for_gemini = sheet_user_defs.get(col_name)
                         
                         gemini_result = gemini_analyzer.analyze_column_semantics(
                             column_name=col_name,
                             sample_values=sample_values,
                             detected_type=col_schema.get('detected_type', 'unknown'),
-                            user_definition=user_definitions.get(col_name)
+                            user_definition=user_def_for_gemini
                         )
                         
                         # Merge Gemini results
@@ -2303,5 +2454,616 @@ async def clear_relationship_cache():
 
 if __name__ == "__main__":
     import uvicorn
+# ============================================
+# Phase 3: Semantic Indexing & RAG Endpoints
+# ===========================================
+
+def index_file_in_vector_store(file_id: str, file_info: Dict[str, Any]) -> bool:
+    """
+    Index a file's columns and metadata into the vector store using full excel_parser capabilities.
+    
+    This function:
+    1. Uses schema detection results (if available) or triggers schema detection
+    2. Incorporates user-provided column definitions
+    3. Includes Gemini semantic analysis results
+    4. Indexes relationship information
+    
+    Args:
+        file_id: File ID
+        file_info: File information dictionary
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    if not EMBEDDINGS_AVAILABLE:
+        return False
+    
+    try:
+        embedder = get_embedder()
+        vector_store = get_vector_store()
+        
+        if not embedder or not vector_store:
+            logger.warning("Embeddings not available - skipping indexing")
+            return False
+        
+        file_name = file_info.get("original_filename", "unknown")
+        saved_path = file_info.get("saved_path")
+        user_definitions = file_info.get("user_definitions", {})
+        
+        # Check if we have schema detection results, if not, run schema detection
+        schema_result = None
+        if saved_path and Path(saved_path).exists():
+            try:
+                # Prepare user_definitions in format expected by schema_detector
+                # schema_detector expects: {column_name: {definition: "...", type: "..."}}
+                # but we store: {"file_id::sheet::column": {definition: "..."}}
+                schema_user_defs = {}
+                for col_key, col_def in user_definitions.items():
+                    if isinstance(col_def, dict):
+                        # Extract column name from key (format: "file_id::sheet::column")
+                        parts = col_key.split("::")
+                        if len(parts) >= 3:
+                            column_name = parts[2]
+                            schema_user_defs[column_name] = col_def
+                    elif isinstance(col_def, str):
+                        # Legacy format: just definition string
+                        parts = col_key.split("::")
+                        if len(parts) >= 3:
+                            column_name = parts[2]
+                            schema_user_defs[column_name] = {"definition": col_def}
+                
+                # Run schema detection with user definitions
+                schema_result = schema_detector.detect_schema(
+                    file_path=Path(saved_path),
+                    user_definitions=schema_user_defs if schema_user_defs else None
+                )
+                
+                # Enhance with Gemini if available
+                if gemini_analyzer and gemini_analyzer.enabled:
+                    try:
+                        import pandas as pd
+                        file_ext = Path(saved_path).suffix.lower()
+                        
+                        # Load sample data for Gemini
+                        if file_ext in ['.xlsx', '.xls']:
+                            excel_file = pd.ExcelFile(saved_path)
+                            dfs = {sheet: pd.read_excel(excel_file, sheet_name=sheet, nrows=100) 
+                                   for sheet in excel_file.sheet_names}
+                            excel_file.close()
+                        else:
+                            dfs = {'Sheet1': pd.read_csv(saved_path, nrows=100)}
+                        
+                        # Enhance each column with Gemini analysis
+                        for sheet_name_key, sheet_schema in schema_result.get('sheets', {}).items():
+                            df = dfs.get(sheet_name_key)
+                            if df is None:
+                                continue
+                                
+                            for col_name, col_schema in sheet_schema.get('columns', {}).items():
+                                if col_name not in df.columns:
+                                    continue
+                                    
+                                sample_values = df[col_name].dropna().head(20).tolist()
+                                
+                                # Get user definition for this column
+                                col_key = f"{file_id}::{sheet_name_key}::{col_name}"
+                                user_def_dict = user_definitions.get(col_key, {})
+                                if isinstance(user_def_dict, dict):
+                                    user_def_for_gemini = user_def_dict
+                                else:
+                                    user_def_for_gemini = None
+                                
+                                gemini_result = gemini_analyzer.analyze_column_semantics(
+                                    column_name=col_name,
+                                    sample_values=sample_values,
+                                    detected_type=col_schema.get('detected_type', 'unknown'),
+                                    user_definition=user_def_for_gemini
+                                )
+                                
+                                # Merge Gemini results
+                                col_schema['gemini_analysis'] = gemini_result
+                                if gemini_result.get('semantic_type') != 'unknown':
+                                    col_schema['semantic_type'] = gemini_result.get('semantic_type')
+                                if gemini_result.get('description'):
+                                    col_schema['description'] = gemini_result.get('description')
+                    except Exception as gemini_error:
+                        logger.warning(f"Gemini enhancement failed during indexing: {str(gemini_error)}")
+                        # Continue without Gemini - schema detection results are still valuable
+            except Exception as schema_error:
+                logger.warning(f"Schema detection failed during indexing: {str(schema_error)}")
+                # Fall back to basic metadata
+                schema_result = None
+        
+        # Use schema results if available, otherwise fall back to basic metadata
+        if schema_result and schema_result.get('sheets'):
+            # Use rich schema detection results
+            indexed_count = 0
+            
+            for sheet_name, sheet_schema in schema_result.get('sheets', {}).items():
+                columns_dict = sheet_schema.get('columns', {})
+                
+                for column_name, col_schema in columns_dict.items():
+                    # Extract all available information
+                    detected_type = col_schema.get('detected_type', 'unknown')
+                    semantic_type = col_schema.get('semantic_type', col_schema.get('semantic_meaning', ''))
+                    description = col_schema.get('description', '')
+                    confidence = col_schema.get('confidence', 0.0)
+                    stats = col_schema.get('statistics', {})
+                    
+                    # Get user definition
+                    col_key = f"{file_id}::{sheet_name}::{column_name}"
+                    user_def_data = user_definitions.get(col_key, {})
+                    if isinstance(user_def_data, dict):
+                        user_def = user_def_data.get("definition", "")
+                    else:
+                        user_def = str(user_def_data) if user_def_data else ""
+                    
+                    # Get sample values from stats or metadata
+                    sample_values = []
+                    if stats.get('sample_values'):
+                        sample_values = [str(v) for v in stats['sample_values'][:10]]
+                    elif col_schema.get('sample_values'):
+                        sample_values = [str(v) for v in col_schema['sample_values'][:10]]
+                    
+                    # Build rich description combining all sources
+                    rich_description = description
+                    if not rich_description and semantic_type:
+                        rich_description = f"Semantic type: {semantic_type}"
+                    if not rich_description and user_def:
+                        rich_description = user_def
+                    
+                    # Generate embedding with all metadata
+                    col_metadata = embedder.embed_column_metadata(
+                        column_name=column_name,
+                        column_type=detected_type,
+                        description=rich_description,
+                        user_definition=user_def,
+                        sample_values=sample_values
+                    )
+                    
+                    # Add statistics and confidence to metadata
+                    col_metadata['confidence'] = confidence
+                    col_metadata['statistics'] = stats
+                    col_metadata['semantic_type'] = semantic_type
+                    
+                    # Add to vector store
+                    vector_store.add_column(
+                        file_id=file_id,
+                        file_name=file_name,
+                        sheet_name=sheet_name,
+                        column_name=column_name,
+                        embedding=col_metadata["context_embedding"],
+                        metadata=col_metadata
+                    )
+                    indexed_count += 1
+                
+                # Index relationships for this sheet
+                relationships = sheet_schema.get('relationships', [])
+                for rel in relationships:
+                    try:
+                        rel_embedding_data = embedder.embed_relationship(rel)
+                        vector_store.add_relationship(
+                            relationship=rel,
+                            embedding=rel_embedding_data["embedding"]
+                        )
+                    except Exception as rel_error:
+                        logger.warning(f"Failed to index relationship: {str(rel_error)}")
+                        continue
+            
+            logger.info(f"Indexed {indexed_count} columns and {len(relationships)} relationships for file: {file_id}")
+        else:
+            # Fallback to basic metadata extraction
+            metadata = file_info.get("metadata", {})
+            sheets = metadata.get("sheets", {})
+            indexed_count = 0
+            
+            for sheet_name, sheet_data in sheets.items():
+                columns = sheet_data.get("columns", [])
+                
+                for col in columns:
+                    column_name = col.get("name", "")
+                    if not column_name:
+                        continue
+                    
+                    # Get user definition
+                    col_key = f"{file_id}::{sheet_name}::{column_name}"
+                    user_def_data = user_definitions.get(col_key, {})
+                    if isinstance(user_def_data, dict):
+                        user_def = user_def_data.get("definition", "")
+                    else:
+                        user_def = str(user_def_data) if user_def_data else ""
+                    
+                    # Get sample values
+                    sample_data = col.get("sample_data", [])
+                    sample_values = [str(v) for v in sample_data[:10]] if sample_data else []
+                    
+                    # Generate embedding metadata
+                    col_metadata = embedder.embed_column_metadata(
+                        column_name=column_name,
+                        column_type=col.get("type", "unknown"),
+                        description=col.get("description", ""),
+                        user_definition=user_def,
+                        sample_values=sample_values
+                    )
+                    
+                    # Add to vector store
+                    vector_store.add_column(
+                        file_id=file_id,
+                        file_name=file_name,
+                        sheet_name=sheet_name,
+                        column_name=column_name,
+                        embedding=col_metadata["context_embedding"],
+                        metadata=col_metadata
+                    )
+                    indexed_count += 1
+            
+            logger.info(f"Indexed {indexed_count} columns (basic metadata) for file: {file_id}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error indexing file {file_id}: {str(e)}")
+        logger.error(traceback.format_exc())
+        return False
+
+
+@app.post("/api/semantic/index/{file_id}")
+async def index_file(file_id: str):
+    """Index a file into the semantic vector store."""
+    try:
+        file_info = load_file_metadata(file_id)
+        if not file_info:
+            raise HTTPException(status_code=404, detail=f"File {file_id} not found")
+        
+        success = index_file_in_vector_store(file_id, file_info)
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"File {file_id} indexed successfully",
+                "file_id": file_id
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Indexing failed - embeddings not available",
+                "file_id": file_id
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error indexing file: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/semantic/index-all")
+async def index_all_files():
+    """Index all uploaded files into the semantic vector store."""
+    try:
+        if not EMBEDDINGS_AVAILABLE:
+            return {
+                "success": False,
+                "message": "Embeddings module not available",
+                "indexed": 0,
+                "total": 0
+            }
+        
+        # Get all files
+        files_response = await list_uploaded_files()
+        files = files_response.get("files", [])
+        
+        indexed_count = 0
+        failed_count = 0
+        
+        for file_info in files:
+            file_id = file_info.get("file_id")
+            if file_id:
+                full_info = load_file_metadata(file_id)
+                if full_info:
+                    if index_file_in_vector_store(file_id, full_info):
+                        indexed_count += 1
+                    else:
+                        failed_count += 1
+        
+        return {
+            "success": True,
+            "message": f"Indexed {indexed_count} files, {failed_count} failed",
+            "indexed": indexed_count,
+            "failed": failed_count,
+            "total": len(files)
+        }
+    except Exception as e:
+        logger.error(f"Error indexing all files: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/semantic/search")
+async def semantic_search(
+    query: str = Query(..., description="Natural language query"),
+    n_results: int = Query(10, ge=1, le=50, description="Number of results"),
+    file_id: Optional[str] = Query(None, description="Filter by file ID")
+):
+    """Perform semantic search over indexed Excel data."""
+    try:
+        retriever = get_retriever()
+        if not retriever:
+            raise HTTPException(
+                status_code=503,
+                detail="Semantic search not available - embeddings not initialized"
+            )
+        
+        # Retrieve context
+        context = retriever.retrieve_context(
+            query=query,
+            n_columns=n_results,
+            n_relationships=min(5, n_results // 2),
+            file_filter=file_id
+        )
+        
+        return {
+            "success": True,
+            "query": query,
+            "results": context,
+            "total_columns": len(context["columns"]),
+            "total_relationships": len(context["relationships"])
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in semantic search: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/semantic/stats")
+async def get_vector_store_stats():
+    """Get statistics about the vector store."""
+    try:
+        vector_store = get_vector_store()
+        if not vector_store:
+            return {
+                "available": False,
+                "message": "Vector store not initialized"
+            }
+        
+        stats = vector_store.get_collection_stats()
+        return {
+            "available": True,
+            "stats": stats
+        }
+    except Exception as e:
+        logger.error(f"Error getting vector store stats: {str(e)}")
+        return {
+            "available": False,
+            "error": str(e)
+        }
+
+
+@app.delete("/api/semantic/index/{file_id}")
+async def remove_file_from_index(file_id: str):
+    """Remove a file from the semantic index."""
+    try:
+        vector_store = get_vector_store()
+        if not vector_store:
+            raise HTTPException(
+                status_code=503,
+                detail="Vector store not available"
+            )
+        
+        success = vector_store.delete_file(file_id)
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"File {file_id} removed from index"
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Failed to remove file {file_id} from index"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing file from index: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Phase 4: LangChain Agent System Endpoints
+# ============================================================================
+
+# Global agent instances (one per provider)
+_agent_instances = {}
+
+def get_agent_tools():
+    """Get common tools for all agents."""
+    excel_retriever = ExcelRetriever(
+        files_base_path=UPLOADED_FILES_DIR,
+        metadata_base_path=METADATA_DIR
+    )
+    data_calculator = DataCalculator()
+    trend_analyzer = TrendAnalyzer()
+    comparative_analyzer = ComparativeAnalyzer()
+    kpi_calculator = KPICalculator()
+    
+    # Get semantic retriever
+    semantic_retriever = get_retriever()
+    if not semantic_retriever:
+        logger.warning("Semantic retriever not available - agent will have limited capabilities")
+    
+    # Create LangChain tools
+    tools = []
+    
+    if semantic_retriever:
+        tools.append(create_excel_retriever_tool(excel_retriever, semantic_retriever))
+    tools.append(create_data_calculator_tool(data_calculator))
+    tools.append(create_trend_analyzer_tool(trend_analyzer))
+    tools.append(create_comparative_analyzer_tool(comparative_analyzer))
+    tools.append(create_kpi_calculator_tool(kpi_calculator))
+    
+    return tools
+
+def get_agent_instance(provider: str = "groq"):
+    """Get or create agent instance for specified provider."""
+    global _agent_instances
+    
+    if not AGENT_AVAILABLE:
+        return None
+    
+    provider = provider.lower()
+    
+    # Return cached instance if available
+    if provider in _agent_instances and _agent_instances[provider] is not None:
+        return _agent_instances[provider]
+    
+    try:
+        # Get tools
+        tools = get_agent_tools()
+        
+        # Create agent based on provider
+        if provider == "gemini":
+            gemini_api_key = os.getenv("GEMINI_API_KEY")
+            if not gemini_api_key:
+                logger.error("GEMINI_API_KEY not found in environment variables")
+                raise ValueError("GEMINI_API_KEY is required for Gemini agent")
+            
+            model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+            
+            _agent_instances[provider] = ExcelAgent(
+                tools=tools,
+                provider="gemini",
+                model_name=model_name,
+                gemini_api_key=gemini_api_key
+            )
+            logger.info(f"✓ Gemini agent initialized successfully with model: {model_name}")
+            
+        elif provider == "groq":
+            groq_api_key = os.getenv("GROQ_API_KEY")
+            if not groq_api_key:
+                logger.error("GROQ_API_KEY not found in environment variables")
+                raise ValueError("GROQ_API_KEY is required for Groq agent")
+            
+            model_name = os.getenv("AGENT_MODEL_NAME", "meta-llama/llama-4-maverick-17b-128e-instruct")
+            
+            _agent_instances[provider] = ExcelAgent(
+                tools=tools,
+                provider="groq",
+                model_name=model_name,
+                groq_api_key=groq_api_key
+            )
+            logger.info(f"✓ Groq agent initialized successfully with model: {model_name}")
+        else:
+            raise ValueError(f"Unknown provider: {provider}. Must be 'groq' or 'gemini'")
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize {provider} agent: {str(e)}")
+        _agent_instances[provider] = None
+        return None
+    
+    return _agent_instances[provider]
+
+
+class AgentQueryRequest(BaseModel):
+    """Request model for agent query."""
+    question: str
+    provider: Optional[str] = "groq"  # "groq" or "gemini"
+
+
+@app.post("/api/agent/query")
+async def agent_query(request: AgentQueryRequest):
+    """Process a natural language query using the agent."""
+    try:
+        if not AGENT_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Agent system not available - dependencies not installed"
+            )
+        
+        provider = request.provider.lower() if request.provider else "groq"
+        if provider not in ["groq", "gemini"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid provider: {provider}. Must be 'groq' or 'gemini'"
+            )
+        
+        agent = get_agent_instance(provider=provider)
+        if not agent:
+            raise HTTPException(
+                status_code=503,
+                detail=f"{provider.capitalize()} agent not initialized - check logs and API keys"
+            )
+        
+        # Process query
+        result = agent.query(request.question)
+        result["provider"] = provider
+        result["model_name"] = agent.model_name
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing agent query: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/agent/status")
+async def get_agent_status():
+    """Get agent system status for all providers."""
+    try:
+        prompt_eng_available = PROMPT_ENGINEERING_AVAILABLE if 'PROMPT_ENGINEERING_AVAILABLE' in globals() else False
+        
+        # Check Groq availability
+        groq_available = False
+        groq_agent = None
+        groq_model = None
+        try:
+            groq_agent = get_agent_instance(provider="groq")
+            groq_available = groq_agent is not None
+            if groq_agent:
+                groq_model = groq_agent.model_name
+        except Exception as e:
+            logger.debug(f"Groq agent not available: {e}")
+        
+        # Check Gemini availability
+        gemini_available = False
+        gemini_agent = None
+        gemini_model = None
+        try:
+            gemini_agent = get_agent_instance(provider="gemini")
+            gemini_available = gemini_agent is not None
+            if gemini_agent:
+                gemini_model = gemini_agent.model_name
+        except Exception as e:
+            logger.debug(f"Gemini agent not available: {e}")
+        
+        return {
+            "available": AGENT_AVAILABLE and (groq_available or gemini_available),
+            "embeddings_available": EMBEDDINGS_AVAILABLE,
+            "prompt_engineering": prompt_eng_available,
+            "providers": {
+                "groq": {
+                    "available": groq_available,
+                    "initialized": groq_agent is not None,
+                    "model_name": groq_model or os.getenv("AGENT_MODEL_NAME", "meta-llama/llama-4-maverick-17b-128e-instruct"),
+                    "api_key_set": bool(os.getenv("GROQ_API_KEY"))
+                },
+                "gemini": {
+                    "available": gemini_available,
+                    "initialized": gemini_agent is not None,
+                    "model_name": gemini_model or os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash"),
+                    "api_key_set": bool(os.getenv("GEMINI_API_KEY"))
+                }
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting agent status: {str(e)}")
+        return {
+            "available": False,
+            "error": str(e)
+        }
+
+
+if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
