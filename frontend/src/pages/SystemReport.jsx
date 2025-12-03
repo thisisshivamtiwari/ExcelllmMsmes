@@ -218,8 +218,8 @@ const SystemReport = () => {
                     <FiRefreshCw className="animate-spin text-4xl text-blue-400" />
                   </div>
                 ) : report ? (
-                  <div className="bg-gray-800/30 rounded-lg p-6 overflow-auto max-h-[600px]">
-                    <ReactMarkdown className="markdown-content">
+                  <div className="bg-gray-800/30 rounded-lg p-6 overflow-auto max-h-[600px] markdown-content">
+                    <ReactMarkdown>
                       {report.content}
                     </ReactMarkdown>
                   </div>
