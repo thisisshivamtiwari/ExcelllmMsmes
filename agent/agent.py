@@ -260,25 +260,50 @@ Thought: {agent_scratchpad}"""
         try:
             result = self.agent_executor.invoke({"input": question})
             
+            # Check for empty response
+            answer = result.get("output", "")
+            if not answer or answer.strip() == "":
+                logger.warning("Empty response from agent executor")
+                # Try to get information from intermediate steps
+                steps = result.get("intermediate_steps", [])
+                if steps:
+                    last_observation = str(steps[-1][1]) if len(steps[-1]) > 1 else ""
+                    answer = f"I processed your query but received an empty response. Last observation: {last_observation[:200]}"
+                else:
+                    answer = "I encountered an issue processing your query. Please try rephrasing it or check if the required data is available."
+            
+            # Check for "No generation chunks" error in answer
+            if "no generation chunks" in answer.lower() or "generation chunks" in answer.lower():
+                logger.error("No generation chunks error detected in response")
+                answer = "I encountered an issue generating a response. This may be due to API limitations or the query complexity. Please try simplifying your query or breaking it into smaller parts."
+            
             return {
                 "success": True,
                 "question": question,
-                "answer": result.get("output", ""),
+                "answer": answer,
                 "intermediate_steps": [
                     {
                         "action": str(step[0].tool) if step[0] else None,
                         "action_input": str(step[0].tool_input) if step[0] else None,
-                        "observation": str(step[1]) if len(step) > 1 else None
+                        "observation": str(step[1])[:500] if len(step) > 1 else None  # Truncate long observations
                     }
                     for step in result.get("intermediate_steps", [])
                 ]
             }
         except Exception as e:
-            logger.error(f"Error processing query: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Error processing query: {error_msg}")
+            
+            # Handle specific error types
+            if "no generation chunks" in error_msg.lower():
+                error_msg = "The API did not return any response. This may be due to rate limits or query complexity. Please try again."
+            elif "timeout" in error_msg.lower():
+                error_msg = "The query took too long to process. Please try simplifying your query."
+            
             return {
                 "success": False,
                 "question": question,
-                "error": str(e),
-                "answer": f"I encountered an error while processing your query: {str(e)}"
+                "error": error_msg,
+                "answer": f"I encountered an error while processing your query: {error_msg}"
             }
 

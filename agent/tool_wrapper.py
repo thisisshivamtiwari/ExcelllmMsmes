@@ -119,7 +119,31 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
                                 # Get all column names from the file
                                 columns_to_retrieve = list(sheet_info["columns"].keys())
                                 logger.info(f"No semantic columns found, using all columns from file: {columns_to_retrieve[:5]}...")
+                                
+                                # ALWAYS ensure date columns are included if they exist
+                                date_cols = [col for col in columns_to_retrieve if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
+                                if date_cols:
+                                    logger.info(f"Ensured date columns are included: {date_cols}")
                                 break
+            
+            # Final check: if we have columns but no date columns and this might need dates, add them
+            if columns_to_retrieve and file_id and (is_trend_query or any(kw in query_lower for kw in ["trend", "over time", "date", "period"])):
+                date_cols_in_retrieve = [col for col in columns_to_retrieve if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
+                if not date_cols_in_retrieve:
+                    # Load metadata to find date columns
+                    metadata = excel_retriever.load_file_metadata(file_id)
+                    if metadata and "schema" in metadata:
+                        schema = metadata["schema"]
+                        if "sheets" in schema:
+                            for sheet_name, sheet_info in schema["sheets"].items():
+                                if "columns" in sheet_info:
+                                    all_cols = list(sheet_info["columns"].keys())
+                                    date_cols = [col for col in all_cols if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
+                                    for date_col in date_cols:
+                                        if date_col not in columns_to_retrieve:
+                                            columns_to_retrieve.append(date_col)
+                                            logger.info(f"Added missing date column: {date_col}")
+                                    break
             
             # Step 7: Retrieve data
             # Check if query is asking for a calculation (sum, total, average, etc.)
