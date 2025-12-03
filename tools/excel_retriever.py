@@ -188,8 +188,9 @@ class ExcelRetriever:
                     # Normalize boolean values
                     df[col_name] = self._normalize_boolean(df[col_name])
                 elif col_type == 'categorical':
-                    # Normalize text (lowercase, trim)
-                    df[col_name] = df[col_name].astype(str).str.lower().str.strip()
+                    # Normalize text (trim whitespace, preserve original case)
+                    # Don't lowercase - preserve as-is for proper entity matching
+                    df[col_name] = df[col_name].astype(str).str.strip()
             except Exception as e:
                 logger.warning(f"Error preprocessing column {col_name}: {str(e)}")
                 continue
@@ -330,6 +331,17 @@ class ExcelRetriever:
                         serializable_record[key] = value
                 serializable_records.append(serializable_record)
             
+            # Get schema information for better context
+            schema_info = metadata.get("schema", {})
+            column_types = {}
+            if 'sheets' in schema_info:
+                for sheet_name_key, sheet_info in schema_info['sheets'].items():
+                    if 'columns' in sheet_info:
+                        for col_name, col_info in sheet_info['columns'].items():
+                            if isinstance(col_info, dict):
+                                column_types[col_name] = col_info.get('type', 'unknown')
+                        break  # Use first sheet
+            
             result = {
                 "success": True,
                 "file_id": file_id,
@@ -338,6 +350,8 @@ class ExcelRetriever:
                 "row_count": len(serializable_records),
                 "column_count": len(df.columns),
                 "columns": list(df.columns),
+                "column_types": column_types,  # Add column type information
+                "schema_note": f"Available columns: {', '.join(df.columns)}. Use these EXACT names.",
                 "data": serializable_records,
                 "summary": self._calculate_summary(df)
             }
@@ -366,9 +380,18 @@ class ExcelRetriever:
             if isinstance(filter_value, dict):
                 # Complex filter
                 if 'equals' in filter_value:
-                    filtered_df = filtered_df[filtered_df[column] == filter_value['equals']]
+                    # Case-insensitive comparison for string columns
+                    if filtered_df[column].dtype == 'object':
+                        mask = filtered_df[column].notna() & (filtered_df[column].str.lower() == str(filter_value['equals']).lower())
+                        filtered_df = filtered_df[mask]
+                    else:
+                        filtered_df = filtered_df[filtered_df[column] == filter_value['equals']]
                 elif 'not_equals' in filter_value:
-                    filtered_df = filtered_df[filtered_df[column] != filter_value['not_equals']]
+                    if filtered_df[column].dtype == 'object':
+                        mask = filtered_df[column].notna() & (filtered_df[column].str.lower() != str(filter_value['not_equals']).lower())
+                        filtered_df = filtered_df[mask]
+                    else:
+                        filtered_df = filtered_df[filtered_df[column] != filter_value['not_equals']]
                 elif 'greater_than' in filter_value:
                     filtered_df = filtered_df[filtered_df[column] > filter_value['greater_than']]
                 elif 'less_than' in filter_value:
@@ -386,8 +409,12 @@ class ExcelRetriever:
                     if 'end' in date_range:
                         filtered_df = filtered_df[filtered_df[column] <= pd.to_datetime(date_range['end'])]
             else:
-                # Simple equality filter
-                filtered_df = filtered_df[filtered_df[column] == filter_value]
+                # Simple equality filter - case-insensitive for strings
+                if filtered_df[column].dtype == 'object' and isinstance(filter_value, str):
+                    mask = filtered_df[column].notna() & (filtered_df[column].str.lower() == filter_value.lower())
+                    filtered_df = filtered_df[mask]
+                else:
+                    filtered_df = filtered_df[filtered_df[column] == filter_value]
         
         return filtered_df
     

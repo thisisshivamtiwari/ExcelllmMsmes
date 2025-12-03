@@ -93,7 +93,11 @@ class ExcelAgent:
                 model=self.model_name,
                 google_api_key=gemini_key,
                 temperature=0.1,
-                max_tokens=2048
+                max_tokens=4096,  # Optimal for Gemini to prevent generation failures
+                timeout=120,  # 2 minute timeout for complex queries
+                max_retries=3,  # Retry on errors
+                request_timeout=120,  # Request timeout
+                convert_system_message_to_human=True  # Better Gemini compatibility
             )
             logger.info(f"✓ Initialized Gemini LLM: {self.model_name}")
             
@@ -128,13 +132,14 @@ class ExcelAgent:
         # Create agent
         self.agent = create_react_agent(self.llm, tools, self.prompt)
         
-        # Create agent executor
+        # Create agent executor with increased limits for complex queries
         self.agent_executor = AgentExecutor(
             agent=self.agent,
             tools=tools,
             verbose=True,
             handle_parsing_errors=True,
-            max_iterations=10
+            max_iterations=25,  # Increased from 10 to handle complex cross-file queries
+            max_execution_time=180  # 3 minutes timeout for complex queries
         )
     
     def _create_react_prompt(self) -> PromptTemplate:
@@ -155,14 +160,16 @@ You have access to the following tools:
 - Trend analysis over time periods
 - Comparative analysis between entities
 - KPI calculations (OEE, FPY, defect rates)
-- Graph/chart generation (line, bar, pie, scatter, area, heatmap)
 
 ## Database Schema Context:
 You are working with manufacturing data including:
-- production_logs: Daily production records with targets, actuals, downtime
-- quality_control: Quality inspections, defects, rework counts
-- maintenance_logs: Machine maintenance, breakdowns, costs
-- inventory_logs: Material stock, consumption, wastage
+
+1. production_logs: Columns: Date, Shift, Line_Machine, Product, Target_Qty, Actual_Qty, Downtime_Minutes, Operator
+2. quality_control: Columns: Inspection_Date, Batch_ID, Product, Line, Inspected_Qty, Passed_Qty, Failed_Qty, Defect_Type
+3. maintenance_logs: Columns: Maintenance_Date, Machine, Maintenance_Type, Cost_Rupees, Breakdown_Date, Downtime_Hours, Issue_Description, Parts_Replaced, Technician
+4. inventory: Columns: Date, Material_Code, Material_Name, Consumption_Kg, Wastage_Kg
+
+IMPORTANT: These are the EXACT column names - use them precisely in your queries.
 
 ## Instructions:
 Use the following format:
@@ -177,23 +184,28 @@ Thought: I now know the final answer
 Final Answer: the final answer to the original input question
 
 ## Best Practices:
-1. **Start with semantic search** to find relevant columns/files for the query
-2. **Retrieve actual data** using the excel_data_retriever tool with appropriate filters
-3. **For large datasets (>100 rows)**: Use summary statistics (mean * count = total) instead of passing all data to calculator
-4. **Perform calculations** using data_calculator ONLY for small datasets (<100 rows). For large datasets, use summary statistics from excel_data_retriever response
-5. **Analyze trends** using trend_analyzer for time-based questions
-6. **Compare entities** using comparative_analyzer for "which is best/worst" questions
-7. **Calculate KPIs** using kpi_calculator for manufacturing metrics
-8. **Generate visualizations** using graph_generator for chart/graph requests:
-   - Line charts: time series (production over time, trends)
-   - Bar charts: comparisons (production by line, defects by product)
-   - Pie charts: distributions (defect types, product distribution)
-   - Scatter charts: correlations (production vs downtime)
-   - Area charts: filled trends (cumulative production)
-   - Heatmaps: 2D matrices (production by line and shift)
-9. **Provide clear reasoning** - show your thought process
-10. **Include specific numbers** - always provide quantitative answers when possible
-11. **Handle edge cases** - if data is missing or insufficient, explain clearly
+1. **Use excel_data_retriever first** to get data from the correct file
+2. **Then use calculator/analyzer tools** to process the data
+3. **Keep responses concise** - provide numbers and brief explanations
+4. **For large datasets (>100 rows)**: Use summary statistics (mean * count = total) instead of passing all data to calculator
+5. **Perform calculations** using data_calculator ONLY for small datasets (<100 rows). For large datasets, use summary statistics from excel_data_retriever response
+6. **Analyze trends** using trend_analyzer for time-based questions
+7. **Compare entities** using comparative_analyzer for "which is best/worst" questions
+8. **Calculate KPIs** using kpi_calculator for manufacturing metrics
+9. **Generate visualizations** using graph_generator for charts, graphs, and plots
+10. **Provide clear reasoning** - show your thought process
+11. **Include specific numbers** - always provide quantitative answers when possible
+12. **Handle edge cases** - if data is missing or insufficient, explain clearly
+
+## CRITICAL: Chart/Graph Responses
+When the user asks for a chart, graph, visualization, or plot:
+1. Use the graph_generator tool
+2. Your Final Answer MUST be ONLY the JSON configuration returned by graph_generator
+3. DO NOT add any explanatory text before or after the JSON
+4. DO NOT wrap the JSON in markdown code blocks
+5. Return the raw JSON directly so the frontend can render the chart
+6. Example Final Answer for charts: {{"type":"bar","data":{{"labels":[...], "datasets":[...]}},"options":{{...}}}}
+7. If the user asks "show me a bar chart of X", return ONLY the Chart.js JSON
 
 ## IMPORTANT: Large Dataset Handling
 - If excel_data_retriever returns "truncated": true and "use_summary_stats": true, DO NOT pass all data to calculator
@@ -247,63 +259,93 @@ Thought: {agent_scratchpad}"""
         
         return PromptTemplate.from_template(template)
     
-    def query(self, question: str) -> Dict[str, Any]:
+    def query(self, question: str, max_retries: int = 3) -> Dict[str, Any]:
         """
-        Process a query using the agent.
+        Process a query using the agent with retry logic for API errors.
         
         Args:
             question: Natural language question
+            max_retries: Maximum number of retries on API errors
             
         Returns:
             Dictionary with answer and metadata
         """
-        try:
-            result = self.agent_executor.invoke({"input": question})
-            
-            # Check for empty response
-            answer = result.get("output", "")
-            if not answer or answer.strip() == "":
-                logger.warning("Empty response from agent executor")
-                # Try to get information from intermediate steps
-                steps = result.get("intermediate_steps", [])
-                if steps:
-                    last_observation = str(steps[-1][1]) if len(steps[-1]) > 1 else ""
-                    answer = f"I processed your query but received an empty response. Last observation: {last_observation[:200]}"
+        import time
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Processing query (attempt {attempt + 1}/{max_retries}): {question}")
+                logger.info(f"Using provider: {self.provider}, model: {self.model_name}")
+                
+                result = self.agent_executor.invoke({"input": question})
+                
+                logger.info(f"Query completed successfully. Answer length: {len(result.get('output', ''))}")
+                logger.info(f"Intermediate steps: {len(result.get('intermediate_steps', []))}")
+                
+                return {
+                    "success": True,
+                    "question": question,
+                    "answer": result.get("output", ""),
+                    "intermediate_steps": [
+                        {
+                            "action": str(step[0].tool) if step[0] else None,
+                            "action_input": str(step[0].tool_input) if step[0] else None,
+                            "observation": str(step[1]) if len(step) > 1 else None
+                        }
+                        for step in result.get("intermediate_steps", [])
+                    ]
+                }
+            except ValueError as e:
+                error_msg = str(e)
+                if "No generation chunks" in error_msg:
+                    # Gemini generation error (not rate limit) - retry with backoff
+                    if attempt < max_retries - 1:
+                        wait_time = (2 ** attempt) * 3  # 3, 6, 12 seconds
+                        logger.warning(f"Gemini generation error (empty response), retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        logger.error(f"Max retries reached - Gemini returned empty responses for: '{question}'")
+                        logger.error("This may be due to: 1) Query too complex, 2) Response filtering, 3) API instability")
+                        return {
+                            "success": False,
+                            "question": question,
+                            "error": f"Gemini API returned empty response after {max_retries} attempts. The query may be too complex.",
+                            "answer": f"I was unable to generate a response for this query. Try simplifying it or breaking it into multiple questions."
+                        }
+                elif "rate limit" in error_msg.lower():
+                    # Actual rate limit - retry
+                    if attempt < max_retries - 1:
+                        wait_time = 5 * (attempt + 1)  # 5, 10, 15 seconds
+                        logger.warning(f"Rate limit hit, waiting {wait_time}s...")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        return {
+                            "success": False,
+                            "question": question,
+                            "error": f"Rate limit exceeded",
+                            "answer": f"Rate limit reached. Please wait a moment and try again."
+                        }
                 else:
-                    answer = "I encountered an issue processing your query. Please try rephrasing it or check if the required data is available."
-            
-            # Check for "No generation chunks" error in answer
-            if "no generation chunks" in answer.lower() or "generation chunks" in answer.lower():
-                logger.error("No generation chunks error detected in response")
-                answer = "I encountered an issue generating a response. This may be due to API limitations or the query complexity. Please try simplifying your query or breaking it into smaller parts."
-            
-            return {
-                "success": True,
-                "question": question,
-                "answer": answer,
-                "intermediate_steps": [
-                    {
-                        "action": str(step[0].tool) if step[0] else None,
-                        "action_input": str(step[0].tool_input) if step[0] else None,
-                        "observation": str(step[1])[:500] if len(step) > 1 else None  # Truncate long observations
-                    }
-                    for step in result.get("intermediate_steps", [])
-                ]
-            }
-        except Exception as e:
-            error_msg = str(e)
-            logger.error(f"Error processing query: {error_msg}")
-            
-            # Handle specific error types
-            if "no generation chunks" in error_msg.lower():
-                error_msg = "The API did not return any response. This may be due to rate limits or query complexity. Please try again."
-            elif "timeout" in error_msg.lower():
-                error_msg = "The query took too long to process. Please try simplifying your query."
-            
-            return {
-                "success": False,
-                "question": question,
-                "error": error_msg,
-                "answer": f"I encountered an error while processing your query: {error_msg}"
-            }
+                    # Other ValueError - don't retry
+                    raise
+            except Exception as e:
+                logger.error(f"Error processing query '{question}': {str(e)}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                return {
+                    "success": False,
+                    "question": question,
+                    "error": str(e),
+                    "answer": f"I encountered an error while processing your query: {str(e)}"
+                }
+        
+        # Should not reach here, but just in case
+        return {
+            "success": False,
+            "question": question,
+            "error": "Unknown error after retries",
+            "answer": "An unexpected error occurred. Please try again."
+        }
 

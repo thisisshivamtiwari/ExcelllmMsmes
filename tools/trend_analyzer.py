@@ -33,6 +33,7 @@ class TrendAnalyzer:
             value_column: Column containing values to analyze
             period: Time period (daily, weekly, monthly, quarterly, yearly)
             group_by: Optional columns to group by
+            time_range: Optional time range filter (e.g., "last month")
             
         Returns:
             Dictionary with trend analysis

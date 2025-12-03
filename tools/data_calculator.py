@@ -42,6 +42,12 @@ class DataCalculator:
             
             df = pd.DataFrame(data)
             
+            # Handle composite columns like Line_Machine (Line-X/Machine-MX)
+            # Extract Line part if grouping by 'Line' but only Line_Machine exists
+            if group_by and 'Line' in group_by and 'Line' not in df.columns and 'Line_Machine' in df.columns:
+                df['Line'] = df['Line_Machine'].str.extract(r'^(Line-\d+)', expand=False)
+                logger.info(f"Extracted 'Line' column from 'Line_Machine' composite column")
+            
             if column not in df.columns:
                 return {
                     "success": False,
@@ -113,14 +119,23 @@ class DataCalculator:
             
             # Convert result to serializable format
             if isinstance(result, pd.Series):
-                # Grouped result
+                # Grouped result - convert to dict safely
                 result_dict = {}
-                for idx, val in result.items():
-                    if isinstance(idx, tuple):
-                        key = " | ".join(str(v) for v in idx)
+                try:
+                    # Handle both simple and multi-index Series
+                    if isinstance(result.index, pd.MultiIndex):
+                        for idx, val in result.items():
+                            key = " | ".join(str(v) for v in idx)
+                            result_dict[key] = float(val) if pd.notna(val) else None
                     else:
-                        key = str(idx)
-                    result_dict[key] = float(val) if pd.notna(val) else None
+                        for idx, val in result.items():
+                            result_dict[str(idx)] = float(val) if pd.notna(val) else None
+                except Exception as e:
+                    logger.error(f"Error converting grouped result: {str(e)}")
+                    # Fallback: convert to DataFrame first
+                    result_df = result.reset_index()
+                    result_dict = result_df.to_dict('records')
+                
                 return {
                     "success": True,
                     "operation": operation,
@@ -173,6 +188,11 @@ class DataCalculator:
                 }
             
             df = pd.DataFrame(data)
+            
+            # Handle composite columns like Line_Machine (Line-X/Machine-MX)
+            if group_by and 'Line' in group_by and 'Line' not in df.columns and 'Line_Machine' in df.columns:
+                df['Line'] = df['Line_Machine'].str.extract(r'^(Line-\d+)', expand=False)
+                logger.info(f"Extracted 'Line' column from 'Line_Machine' composite column")
             
             if numerator_column not in df.columns or denominator_column not in df.columns:
                 return {

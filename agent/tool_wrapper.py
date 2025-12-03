@@ -119,31 +119,7 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
                                 # Get all column names from the file
                                 columns_to_retrieve = list(sheet_info["columns"].keys())
                                 logger.info(f"No semantic columns found, using all columns from file: {columns_to_retrieve[:5]}...")
-                                
-                                # ALWAYS ensure date columns are included if they exist
-                                date_cols = [col for col in columns_to_retrieve if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
-                                if date_cols:
-                                    logger.info(f"Ensured date columns are included: {date_cols}")
                                 break
-            
-            # Final check: if we have columns but no date columns and this might need dates, add them
-            if columns_to_retrieve and file_id and (is_trend_query or any(kw in query_lower for kw in ["trend", "over time", "date", "period"])):
-                date_cols_in_retrieve = [col for col in columns_to_retrieve if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
-                if not date_cols_in_retrieve:
-                    # Load metadata to find date columns
-                    metadata = excel_retriever.load_file_metadata(file_id)
-                    if metadata and "schema" in metadata:
-                        schema = metadata["schema"]
-                        if "sheets" in schema:
-                            for sheet_name, sheet_info in schema["sheets"].items():
-                                if "columns" in sheet_info:
-                                    all_cols = list(sheet_info["columns"].keys())
-                                    date_cols = [col for col in all_cols if any(kw in col.lower() for kw in ["date", "time", "timestamp"])]
-                                    for date_col in date_cols:
-                                        if date_col not in columns_to_retrieve:
-                                            columns_to_retrieve.append(date_col)
-                                            logger.info(f"Added missing date column: {date_col}")
-                                    break
             
             # Step 7: Retrieve data
             # Check if query is asking for a calculation (sum, total, average, etc.)
@@ -687,71 +663,56 @@ def create_kpi_calculator_tool(kpi_calculator, excel_retriever=None, semantic_re
 
 
 def create_graph_generator_tool(graph_generator, excel_retriever=None, semantic_retriever=None) -> Tool:
-    """Create LangChain tool for graph/chart generation."""
+    """Create LangChain tool for graph generation."""
     
     def generate_graph(query: str) -> str:
         """
-        Generate chart/graph data for visualization.
+        Generate charts and visualizations.
         
-        Supports chart types:
-        - line: Time series data (x=date/time, y=value)
-        - bar: Categorical data (x=categories, y=values)
-        - pie: Distribution data (labels, values)
-        - scatter: Correlation data (x, y coordinates)
-        - area: Filled line chart
-        - heatmap: 2D matrix visualization
-        
-        Input should be JSON string with:
-        {
-            "chart_type": "line|bar|pie|scatter|area|heatmap",
-            "data": <array from excel_data_retriever OR query string>,
-            "x_column": "column_name",
-            "y_column": "column_name",
-            "group_by": "optional_column",
-            "title": "optional_title",
-            ... (chart-specific parameters)
-        }
-        
-        If 'data' is a query string (e.g., "production_logs"), the tool will fetch data automatically.
+        Args:
+            query: JSON string with parameters
+            
+        Returns:
+            JSON string with chart configuration in Chart.js format
         """
         try:
-            # Parse query
-            if isinstance(query, str):
-                try:
-                    params = json.loads(query)
-                except json.JSONDecodeError:
-                    return json.dumps({
-                        "success": False,
-                        "error": "Invalid JSON. Input must be a JSON string with chart_type, data, x_column, y_column, etc."
-                    })
-            else:
-                params = query
+            try:
+                params = json.loads(query)
+            except json.JSONDecodeError as e:
+                return json.dumps({
+                    "success": False,
+                    "error": f"Invalid JSON format: {str(e)}. Expected JSON with 'data' (array or query string), 'chart_type', 'x_column', 'y_columns' (array), and optional parameters."
+                })
             
-            chart_type = params.get("chart_type", "").lower()
-            data = params.get("data")
+            data = params.get("data", [])
+            chart_type = params.get("chart_type", "bar")
+            x_column = params.get("x_column")
+            y_columns = params.get("y_columns", [])
+            title = params.get("title")
+            group_by = params.get("group_by")
+            aggregate_function = params.get("aggregate_function", "sum")
+            limit = params.get("limit")
+            sort_by = params.get("sort_by")
+            sort_order = params.get("sort_order", "desc")
             
-            # Handle data parameter - can be array or query string
-            if isinstance(data, str):
-                # It's a query string - fetch data using excel_retriever
-                if not excel_retriever:
-                    return json.dumps({
-                        "success": False,
-                        "error": "excel_retriever not available. Cannot fetch data from query string."
-                    })
-                
-                # Find file
+            # If data is a string (query), fetch data using excel_retriever
+            if isinstance(data, str) and excel_retriever:
+                logger.info(f"Data is a query string for graph generation, fetching data: {data}")
                 file_id = excel_retriever.find_file_by_name(data)
                 if not file_id:
                     return json.dumps({
                         "success": False,
-                        "error": f"Could not find file matching query: '{data}'"
+                        "error": f"Could not find file matching query: '{data}'. Use excel_data_retriever first to get the data."
                     })
                 
-                # Get all columns for graph generation
+                # For graphs, get ALL columns to ensure x_column and y_columns are available
+                columns_to_retrieve = None  # None means get all columns
+                
+                # Retrieve data
                 retrieve_result = excel_retriever.retrieve_data(
                     file_id=file_id,
-                    columns=None,  # Get all columns
-                    limit=None  # Get all data
+                    columns=columns_to_retrieve,  # None = all columns
+                    limit=None  # Get all data for graphing
                 )
                 
                 if not retrieve_result.get("success"):
@@ -766,65 +727,25 @@ def create_graph_generator_tool(graph_generator, excel_retriever=None, semantic_
             if not isinstance(data, list) or not data:
                 return json.dumps({
                     "success": False,
-                    "error": "Data must be an array of objects or a query string"
+                    "error": f"Data must be an array of objects. Got: {type(data).__name__}. Use excel_data_retriever first to get the data."
                 })
             
-            # Generate chart based on type
-            if chart_type == "line":
-                result = graph_generator.generate_line_chart(
-                    data=data,
-                    x_column=params.get("x_column"),
-                    y_column=params.get("y_column"),
-                    group_by=params.get("group_by"),
-                    title=params.get("title")
-                )
-            elif chart_type == "bar":
-                result = graph_generator.generate_bar_chart(
-                    data=data,
-                    x_column=params.get("x_column"),
-                    y_column=params.get("y_column"),
-                    group_by=params.get("group_by"),
-                    aggregation=params.get("aggregation", "sum"),
-                    title=params.get("title")
-                )
-            elif chart_type == "pie":
-                result = graph_generator.generate_pie_chart(
-                    data=data,
-                    label_column=params.get("label_column") or params.get("x_column"),
-                    value_column=params.get("value_column") or params.get("y_column"),
-                    title=params.get("title")
-                )
-            elif chart_type == "scatter":
-                result = graph_generator.generate_scatter_chart(
-                    data=data,
-                    x_column=params.get("x_column"),
-                    y_column=params.get("y_column"),
-                    size_column=params.get("size_column"),
-                    color_column=params.get("color_column"),
-                    title=params.get("title")
-                )
-            elif chart_type == "area":
-                result = graph_generator.generate_area_chart(
-                    data=data,
-                    x_column=params.get("x_column"),
-                    y_column=params.get("y_column"),
-                    group_by=params.get("group_by"),
-                    title=params.get("title")
-                )
-            elif chart_type == "heatmap":
-                result = graph_generator.generate_heatmap(
-                    data=data,
-                    x_column=params.get("x_column"),
-                    y_column=params.get("y_column"),
-                    value_column=params.get("value_column") or params.get("y_column"),
-                    aggregation=params.get("aggregation", "sum"),
-                    title=params.get("title")
-                )
-            else:
-                result = {
-                    "success": False,
-                    "error": f"Unknown chart type: {chart_type}. Supported types: line, bar, pie, scatter, area, heatmap"
-                }
+            # Ensure y_columns is a list
+            if isinstance(y_columns, str):
+                y_columns = [col.strip() for col in y_columns.split(",")]
+            
+            result = graph_generator.generate_chart(
+                data=data,
+                chart_type=chart_type,
+                x_column=x_column,
+                y_columns=y_columns,
+                title=title,
+                group_by=group_by,
+                aggregate_function=aggregate_function,
+                limit=limit,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
             
             return json.dumps(result, default=str)
             
@@ -839,7 +760,38 @@ def create_graph_generator_tool(graph_generator, excel_retriever=None, semantic_
     
     return Tool(
         name="graph_generator",
-        description="Generate chart/graph data for visualization. Supports line, bar, pie, scatter, area, and heatmap charts. Input should be JSON string with 'chart_type', 'data' (array or query string), 'x_column', 'y_column', and chart-specific parameters. If 'data' is a query string (e.g., 'production_logs'), the tool will fetch data automatically.",
+        description="""Generate charts and visualizations in Chart.js format. This tool returns a complete Chart.js configuration object that can be directly rendered by the frontend.
+        
+Supported chart types: bar, line, pie, doughnut, radar, polarArea, scatter, area, stacked_bar, grouped_bar, multi_line, combo
+
+Input JSON format:
+{
+  "data": "<query string to fetch data OR array of data objects>",
+  "chart_type": "<one of the supported types>",
+  "x_column": "<column name for X-axis>",
+  "y_columns": ["<column name(s) for Y-axis>"],
+  "title": "<optional chart title>",
+  "group_by": "<optional column to group data>",
+  "aggregate_function": "<sum|avg|count|min|max>",
+  "limit": <optional number of data points>,
+  "sort_by": "<optional column to sort>",
+  "sort_order": "<asc|desc>"
+}
+
+When user asks for graphs/charts/visualizations:
+1. ALWAYS use this tool when they request visual representations
+2. The tool returns JSON with Chart.js configuration
+3. DO NOT add explanatory text - return ONLY the JSON configuration from this tool
+4. The frontend will render the chart automatically from the JSON
+
+Examples of when to use:
+- "show me a bar chart of..."
+- "create a line graph showing..."
+- "visualize the trend..."
+- "display a pie chart of..."
+- "plot X vs Y..."
+- "chart the relationship between..."
+""",
         func=generate_graph
     )
 
