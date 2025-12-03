@@ -69,12 +69,19 @@ def create_excel_retriever_tool(excel_retriever, semantic_retriever) -> Tool:
                 columns_to_retrieve = [col.get("column_name") for col in columns[:10] if col.get("file_id") == file_id]
             
             # Step 7: Retrieve data
-            # For display purposes, limit to 50 rows to prevent token overflow
-            # But include summary statistics for calculations
+            # Check if query is asking for a calculation (sum, total, average, etc.)
+            # If so, don't limit data - we need all rows for accurate calculations
+            calculation_keywords = ["total", "sum", "average", "avg", "mean", "count", "how many"]
+            is_calculation_query = any(keyword in query.lower() for keyword in calculation_keywords)
+            
+            # For calculation queries, get all data (no limit)
+            # For display queries, limit to 50 rows to prevent token overflow
+            limit_value = None if is_calculation_query else 50
+            
             result = excel_retriever.retrieve_data(
                 file_id=file_id,
                 columns=columns_to_retrieve,
-                limit=50  # Limit displayed rows to prevent token overflow
+                limit=limit_value
             )
             
             # Step 8: If result is too large, truncate data but keep summary
