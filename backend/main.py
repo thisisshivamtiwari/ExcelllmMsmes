@@ -3076,10 +3076,6 @@ async def get_agent_status():
         }
 
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
 # ============================================================================
 # PHASE 6: System Reports & Testing API
 # ============================================================================
@@ -3220,3 +3216,7 @@ async def get_system_logs(lines: int = 100):
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
