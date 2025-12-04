@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar"
 import Dashboard from "@/pages/Dashboard"
 import DataGenerator from "@/pages/DataGenerator"
 import Visualization from "@/pages/Visualization"
+import VisualizationDynamic from "@/pages/VisualizationDynamic"
 import QuestionGenerator from "@/pages/QuestionGenerator"
 import Benchmarking from "@/pages/Benchmarking"
 import PromptEngineering from "@/pages/PromptEngineering"
@@ -69,7 +70,8 @@ function App() {
               <Route path="/semantic-search" element={<SemanticSearch />} />
               <Route path="/agent-chat" element={<AgentChat />} />
               <Route path="/data-generator" element={<DataGenerator />} />
-              <Route path="/visualization" element={<Visualization />} />
+              <Route path="/visualization" element={<VisualizationDynamic />} />
+              <Route path="/visualization-old" element={<Visualization />} />
               <Route path="/question-generator" element={<QuestionGenerator />} />
               <Route path="/benchmarking" element={<Benchmarking />} />
               <Route path="/prompt-engineering" element={<PromptEngineering />} />
