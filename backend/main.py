@@ -3199,7 +3199,11 @@ async def get_test_results():
 # DATA VISUALIZATION ENDPOINTS
 # ============================================================================
 
-from backend.dynamic_visualizer import DynamicVisualizer
+# Import dynamic visualizer
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent))
+from dynamic_visualizer import DynamicVisualizer
 
 # Initialize dynamic visualizer
 dynamic_visualizer = DynamicVisualizer()
