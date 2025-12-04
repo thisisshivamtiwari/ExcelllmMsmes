@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 import logging
 from datetime import datetime, timedelta
+import sys
+
+# Import Gemini Column Finder
+sys.path.insert(0, str(Path(__file__).parent))
+from gemini_column_finder import GeminiColumnFinder
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +25,11 @@ class DynamicVisualizer:
     """
     
     def __init__(self):
+        # Initialize Gemini-powered column finder
+        self.gemini_finder = GeminiColumnFinder()
+        logger.info(f"Dynamic Visualizer initialized with Gemini support: {self.gemini_finder.model is not None}")
+        
+        # Fallback keywords (only used if Gemini not available)
         self.numeric_keywords = [
             'qty', 'quantity', 'count', 'total', 'sum', 'amount', 'value', 'price', 
             'cost', 'revenue', 'sales', 'hours', 'minutes', 'rate', 'percent', 
@@ -74,8 +84,30 @@ class DynamicVisualizer:
     
     def find_best_columns(self, df: pd.DataFrame, column_types: Dict, purpose: str) -> Dict[str, str]:
         """
-        Use semantic search to find best columns for specific purposes
+        Use Gemini AI (or semantic search fallback) to find best columns for specific purposes
         """
+        # Try Gemini first
+        if self.gemini_finder.model:
+            try:
+                all_columns = list(df.columns)
+                purpose_descriptions = {
+                    'quantity': 'find quantity or amount columns',
+                    'target_actual': 'find target and actual columns for comparison',
+                    'efficiency': 'calculate efficiency (actual vs target)',
+                    'cost': 'find cost or price columns',
+                    'time': 'find time duration columns (hours, minutes)'
+                }
+                
+                gemini_purpose = purpose_descriptions.get(purpose, purpose)
+                result = self.gemini_finder.find_columns(all_columns, gemini_purpose)
+                
+                if result:
+                    logger.info(f"✅ Gemini found columns for '{purpose}': {result}")
+                    return result
+            except Exception as e:
+                logger.warning(f"Gemini column finding failed, using fallback: {e}")
+        
+        # Fallback to keyword-based search
         result = {}
         
         if purpose == 'quantity':
