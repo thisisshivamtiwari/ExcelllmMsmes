@@ -3199,163 +3199,19 @@ async def get_test_results():
 # DATA VISUALIZATION ENDPOINTS
 # ============================================================================
 
+from backend.dynamic_visualizer import DynamicVisualizer
+
+# Initialize dynamic visualizer
+dynamic_visualizer = DynamicVisualizer()
+
 @app.get("/api/visualizations/data/all")
 async def get_all_visualization_data():
-    """Get all data for visualizations"""
+    """Get all data for visualizations - DYNAMIC VERSION"""
     try:
-        import pandas as pd
-        
         data_dir = BASE_DIR / "datagenerator" / "generated_data"
-        visualizations = {}
         
-        # Production Logs Analysis
-        prod_file = data_dir / "production_logs.csv"
-        if prod_file.exists():
-            df = pd.read_csv(prod_file)
-            
-            # Production by Product
-            prod_by_product = df.groupby('Product')['Actual_Qty'].sum().to_dict()
-            
-            # Production Trend (Last 30 days)
-            df['Date'] = pd.to_datetime(df['Date'])
-            df_sorted = df.sort_values('Date')
-            daily_prod = df_sorted.groupby('Date')['Actual_Qty'].sum().tail(30)
-            
-            # Production by Shift
-            prod_by_shift = df.groupby('Shift')['Actual_Qty'].sum().to_dict()
-            
-            # Production by Line
-            prod_by_line = df.groupby('Line_Machine')['Actual_Qty'].sum().to_dict()
-            
-            # Downtime Analysis
-            downtime_by_line = df.groupby('Line_Machine')['Downtime_Minutes'].sum().to_dict()
-            
-            # Target vs Actual
-            target_vs_actual = {
-                'Target': int(df['Target_Qty'].sum()),
-                'Actual': int(df['Actual_Qty'].sum())
-            }
-            
-            # Efficiency by Product
-            df['Efficiency'] = (df['Actual_Qty'] / df['Target_Qty'] * 100)
-            efficiency_by_product = df.groupby('Product')['Efficiency'].mean().to_dict()
-            
-            visualizations['production'] = {
-                'by_product': prod_by_product,
-                'trend': {
-                    'labels': [str(d.date()) for d in daily_prod.index],
-                    'values': daily_prod.tolist()
-                },
-                'by_shift': prod_by_shift,
-                'by_line': prod_by_line,
-                'downtime_by_line': downtime_by_line,
-                'target_vs_actual': target_vs_actual,
-                'efficiency_by_product': efficiency_by_product
-            }
-        
-        # Quality Control Analysis
-        qc_file = data_dir / "quality_control.csv"
-        if qc_file.exists():
-            df = pd.read_csv(qc_file)
-            
-            # Defects by Type
-            defects_by_type = df.groupby('Defect_Type')['Failed_Qty'].sum().to_dict()
-            defects_by_type = {k: v for k, v in defects_by_type.items() if k and str(k) != 'nan'}
-            
-            # Pass Rate by Product
-            df['Pass_Rate'] = (df['Passed_Qty'] / df['Inspected_Qty'] * 100)
-            pass_rate_by_product = df.groupby('Product')['Pass_Rate'].mean().to_dict()
-            
-            # Quality Trend
-            df['Inspection_Date'] = pd.to_datetime(df['Inspection_Date'])
-            df_sorted = df.sort_values('Inspection_Date')
-            daily_pass_rate = df_sorted.groupby('Inspection_Date')['Pass_Rate'].mean().tail(30)
-            
-            # Defects by Product
-            defects_by_product = df.groupby('Product')['Failed_Qty'].sum().to_dict()
-            
-            # Rework Analysis
-            rework_by_product = df.groupby('Product')['Rework_Count'].sum().to_dict()
-            
-            visualizations['quality'] = {
-                'defects_by_type': defects_by_type,
-                'pass_rate_by_product': pass_rate_by_product,
-                'quality_trend': {
-                    'labels': [str(d.date()) for d in daily_pass_rate.index],
-                    'values': daily_pass_rate.tolist()
-                },
-                'defects_by_product': defects_by_product,
-                'rework_by_product': rework_by_product
-            }
-        
-        # Maintenance Analysis
-        maint_file = data_dir / "maintenance_logs.csv"
-        if maint_file.exists():
-            df = pd.read_csv(maint_file)
-            
-            # Maintenance by Type
-            maint_by_type = df.groupby('Maintenance_Type').size().to_dict()
-            
-            # Downtime by Machine
-            downtime_by_machine = df.groupby('Machine')['Downtime_Hours'].sum().to_dict()
-            
-            # Cost by Machine
-            cost_by_machine = df.groupby('Machine')['Cost_Rupees'].sum().to_dict()
-            
-            # Maintenance Trend
-            df['Maintenance_Date'] = pd.to_datetime(df['Maintenance_Date'])
-            df_sorted = df.sort_values('Maintenance_Date')
-            monthly_maint = df_sorted.groupby(df_sorted['Maintenance_Date'].dt.to_period('M')).size()
-            
-            # Cost Trend
-            monthly_cost = df_sorted.groupby(df_sorted['Maintenance_Date'].dt.to_period('M'))['Cost_Rupees'].sum()
-            
-            visualizations['maintenance'] = {
-                'by_type': maint_by_type,
-                'downtime_by_machine': downtime_by_machine,
-                'cost_by_machine': cost_by_machine,
-                'maintenance_trend': {
-                    'labels': [str(p) for p in monthly_maint.index],
-                    'values': monthly_maint.tolist()
-                },
-                'cost_trend': {
-                    'labels': [str(p) for p in monthly_cost.index],
-                    'values': monthly_cost.tolist()
-                }
-            }
-        
-        # Inventory Analysis
-        inv_file = data_dir / "inventory_logs.csv"
-        if inv_file.exists():
-            df = pd.read_csv(inv_file)
-            
-            # Stock by Material
-            latest_stock = df.groupby('Material_Name')['Closing_Stock_Kg'].last().to_dict()
-            
-            # Consumption by Material
-            consumption_by_material = df.groupby('Material_Name')['Consumption_Kg'].sum().to_dict()
-            
-            # Wastage by Material
-            wastage_by_material = df.groupby('Material_Name')['Wastage_Kg'].sum().to_dict()
-            
-            # Stock Trend (Last 30 days)
-            df['Date'] = pd.to_datetime(df['Date'])
-            df_sorted = df.sort_values('Date')
-            daily_stock = df_sorted.groupby('Date')['Closing_Stock_Kg'].sum().tail(30)
-            
-            # Cost by Supplier
-            cost_by_supplier = df.groupby('Supplier')['Unit_Cost_Rupees'].mean().to_dict()
-            
-            visualizations['inventory'] = {
-                'stock_by_material': latest_stock,
-                'consumption_by_material': consumption_by_material,
-                'wastage_by_material': wastage_by_material,
-                'stock_trend': {
-                    'labels': [str(d.date()) for d in daily_stock.index],
-                    'values': daily_stock.tolist()
-                },
-                'cost_by_supplier': cost_by_supplier
-            }
+        # Use dynamic visualizer - works with ANY CSV files
+        visualizations = dynamic_visualizer.generate_all_file_visualizations(data_dir)
         
         return {
             "success": True,
