@@ -7,12 +7,117 @@ import pandas as pd
 import numpy as np
 from typing import Dict, Any, List, Optional
 import logging
+import sys
+from pathlib import Path
+
+# Import Gemini Column Finder for intelligent column handling
+sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+try:
+    from gemini_column_finder import GeminiColumnFinder
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    logger.warning("GeminiColumnFinder not available")
 
 logger = logging.getLogger(__name__)
 
 
 class DataCalculator:
     """Performs data aggregations and calculations."""
+    
+    def __init__(self):
+        """Initialize with Gemini support if available"""
+        self.gemini_finder = GeminiColumnFinder() if GEMINI_AVAILABLE else None
+        if self.gemini_finder and self.gemini_finder.model:
+            logger.info("✅ DataCalculator initialized with Gemini support")
+        else:
+            logger.info("⚠️ DataCalculator using fallback mode (no Gemini)")
+    
+    def _extract_derived_column(self, df: pd.DataFrame, requested_column: str, available_columns: List[str]) -> Optional[str]:
+        """
+        Use Gemini to intelligently extract or derive a column
+        
+        Args:
+            df: DataFrame
+            requested_column: Column requested by user (e.g., 'Line')
+            available_columns: Columns that actually exist
+            
+        Returns:
+            Column name to use, or None if cannot be derived
+        """
+        if requested_column in available_columns:
+            return requested_column
+        
+        # Use Gemini to find if we can derive this column
+        if self.gemini_finder and self.gemini_finder.model:
+            try:
+                # Get sample data for context
+                sample_row = df.iloc[0].to_dict() if len(df) > 0 else {}
+                
+                prompt_purpose = f"extract or derive '{requested_column}' column from available columns"
+                
+                result = self.gemini_finder.find_columns(
+                    available_columns=available_columns,
+                    purpose=prompt_purpose,
+                    data_context=f"Need to get '{requested_column}' values. Sample row: {sample_row}"
+                )
+                
+                if result and 'source_column' in result:
+                    source_col = result['source_column']
+                    
+                    # If Gemini suggests a transformation
+                    if 'extraction_pattern' in result and result['extraction_pattern']:
+                        pattern = result['extraction_pattern']
+                        logger.info(f"Gemini suggests extracting '{requested_column}' from '{source_col}' using pattern: {pattern}")
+                        
+                        # Apply extraction
+                        try:
+                            df[requested_column] = df[source_col].str.extract(pattern, expand=False)
+                            return requested_column
+                        except Exception as e:
+                            logger.warning(f"Failed to extract using pattern {pattern}: {e}")
+                    
+                    # If source column can be used directly
+                    return source_col
+                    
+            except Exception as e:
+                logger.warning(f"Gemini extraction failed: {e}")
+        
+        # Fallback: Try to find composite columns
+        return self._fallback_extract_column(df, requested_column, available_columns)
+    
+    def _fallback_extract_column(self, df: pd.DataFrame, requested_column: str, available_columns: List[str]) -> Optional[str]:
+        """
+        Fallback method to extract columns without Gemini
+        """
+        requested_lower = requested_column.lower()
+        
+        # Look for columns that might contain the requested one
+        for col in available_columns:
+            col_lower = col.lower()
+            
+            # Check if requested column is part of a composite column
+            if requested_lower in col_lower and col != requested_column:
+                logger.info(f"Found potential source column: {col} for {requested_column}")
+                
+                # Try common patterns
+                patterns = [
+                    rf'^({requested_column}-\d+)',  # Line-1, Line-2, etc.
+                    rf'^({requested_column}\d+)',   # Line1, Line2, etc.
+                    rf'({requested_column}[^/]+)',  # Line-ABC before /
+                ]
+                
+                for pattern in patterns:
+                    try:
+                        extracted = df[col].str.extract(pattern, expand=False)
+                        if extracted.notna().any():
+                            df[requested_column] = extracted
+                            logger.info(f"Extracted '{requested_column}' from '{col}' using pattern: {pattern}")
+                            return requested_column
+                    except:
+                        continue
+        
+        return None
     
     def calculate(
         self,
@@ -42,11 +147,16 @@ class DataCalculator:
             
             df = pd.DataFrame(data)
             
-            # Handle composite columns like Line_Machine (Line-X/Machine-MX)
-            # Extract Line part if grouping by 'Line' but only Line_Machine exists
-            if group_by and 'Line' in group_by and 'Line' not in df.columns and 'Line_Machine' in df.columns:
-                df['Line'] = df['Line_Machine'].str.extract(r'^(Line-\d+)', expand=False)
-                logger.info(f"Extracted 'Line' column from 'Line_Machine' composite column")
+            # Handle missing columns intelligently using Gemini
+            if group_by:
+                for gb_col in group_by:
+                    if gb_col not in df.columns:
+                        derived_col = self._extract_derived_column(df, gb_col, list(df.columns))
+                        if not derived_col:
+                            return {
+                                "success": False,
+                                "error": f"Group by column '{gb_col}' not found and cannot be derived"
+                            }
             
             if column not in df.columns:
                 return {
@@ -189,10 +299,16 @@ class DataCalculator:
             
             df = pd.DataFrame(data)
             
-            # Handle composite columns like Line_Machine (Line-X/Machine-MX)
-            if group_by and 'Line' in group_by and 'Line' not in df.columns and 'Line_Machine' in df.columns:
-                df['Line'] = df['Line_Machine'].str.extract(r'^(Line-\d+)', expand=False)
-                logger.info(f"Extracted 'Line' column from 'Line_Machine' composite column")
+            # Handle missing columns intelligently using Gemini
+            if group_by:
+                for gb_col in group_by:
+                    if gb_col not in df.columns:
+                        derived_col = self._extract_derived_column(df, gb_col, list(df.columns))
+                        if not derived_col:
+                            return {
+                                "success": False,
+                                "error": f"Group by column '{gb_col}' not found and cannot be derived"
+                            }
             
             if numerator_column not in df.columns or denominator_column not in df.columns:
                 return {
