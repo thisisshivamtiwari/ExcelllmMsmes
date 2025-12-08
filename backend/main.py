@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Request
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Request, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -18,6 +18,21 @@ import logging
 import traceback
 import gc
 from dotenv import load_dotenv
+
+# Multi-Tenant SaaS imports (after logger is defined)
+MONGODB_AVAILABLE = False
+try:
+    from backend.database import connect_to_mongodb, close_mongodb_connection
+    from backend.models.user import UserCreate, UserLogin, UserResponse, UserInDB
+    from backend.models.industry import IndustryResponse
+    from backend.services.auth_service import create_user, authenticate_user, create_access_token, get_user_by_id
+    from backend.services.industry_service import seed_industries, get_all_industries, get_industry_by_name
+    from backend.middleware.auth_middleware import get_current_user
+    MONGODB_AVAILABLE = True
+except ImportError as e:
+    # Logger might not be defined yet, use print for initial warning
+    import sys
+    print(f"Warning: MongoDB/Auth modules not available: {str(e)}", file=sys.stderr)
 
 # Load environment variables from .env file
 # Try backend/.env first, then project root .env
@@ -48,7 +63,45 @@ elif ROOT_ENV.exists():
 else:
     logger.info("Environment variables loaded from system/default location")
 
+# Multi-Tenant SaaS imports (after logger is defined)
+MONGODB_AVAILABLE = False
+try:
+    from backend.database import connect_to_mongodb, close_mongodb_connection
+    from backend.models.user import UserCreate, UserLogin, UserResponse, UserInDB
+    from backend.models.industry import IndustryResponse
+    from backend.services.auth_service import create_user, authenticate_user, create_access_token, get_user_by_id
+    from backend.services.industry_service import seed_industries, get_all_industries, get_industry_by_name
+    from backend.middleware.auth_middleware import get_current_user
+    MONGODB_AVAILABLE = True
+    logger.info("✅ Multi-tenant SaaS modules loaded successfully")
+except ImportError as e:
+    logger.warning(f"MongoDB/Auth modules not available: {str(e)}")
+
 app = FastAPI(title="ExcelLLM Data Generator API")
+
+# MongoDB startup and shutdown events
+@app.on_event("startup")
+async def startup_event():
+    """Initialize MongoDB connection on startup"""
+    if MONGODB_AVAILABLE:
+        try:
+            await connect_to_mongodb()
+            # Seed industries on startup
+            await seed_industries()
+            logger.info("✅ MongoDB initialized and industries seeded")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize MongoDB: {e}")
+            logger.warning("Continuing without MongoDB (some features may not work)")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close MongoDB connection on shutdown"""
+    if MONGODB_AVAILABLE:
+        try:
+            await close_mongodb_connection()
+            logger.info("MongoDB connection closed")
+        except Exception as e:
+            logger.error(f"Error closing MongoDB connection: {e}")
 
 # CORS middleware - MUST be added BEFORE exception handlers
 app.add_middleware(
@@ -270,6 +323,175 @@ async def root():
 @app.get("/api/health")
 async def health():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+
+# ============================================================================
+# MULTI-TENANT SAAS: Authentication & User Management
+# ============================================================================
+
+@app.post("/api/auth/signup", response_model=Dict[str, Any])
+async def signup(user_data: UserCreate):
+    """Create a new user account"""
+    if not MONGODB_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication service not available - MongoDB not configured"
+        )
+    
+    try:
+        # Validate industry exists
+        industry = await get_industry_by_name(user_data.industry)
+        if not industry:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid industry: {user_data.industry}"
+            )
+        
+        # Create user
+        user = await create_user(user_data)
+        
+        # Create access token
+        access_token = create_access_token(data={"sub": user.id})
+        
+        return {
+            "success": True,
+            "message": "User created successfully",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "industry": user.industry,
+                "name": user.profile.name if user.profile else None,
+                "company": user.profile.company if user.profile else None
+            },
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating user: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/auth/login", response_model=Dict[str, Any])
+async def login(credentials: UserLogin):
+    """Login and get access token"""
+    if not MONGODB_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication service not available - MongoDB not configured"
+        )
+    
+    try:
+        # Authenticate user
+        user = await authenticate_user(credentials.email, credentials.password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Create access token
+        access_token = create_access_token(data={"sub": str(user._id)})
+        
+        return {
+            "success": True,
+            "message": "Login successful",
+            "user": {
+                "id": str(user._id),
+                "email": user.email,
+                "industry": user.industry,
+                "name": user.profile.name if user.profile else None,
+                "company": user.profile.company if user.profile else None
+            },
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during login: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/auth/me", response_model=Dict[str, Any])
+async def get_current_user_info(current_user: UserInDB = Depends(get_current_user)):
+    """Get current authenticated user information"""
+    return {
+        "success": True,
+        "user": {
+            "id": str(current_user._id),
+            "email": current_user.email,
+            "industry": current_user.industry,
+            "created_at": current_user.created_at.isoformat(),
+            "last_login": current_user.last_login.isoformat() if current_user.last_login else None,
+            "profile": {
+                "name": current_user.profile.name if current_user.profile else None,
+                "company": current_user.profile.company if current_user.profile else None
+            } if current_user.profile else None
+        }
+    }
+
+
+# ============================================================================
+# MULTI-TENANT SAAS: Industry Management
+# ============================================================================
+
+@app.get("/api/industries", response_model=List[Dict[str, Any]])
+async def get_industries():
+    """Get all available industries"""
+    if not MONGODB_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Industry service not available - MongoDB not configured"
+        )
+    
+    try:
+        industries = await get_all_industries()
+        return [
+            {
+                "id": ind.id,
+                "name": ind.name,
+                "display_name": ind.display_name,
+                "description": ind.description,
+                "icon": ind.icon,
+                "schema_templates": ind.schema_templates
+            }
+            for ind in industries
+        ]
+    except Exception as e:
+        logger.error(f"Error getting industries: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/industries/{industry_name}", response_model=Dict[str, Any])
+async def get_industry(industry_name: str):
+    """Get industry by name"""
+    if not MONGODB_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Industry service not available - MongoDB not configured"
+        )
+    
+    try:
+        industry = await get_industry_by_name(industry_name)
+        if not industry:
+            raise HTTPException(status_code=404, detail="Industry not found")
+        
+        return {
+            "id": industry.id,
+            "name": industry.name,
+            "display_name": industry.display_name,
+            "description": industry.description,
+            "icon": industry.icon,
+            "schema_templates": industry.schema_templates
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting industry: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/python-status")

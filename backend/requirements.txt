@@ -25,3 +25,9 @@ langchain-groq>=0.1.0
 langchain-google-genai>=1.0.0
 groq>=0.4.0
 
+# Multi-Tenant SaaS: Authentication & MongoDB
+python-jose[cryptography]>=3.3.0  # JWT tokens
+passlib[bcrypt]>=1.7.4              # Password hashing
+motor>=3.3.0                         # Async MongoDB driver
+pymongo>=4.6.0                       # MongoDB driver
+
