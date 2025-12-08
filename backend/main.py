@@ -414,7 +414,7 @@ if MONGODB_AVAILABLE:
     @app.get("/api/auth/me", response_model=Dict[str, Any])
     async def get_current_user_info(current_user: UserInDB = Depends(get_current_user)):
         """Get current authenticated user information"""
-            return {
+        return {
                 "success": True,
                 "user": {
                     "id": str(current_user._id),
