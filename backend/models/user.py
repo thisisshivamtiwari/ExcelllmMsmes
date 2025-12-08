@@ -47,7 +47,7 @@ class UserResponse(BaseModel):
 
 class UserInDB(BaseModel):
     """User document in database"""
-    _id: ObjectId
+    id: ObjectId = Field(alias="_id")
     email: str
     password_hash: str
     industry: str
@@ -59,4 +59,5 @@ class UserInDB(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+        populate_by_name = True  # Allow both id and _id
 

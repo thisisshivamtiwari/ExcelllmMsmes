@@ -155,8 +155,13 @@ async def authenticate_user(email: str, password: str) -> Optional[UserInDB]:
         {"$set": {"last_login": datetime.utcnow()}}
     )
     
-    # Convert to UserInDB
-    return UserInDB(**user_doc)
+    # Convert to UserInDB - ensure _id is properly set
+    # MongoDB returns _id as ObjectId, Pydantic needs it as-is
+    user_data = dict(user_doc)
+    if "_id" not in user_data or user_data["_id"] is None:
+        raise ValueError("User document missing _id field")
+    
+    return UserInDB(**user_data)
 
 
 async def get_user_by_id(user_id: str) -> Optional[UserInDB]:
@@ -182,5 +187,11 @@ async def get_user_by_email(email: str) -> Optional[UserInDB]:
     user_doc = await users_collection.find_one({"email": email})
     if not user_doc:
         return None
-    return UserInDB(**user_doc)
+    
+    # Ensure _id is properly set
+    user_data = dict(user_doc)
+    if "_id" not in user_data:
+        return None
+    
+    return UserInDB(**user_data)
 

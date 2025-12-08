@@ -389,13 +389,13 @@ if MONGODB_AVAILABLE:
                 )
             
             # Create access token
-            access_token = create_access_token(data={"sub": str(user._id)})
+            access_token = create_access_token(data={"sub": str(user.id)})
             
             return {
                 "success": True,
                 "message": "Login successful",
                 "user": {
-                    "id": str(user._id),
+                    "id": str(user.id),
                     "email": user.email,
                     "industry": user.industry,
                     "name": user.profile.name if user.profile else None,
@@ -415,9 +415,9 @@ if MONGODB_AVAILABLE:
     async def get_current_user_info(current_user: UserInDB = Depends(get_current_user)):
         """Get current authenticated user information"""
         return {
-                "success": True,
-                "user": {
-                    "id": str(current_user._id),
+            "success": True,
+            "user": {
+                "id": str(current_user.id),
                     "email": current_user.email,
                     "industry": current_user.industry,
                     "created_at": current_user.created_at.isoformat(),
