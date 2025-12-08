@@ -8,8 +8,8 @@ from datetime import datetime
 from bson import ObjectId
 import logging
 
-from backend.database import get_database
-from backend.models.industry import IndustryCreate, IndustryResponse
+from database import get_database
+from models.industry import IndustryCreate, IndustryResponse
 
 logger = logging.getLogger(__name__)
 

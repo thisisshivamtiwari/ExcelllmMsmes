@@ -12,8 +12,8 @@ from fastapi import HTTPException, status
 from bson import ObjectId
 import logging
 
-from backend.database import get_database
-from backend.models.user import UserCreate, UserInDB, UserResponse
+from database import get_database
+from models.user import UserCreate, UserInDB, UserResponse
 
 logger = logging.getLogger(__name__)
 

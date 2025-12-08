@@ -8,8 +8,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 import logging
 
-from backend.services.auth_service import verify_token, get_user_by_id
-from backend.models.user import UserInDB
+from services.auth_service import verify_token, get_user_by_id
+from models.user import UserInDB
 
 logger = logging.getLogger(__name__)
 
