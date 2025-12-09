@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from "react"
 import { FiSend, FiLoader, FiAlertCircle, FiCheckCircle, FiMessageSquare, FiChevronDown, FiChevronUp, FiHelpCircle } from "react-icons/fi"
 import ChartDisplay from "../components/ChartDisplay"
 import SuggestionsPanel from "../components/SuggestionsPanel"
+import { useAuth } from "@/contexts/AuthContext"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
 
 const AgentChat = () => {
+  const { token } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -16,7 +18,7 @@ const AgentChat = () => {
 
   useEffect(() => {
     checkAgentStatus()
-  }, [])
+  }, [token, provider])
 
   useEffect(() => {
     scrollToBottom()
@@ -122,13 +124,29 @@ const AgentChat = () => {
   }
 
   const checkAgentStatus = async () => {
+    if (!token) {
+      setAgentStatus({ available: false, message: "Please login to use agent chat" })
+      return
+    }
+    
     try {
-      const response = await fetch(`${API_BASE_URL}/agent/status`)
-      const data = await response.json()
-      setAgentStatus(data)
+      const headers = {
+        "Authorization": `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/agent/status`, { headers })
+      if (response.ok) {
+        const data = await response.json()
+        setAgentStatus(data)
+      } else if (response.status === 401) {
+        setAgentStatus({ available: false, message: "Please login to use agent chat" })
+      } else {
+        const errorData = await response.json().catch(() => ({ detail: "Unknown error" }))
+        setAgentStatus({ available: false, message: errorData.detail || "Failed to check agent status" })
+      }
     } catch (error) {
       console.error("Error checking agent status:", error)
-      setAgentStatus({ available: false, error: "Failed to check agent status" })
+      setAgentStatus({ available: false, message: `Error: ${error.message}` })
     }
   }
 
@@ -153,6 +171,96 @@ const AgentChat = () => {
       setLoading(true)
     }
 
+    if (!token) {
+      const errorMessage = {
+        role: "assistant",
+        content: "Please login to use agent chat",
+        success: false,
+        provider: activeProvider,
+        timestamp: new Date().toISOString()
+      }
+      setMessages((prev) => [...prev, errorMessage])
+      setLoading(false)
+      return
+    }
+
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/agent/query`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ 
+          question: messageText,
+          provider: activeProvider
+        })
+      })
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Please login to use agent chat")
+        }
+        const errorData = await response.json().catch(() => ({ detail: "Unknown error" }))
+        throw new Error(errorData.detail || "Failed to process query")
+      }
+
+      const data = await response.json()
+      const rawAnswer = data.answer || data.error || "No response received"
+
+      const { chartConfig, textContent, parseError } = extractChartConfig(rawAnswer)
+
+      const assistantMessage = {
+        role: "assistant",
+        content: textContent,
+        chartConfig: chartConfig,
+        success: data.success,
+        intermediateSteps: data.intermediate_steps || [],
+        provider: data.provider || activeProvider,
+        modelName: data.model_name,
+        timestamp: new Date().toISOString()
+      }
+
+      setMessages((prev) => [...prev, assistantMessage])
+
+      const jsonErrorMessage = parseError?.message || ""
+      const looksLikeTruncation = jsonErrorMessage.includes("Unexpected end") || jsonErrorMessage.includes("Unterminated") || (typeof rawAnswer === "string" && rawAnswer.length > 3500)
+
+      if (!chartConfig && looksLikeTruncation && fallbackDepth < 1) {
+        const fallbackQuestion = `${messageText} (limit to the last 60 days)`
+        const fallbackNotice = {
+          role: "assistant",
+          content: "The chart data was too large to render. Fetching a focused view for the last 60 days...",
+          success: false,
+          provider: activeProvider,
+          timestamp: new Date().toISOString()
+        }
+
+        setMessages((prev) => [...prev, fallbackNotice])
+
+        await handleSend(null, fallbackQuestion, {
+          isFallback: true,
+          fallbackDepth: fallbackDepth + 1,
+          providerOverride: activeProvider
+        })
+      }
+    } catch (error) {
+      const errorMessage = {
+        role: "assistant",
+        content: `Error: ${error.message}`,
+        success: false,
+        provider: activeProvider,
+        timestamp: new Date().toISOString()
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      if (!isFallback) {
+        setLoading(false)
+      }
+    }
+    /* 
     try {
       const response = await fetch(`${API_BASE_URL}/agent/query`, {
         method: "POST",
@@ -218,6 +326,7 @@ const AgentChat = () => {
         setLoading(false)
       }
     }
+    */
   }
 
   const handleSuggestionSelect = (question) => {
@@ -420,7 +529,7 @@ const AgentChat = () => {
               />
               <button
                 type="submit"
-                disabled={loading || !input.trim() || !agentStatus?.providers?.[provider]?.available}
+                disabled={loading || !input.trim() || !agentStatus?.available || !agentStatus?.providers?.[provider]?.available}
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 {loading ? (

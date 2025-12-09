@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import axios from "axios"
 
 const AuthContext = createContext(null)
@@ -10,6 +10,14 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("auth_token"))
   const [loading, setLoading] = useState(true)
   const [industries, setIndustries] = useState([])
+
+  // Define logout function before it's used
+  const logout = useCallback(() => {
+    setToken(null)
+    setUser(null)
+    localStorage.removeItem("auth_token")
+    delete axios.defaults.headers.common["Authorization"]
+  }, [])
 
   // Configure axios defaults
   useEffect(() => {
@@ -41,16 +49,23 @@ export const AuthProvider = ({ children }) => {
     }
 
     loadUser()
-  }, [token])
+  }, [token, logout])
 
   // Load industries on mount
   useEffect(() => {
     const loadIndustries = async () => {
       try {
+        console.log("Loading industries from:", `${API_BASE_URL}/industries`)
         const response = await axios.get(`${API_BASE_URL}/industries`)
-        setIndustries(response.data)
+        console.log("Industries response:", response.data)
+        if (response.data && Array.isArray(response.data)) {
+          setIndustries(response.data)
+        } else {
+          console.error("Invalid industries response:", response.data)
+        }
       } catch (error) {
         console.error("Error loading industries:", error)
+        console.error("Error details:", error.response?.data || error.message)
       }
     }
 
@@ -108,13 +123,6 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const logout = () => {
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem("auth_token")
-    delete axios.defaults.headers.common["Authorization"]
-  }
-
   const value = {
     user,
     token,
@@ -129,6 +137,7 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {

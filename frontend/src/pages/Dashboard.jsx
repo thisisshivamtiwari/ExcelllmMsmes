@@ -4,10 +4,11 @@ import {
   FiActivity, FiBarChart2, FiDatabase, FiMessageCircle, FiTrendingUp, 
   FiCheckCircle, FiAlertCircle, FiClock, FiPackage, FiTool, FiBox,
   FiArrowRight, FiPieChart, FiSettings, FiFileText, FiZap, FiTarget,
-  FiAward, FiPercent, FiDollarSign
+  FiAward, FiPercent, FiDollarSign, FiLoader, FiFile
 } from "react-icons/fi"
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from 'chart.js'
-import { Bar, Line, Doughnut } from 'react-chartjs-2'
+import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2'
+import { useAuth } from "@/contexts/AuthContext"
 
 // Register ChartJS components
 ChartJS.register(
@@ -23,36 +24,59 @@ ChartJS.register(
 )
 
 const Dashboard = () => {
+  const { token, user, industries } = useAuth()
   const [systemStats, setSystemStats] = useState(null)
   const [visualizationData, setVisualizationData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [files, setFiles] = useState([])
+  const [userIndustry, setUserIndustry] = useState(null)
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
 
   useEffect(() => {
-    fetchSystemStats()
+    fetchFiles()
     fetchVisualizationData()
-  }, [])
+  }, [token])
 
-  const fetchSystemStats = async () => {
+  // Get user's industry details
+  useEffect(() => {
+    if (user?.industry && industries.length > 0) {
+      const industry = industries.find(ind => ind.name === user.industry)
+      if (industry) {
+        setUserIndustry(industry)
+      }
+    }
+  }, [user, industries])
+
+  const fetchFiles = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/system/stats`)
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/files/list`, { headers })
       if (response.ok) {
         const data = await response.json()
-        setSystemStats(data)
+        setFiles(data.files || [])
       }
     } catch (error) {
-      console.error("Error fetching system stats:", error)
+      console.error("Error fetching files:", error)
     }
   }
 
   const fetchVisualizationData = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/visualizations/data/all`)
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/visualizations/data/all`, { headers })
       if (response.ok) {
         const data = await response.json()
-        if (data.success) {
+        if (data.success && data.visualizations) {
           setVisualizationData(data.visualizations)
         }
       }
@@ -63,13 +87,16 @@ const Dashboard = () => {
     }
   }
 
-  // Chart options with dark theme
+  // Colorful chart options
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false
+        labels: {
+          color: '#E5E7EB',
+          font: { size: 12 }
+        }
       },
       tooltip: {
         backgroundColor: 'rgba(17, 24, 39, 0.95)',
@@ -81,47 +108,173 @@ const Dashboard = () => {
     },
     scales: {
       x: {
-        ticks: { color: '#9CA3AF', font: { size: 10 } },
-        grid: { display: false }
+        ticks: { color: '#9CA3AF', font: { size: 11 } },
+        grid: { color: 'rgba(75, 85, 99, 0.2)' }
       },
       y: {
-        ticks: { color: '#9CA3AF', font: { size: 10 } },
-        grid: { color: 'rgba(75, 85, 99, 0.2)' }
+        ticks: { color: '#9CA3AF', font: { size: 11 } },
+        grid: { color: 'rgba(75, 85, 99, 0.2)' },
+        beginAtZero: true
       }
     }
   }
 
-  // Calculate KPIs
-  const calculateKPIs = () => {
-    if (!visualizationData) return null
-
-    const production = visualizationData.production
-    const quality = visualizationData.quality
-
-    let totalProduction = 0
-    let totalTarget = 0
-    let avgPassRate = 0
-    let totalDefects = 0
-
-    if (production) {
-      totalProduction = Object.values(production.by_product || {}).reduce((a, b) => a + b, 0)
-      totalTarget = production.target_vs_actual?.Target || 0
-      
-      if (production.efficiency_by_product) {
-        const efficiencies = Object.values(production.efficiency_by_product)
-        avgPassRate = efficiencies.reduce((a, b) => a + b, 0) / efficiencies.length
+  const pieOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          color: '#E5E7EB',
+          font: { size: 11 },
+          padding: 10
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+        titleColor: '#F3F4F6',
+        bodyColor: '#E5E7EB',
+        borderColor: '#374151',
+        borderWidth: 1
       }
     }
+  }
 
-    if (quality) {
-      totalDefects = Object.values(quality.defects_by_product || {}).reduce((a, b) => a + b, 0)
+  // Colorful gradient arrays
+  const colors = {
+    primary: ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#06B6D4', '#6366F1', '#EF4444', '#F97316', '#84CC16'],
+    gradient: [
+      'rgba(59, 130, 246, 0.8)',
+      'rgba(139, 92, 246, 0.8)',
+      'rgba(236, 72, 153, 0.8)',
+      'rgba(245, 158, 11, 0.8)',
+      'rgba(16, 185, 129, 0.8)',
+      'rgba(6, 182, 212, 0.8)',
+      'rgba(99, 102, 241, 0.8)',
+      'rgba(239, 68, 68, 0.8)',
+      'rgba(249, 115, 22, 0.8)',
+      'rgba(132, 204, 22, 0.8)'
+    ],
+    border: ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#06B6D4', '#6366F1', '#EF4444', '#F97316', '#84CC16']
+  }
+
+  // Skeleton Loader Component
+  const ChartSkeleton = () => (
+    <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-xl p-6 shadow-lg animate-pulse">
+      <div className="h-6 bg-gray-800 rounded w-1/3 mb-4"></div>
+      <div className="h-64 bg-gray-800/50 rounded"></div>
+    </div>
+  )
+
+  const CardSkeleton = () => (
+    <div className="bg-gradient-to-br from-gray-800/20 to-gray-700/10 backdrop-blur-xl border border-gray-700/30 rounded-xl p-6 shadow-lg animate-pulse">
+      <div className="flex items-center justify-between mb-3">
+        <div className="h-12 w-12 bg-gray-700 rounded-lg"></div>
+        <div className="h-4 bg-gray-700 rounded w-20"></div>
+      </div>
+      <div className="h-8 bg-gray-700 rounded w-24 mb-2"></div>
+      <div className="h-4 bg-gray-700 rounded w-32"></div>
+    </div>
+  )
+
+  // Render chart component
+  const renderChart = (chart, index = 0) => {
+    if (!chart || !chart.data) return null
+    
+    const { type, title, data } = chart
+    const colorIndex = index % colors.gradient.length
+    
+    const chartData = {
+      labels: data.labels || [],
+      datasets: [{
+        label: title,
+        data: data.values || [],
+        backgroundColor: type === 'pie' || type === 'doughnut' 
+          ? colors.gradient.slice(0, Math.max(data.labels?.length || 1, 8))
+          : colors.gradient[colorIndex],
+        borderColor: type === 'pie' || type === 'doughnut'
+          ? colors.border.slice(0, Math.max(data.labels?.length || 1, 8))
+          : colors.border[colorIndex],
+        borderWidth: 2
+      }]
     }
 
+    switch (type) {
+      case 'bar':
+        return (
+          <div className="h-80">
+            <Bar data={chartData} options={chartOptions} />
+          </div>
+        )
+      case 'line':
+        return (
+          <div className="h-80">
+            <Line 
+              data={{
+                ...chartData,
+                datasets: [{
+                  ...chartData.datasets[0],
+                  borderColor: colors.border[colorIndex],
+                  backgroundColor: colors.gradient[colorIndex].replace('0.8', '0.1'),
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 4,
+                  pointHoverRadius: 6
+                }]
+              }} 
+              options={chartOptions} 
+            />
+          </div>
+        )
+      case 'pie':
+        return (
+          <div className="h-80">
+            <Pie data={chartData} options={pieOptions} />
+          </div>
+        )
+      case 'doughnut':
+        return (
+          <div className="h-80">
+            <Doughnut data={chartData} options={pieOptions} />
+          </div>
+        )
+      default:
+        return null
+    }
+  }
+
+  // Calculate KPIs from all visualizations
+  const calculateKPIs = () => {
+    if (!visualizationData || Object.keys(visualizationData).length === 0) return null
+
+    let totalFiles = 0
+    let totalCharts = 0
+    let totalMetrics = 0
+
+    // Count files, charts, and metrics across all visualizations
+    Object.values(visualizationData).forEach((fileViz) => {
+      if (fileViz) {
+        totalFiles++
+        
+        // Count charts in sheets or root
+        if (fileViz.sheets) {
+          Object.values(fileViz.sheets).forEach((sheet) => {
+            if (sheet.charts) totalCharts += sheet.charts.length
+            if (sheet.metrics) totalMetrics += Object.keys(sheet.metrics).length
+          })
+        } else {
+          if (fileViz.charts) totalCharts += fileViz.charts.length
+          if (fileViz.metrics) totalMetrics += Object.keys(fileViz.metrics).length
+        }
+      }
+    })
+
     return {
-      totalProduction: Math.round(totalProduction),
-      totalTarget: Math.round(totalTarget),
-      efficiency: avgPassRate ? avgPassRate.toFixed(1) : 0,
-      defectRate: totalProduction ? ((totalDefects / totalProduction) * 100).toFixed(2) : 0
+      totalFiles,
+      totalCharts,
+      totalMetrics,
+      avgChartsPerFile: totalFiles > 0 ? (totalCharts / totalFiles).toFixed(1) : 0
     }
   }
 
@@ -170,92 +323,105 @@ const Dashboard = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-100 mb-2 flex items-center gap-3">
             <FiActivity className="h-10 w-10 text-blue-400" />
-            Manufacturing Analytics Dashboard
+            {userIndustry ? (
+              <>
+                {userIndustry.icon && <span className="text-4xl">{userIndustry.icon}</span>}
+                {userIndustry.display_name} Analytics Dashboard
+              </>
+            ) : (
+              "Analytics Dashboard"
+            )}
           </h1>
           <p className="text-gray-400 text-lg">
-            Real-time insights and analytics for your manufacturing operations
+            {userIndustry?.description 
+              ? `Real-time insights and analytics for your ${userIndustry.display_name.toLowerCase()} operations`
+              : "Real-time insights and analytics for your operations"
+            }
           </p>
         </div>
 
         {/* KPI Cards */}
-        {kpis && (
+        {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Production */}
-            <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/10 backdrop-blur-xl border border-blue-500/30 rounded-xl p-6 shadow-lg hover:shadow-blue-500/20 transition-all">
+            {[1, 2, 3, 4].map(i => <CardSkeleton key={i} />)}
+          </div>
+        ) : kpis ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Total Files */}
+            <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/10 backdrop-blur-xl border border-blue-500/30 rounded-xl p-6 shadow-lg hover:shadow-blue-500/20 transition-all hover:scale-105">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-3 bg-blue-600/20 rounded-lg">
-                  <FiZap className="h-6 w-6 text-blue-400" />
+                  <FiDatabase className="h-6 w-6 text-blue-400" />
                 </div>
-                <span className="text-xs text-blue-400 font-semibold uppercase tracking-wider">Production</span>
+                <span className="text-xs text-blue-400 font-semibold uppercase tracking-wider">Files</span>
               </div>
               <div className="space-y-1">
-                <p className="text-3xl font-bold text-white">{kpis.totalProduction.toLocaleString()}</p>
-                <p className="text-sm text-gray-400">Total Units Produced</p>
+                <p className="text-3xl font-bold text-white">{kpis.totalFiles}</p>
+                <p className="text-sm text-gray-400">Uploaded Files</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <div className="flex-1 bg-blue-900/30 rounded-full h-2">
-                    <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all"
-                      style={{ width: `${Math.min((kpis.totalProduction / kpis.totalTarget) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-xs text-gray-400">{((kpis.totalProduction / kpis.totalTarget) * 100).toFixed(0)}%</span>
+                  <FiFileText className="h-4 w-4 text-blue-400" />
+                  <span className="text-xs text-blue-400">Active</span>
                 </div>
               </div>
             </div>
 
-            {/* Efficiency */}
-            <div className="bg-gradient-to-br from-green-600/20 to-green-700/10 backdrop-blur-xl border border-green-500/30 rounded-xl p-6 shadow-lg hover:shadow-green-500/20 transition-all">
+            {/* Total Charts */}
+            <div className="bg-gradient-to-br from-purple-600/20 to-purple-700/10 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6 shadow-lg hover:shadow-purple-500/20 transition-all hover:scale-105">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-3 bg-purple-600/20 rounded-lg">
+                  <FiBarChart2 className="h-6 w-6 text-purple-400" />
+                </div>
+                <span className="text-xs text-purple-400 font-semibold uppercase tracking-wider">Charts</span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-white">{kpis.totalCharts}</p>
+                <p className="text-sm text-gray-400">Total Visualizations</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <FiTrendingUp className="h-4 w-4 text-purple-400" />
+                  <span className="text-xs text-purple-400">Avg: {kpis.avgChartsPerFile}/file</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Total Metrics */}
+            <div className="bg-gradient-to-br from-green-600/20 to-green-700/10 backdrop-blur-xl border border-green-500/30 rounded-xl p-6 shadow-lg hover:shadow-green-500/20 transition-all hover:scale-105">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-3 bg-green-600/20 rounded-lg">
                   <FiTarget className="h-6 w-6 text-green-400" />
                 </div>
-                <span className="text-xs text-green-400 font-semibold uppercase tracking-wider">Efficiency</span>
+                <span className="text-xs text-green-400 font-semibold uppercase tracking-wider">Metrics</span>
               </div>
               <div className="space-y-1">
-                <p className="text-3xl font-bold text-white">{kpis.efficiency}%</p>
-                <p className="text-sm text-gray-400">Average Efficiency</p>
+                <p className="text-3xl font-bold text-white">{kpis.totalMetrics}</p>
+                <p className="text-sm text-gray-400">Key Metrics</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <FiTrendingUp className="h-4 w-4 text-green-400" />
-                  <span className="text-xs text-green-400">Target: 85%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Defect Rate */}
-            <div className="bg-gradient-to-br from-orange-600/20 to-orange-700/10 backdrop-blur-xl border border-orange-500/30 rounded-xl p-6 shadow-lg hover:shadow-orange-500/20 transition-all">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-3 bg-orange-600/20 rounded-lg">
-                  <FiPercent className="h-6 w-6 text-orange-400" />
-                </div>
-                <span className="text-xs text-orange-400 font-semibold uppercase tracking-wider">Quality</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-bold text-white">{kpis.defectRate}%</p>
-                <p className="text-sm text-gray-400">Defect Rate</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <FiCheckCircle className="h-4 w-4 text-orange-400" />
-                  <span className="text-xs text-orange-400">Pass Rate: {(100 - parseFloat(kpis.defectRate)).toFixed(2)}%</span>
+                  <FiCheckCircle className="h-4 w-4 text-green-400" />
+                  <span className="text-xs text-green-400">Calculated</span>
                 </div>
               </div>
             </div>
 
             {/* System Status */}
-            <div className="bg-gradient-to-br from-purple-600/20 to-purple-700/10 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6 shadow-lg hover:shadow-purple-500/20 transition-all">
+            <div className="bg-gradient-to-br from-pink-600/20 to-pink-700/10 backdrop-blur-xl border border-pink-500/30 rounded-xl p-6 shadow-lg hover:shadow-pink-500/20 transition-all hover:scale-105">
               <div className="flex items-center justify-between mb-3">
-                <div className="p-3 bg-purple-600/20 rounded-lg">
-                  <FiAward className="h-6 w-6 text-purple-400" />
+                <div className="p-3 bg-pink-600/20 rounded-lg">
+                  <FiAward className="h-6 w-6 text-pink-400" />
                 </div>
-                <span className="text-xs text-purple-400 font-semibold uppercase tracking-wider">Status</span>
+                <span className="text-xs text-pink-400 font-semibold uppercase tracking-wider">Status</span>
               </div>
               <div className="space-y-1">
-                <p className="text-3xl font-bold text-white">97.9%</p>
-                <p className="text-sm text-gray-400">System Accuracy</p>
+                <p className="text-3xl font-bold text-white">100%</p>
+                <p className="text-sm text-gray-400">System Ready</p>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-xs text-green-400">All Systems Operational</span>
                 </div>
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => <CardSkeleton key={i} />)}
           </div>
         )}
 
@@ -288,180 +454,228 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Charts Row */}
-        {!loading && visualizationData && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Production Trend */}
-            {visualizationData.production?.trend && (
-              <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-xl p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                  <FiTrendingUp className="h-5 w-5 text-blue-400" />
-                  Production Trend
-                </h3>
-                <div className="h-64">
-                  <Line
-                    data={{
-                      labels: visualizationData.production.trend.labels.slice(-7),
-                      datasets: [{
-                        label: 'Daily Production',
-                        data: visualizationData.production.trend.values.slice(-7),
-                        borderColor: '#3B82F6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                      }]
-                    }}
-                    options={chartOptions}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Production by Product */}
-            {visualizationData.production?.by_product && (
-              <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-xl p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                  <FiBarChart2 className="h-5 w-5 text-green-400" />
-                  Top Products
-                </h3>
-                <div className="h-64">
-                  <Bar
-                    data={{
-                      labels: Object.keys(visualizationData.production.by_product).slice(0, 5),
-                      datasets: [{
-                        label: 'Production',
-                        data: Object.values(visualizationData.production.by_product).slice(0, 5),
-                        backgroundColor: [
-                          'rgba(59, 130, 246, 0.8)',
-                          'rgba(139, 92, 246, 0.8)',
-                          'rgba(236, 72, 153, 0.8)',
-                          'rgba(245, 158, 11, 0.8)',
-                          'rgba(16, 185, 129, 0.8)'
-                        ],
-                        borderColor: [
-                          '#3B82F6',
-                          '#8B5CF6',
-                          '#EC4899',
-                          '#F59E0B',
-                          '#10B981'
-                        ],
-                        borderWidth: 2
-                      }]
-                    }}
-                    options={chartOptions}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Defects by Type */}
-            {visualizationData.quality?.defects_by_type && (
-              <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-xl p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                  <FiPieChart className="h-5 w-5 text-orange-400" />
-                  Defect Distribution
-                </h3>
-                <div className="h-64">
-                  <Doughnut
-                    data={{
-                      labels: Object.keys(visualizationData.quality.defects_by_type),
-                      datasets: [{
-                        data: Object.values(visualizationData.quality.defects_by_type),
-                        backgroundColor: [
-                          'rgba(239, 68, 68, 0.8)',
-                          'rgba(245, 158, 11, 0.8)',
-                          'rgba(59, 130, 246, 0.8)',
-                          'rgba(139, 92, 246, 0.8)'
-                        ],
-                        borderColor: '#1F2937',
-                        borderWidth: 2
-                      }]
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'bottom',
-                          labels: {
-                            color: '#E5E7EB',
-                            font: { size: 10 },
-                            padding: 10
+        {/* Dynamic Visualizations from All Files */}
+        {loading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => <ChartSkeleton key={i} />)}
+          </div>
+        ) : visualizationData && Object.keys(visualizationData).length > 0 ? (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-100 mb-6 flex items-center gap-2">
+              <FiBarChart2 className="h-7 w-7 text-purple-400" />
+              Data Visualizations
+            </h2>
+            <div className="space-y-8">
+              {Object.entries(visualizationData).map(([fileId, fileViz]) => {
+                const file = files.find(f => f.file_id === fileId)
+                const fileName = file?.original_filename || file?.filename || 'Unknown File'
+                
+                // Get charts from sheets or root
+                let allCharts = []
+                let allMetrics = {}
+                
+                if (fileViz.sheets) {
+                  Object.entries(fileViz.sheets).forEach(([sheetName, sheet]) => {
+                    if (sheet.charts) {
+                      allCharts.push(...sheet.charts.map(chart => ({ ...chart, sheetName })))
+                    }
+                    if (sheet.metrics) {
+                      Object.assign(allMetrics, sheet.metrics)
+                    }
+                  })
+                } else {
+                  if (fileViz.charts) allCharts = fileViz.charts
+                  if (fileViz.metrics) allMetrics = fileViz.metrics
+                }
+                
+                if (allCharts.length === 0) return null
+                
+                return (
+                  <div key={fileId} className="space-y-4">
+                    {/* File Header */}
+                    <div className="bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-blue-600/20 backdrop-blur-xl border border-purple-500/30 rounded-xl p-4 shadow-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-600/20 rounded-lg">
+                          <FiFile className="h-5 w-5 text-purple-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-100">{fileName}</h3>
+                          <p className="text-sm text-gray-400">{allCharts.length} chart{allCharts.length !== 1 ? 's' : ''} • {Object.keys(allMetrics).length} metric{Object.keys(allMetrics).length !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Charts Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {allCharts.map((chart, index) => (
+                        <div 
+                          key={index} 
+                          className="bg-gradient-to-br from-gray-900/90 to-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-xl p-6 shadow-lg hover:shadow-xl hover:border-purple-500/50 transition-all"
+                        >
+                          <h4 className="text-md font-semibold text-gray-100 mb-4 flex items-center gap-2">
+                            {chart.type === 'bar' && <FiBarChart2 className="h-5 w-5 text-blue-400" />}
+                            {chart.type === 'line' && <FiTrendingUp className="h-5 w-5 text-green-400" />}
+                            {chart.type === 'pie' && <FiPieChart className="h-5 w-5 text-purple-400" />}
+                            {chart.type === 'doughnut' && <FiPieChart className="h-5 w-5 text-pink-400" />}
+                            {chart.title || chart.description || 'Chart'}
+                            {chart.sheetName && (
+                              <span className="text-xs text-gray-500 ml-2">({chart.sheetName})</span>
+                            )}
+                          </h4>
+                          {renderChart(chart, index)}
+                          {chart.description && (
+                            <p className="text-xs text-gray-400 mt-4">{chart.description}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Metrics Display */}
+                    {Object.keys(allMetrics).length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {Object.entries(allMetrics).slice(0, 12).map(([key, value], idx) => {
+                          // Extract value from metric object if it's an object
+                          let displayValue = value
+                          let unit = ''
+                          
+                          if (value && typeof value === 'object' && !Array.isArray(value)) {
+                            displayValue = value.value !== undefined ? value.value : value
+                            unit = value.unit || ''
                           }
-                        }
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            )}
+                          
+                          // Format the display value
+                          let formattedValue = displayValue
+                          if (typeof displayValue === 'number') {
+                            formattedValue = displayValue.toLocaleString(undefined, {
+                              maximumFractionDigits: 2
+                            })
+                          } else if (displayValue === null || displayValue === undefined) {
+                            formattedValue = 'N/A'
+                          } else {
+                            formattedValue = String(displayValue)
+                          }
+                          
+                          const colorClass = idx % 4 === 0 ? 'text-blue-400' : 
+                                           idx % 4 === 1 ? 'text-purple-400' : 
+                                           idx % 4 === 2 ? 'text-green-400' : 'text-pink-400'
+                          return (
+                            <div 
+                              key={key}
+                              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl border border-gray-700/30 rounded-lg p-4 text-center hover:border-purple-500/50 transition-colors"
+                            >
+                              <div className="text-xs text-gray-400 mb-1 truncate" title={key.replace(/_/g, ' ')}>
+                                {key.replace(/_/g, ' ')}
+                              </div>
+                              <div className={`text-lg font-bold ${colorClass}`}>
+                                {formattedValue}
+                                {unit && <span className="text-xs text-gray-500 ml-1">{unit}</span>}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : files.length > 0 ? (
+          <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-xl p-12 text-center">
+            <FiBarChart2 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-300 mb-2">No Visualizations Yet</h3>
+            <p className="text-gray-500 mb-6">Upload files to see dynamic visualizations</p>
+            <Link 
+              to="/file-upload"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <FiFileText className="h-5 w-5" />
+              Upload Files
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-xl p-12 text-center">
+            <FiDatabase className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-300 mb-2">No Files Uploaded</h3>
+            <p className="text-gray-500 mb-6">Get started by uploading your first file</p>
+            <Link 
+              to="/file-upload"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg"
+            >
+              <FiFileText className="h-5 w-5" />
+              Upload Files
+            </Link>
           </div>
         )}
 
-        {/* System Stats & Data Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Data Files Overview */}
-          <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-xl p-6 shadow-lg">
+        {/* Data Files Overview */}
+        {files.length > 0 && (
+          <div className="bg-gradient-to-br from-gray-900/90 to-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-xl p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
               <FiDatabase className="h-5 w-5 text-cyan-400" />
-              Data Files
+              Your Files
             </h3>
             <div className="space-y-3">
-              {systemStats?.uploaded_files && Object.entries(systemStats.uploaded_files).map(([fileName, count]) => (
-                <div key={fileName} className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-colors">
+              {files.slice(0, 5).map((file) => (
+                <div key={file.file_id} className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-cyan-600/20 rounded">
                       <FiFileText className="h-4 w-4 text-cyan-400" />
                     </div>
-                    <span className="text-sm text-gray-300 font-medium">
-                      {fileName.replace('.csv', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    <span className="text-sm text-gray-300 font-medium truncate">
+                      {file.original_filename || file.filename}
                     </span>
                   </div>
-                  <span className="text-sm text-gray-400">{count} files</span>
+                  <span className="text-xs text-gray-400">{file.file_type?.toUpperCase()}</span>
                 </div>
               ))}
+              {files.length > 5 && (
+                <Link 
+                  to="/file-upload"
+                  className="block text-center text-sm text-blue-400 hover:text-blue-300 mt-4"
+                >
+                  View all {files.length} files →
+                </Link>
+              )}
             </div>
           </div>
+        )}
 
-          {/* System Information */}
-          <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
-              <FiSettings className="h-5 w-5 text-purple-400" />
-              System Information
-            </h3>
-            <div className="space-y-4">
-              {/* Agent Status */}
-              <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-gray-300">AI Agent</span>
-                </div>
-                <span className="text-sm text-green-400 font-medium">Online</span>
+        {/* System Information */}
+        <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-xl p-6 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
+            <FiSettings className="h-5 w-5 text-purple-400" />
+            System Information
+          </h3>
+          <div className="space-y-4">
+            {/* Agent Status */}
+            <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-300">AI Agent</span>
               </div>
+              <span className="text-sm text-green-400 font-medium">Online</span>
+            </div>
 
-              {/* Vector Store */}
-              <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-gray-300">Vector Store</span>
-                </div>
-                <span className="text-sm text-green-400 font-medium">Ready</span>
+            {/* Vector Store */}
+            <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-300">Vector Store</span>
               </div>
+              <span className="text-sm text-green-400 font-medium">Ready</span>
+            </div>
 
-              {/* LLM Provider */}
-              <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
-                <span className="text-sm text-gray-300">LLM Provider</span>
-                <span className="text-sm text-blue-400 font-medium">Gemini 2.5-flash</span>
-              </div>
+            {/* LLM Provider */}
+            <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+              <span className="text-sm text-gray-300">LLM Provider</span>
+              <span className="text-sm text-blue-400 font-medium">Gemini 2.5-flash</span>
+            </div>
 
-              {/* Accuracy */}
-              <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
-                <span className="text-sm text-gray-300">System Accuracy</span>
-                <span className="text-sm text-purple-400 font-medium">97.9%</span>
-              </div>
+            {/* Accuracy */}
+            <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+              <span className="text-sm text-gray-300">System Accuracy</span>
+              <span className="text-sm text-purple-400 font-medium">97.9%</span>
             </div>
           </div>
         </div>

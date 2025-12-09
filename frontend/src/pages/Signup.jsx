@@ -14,8 +14,11 @@ const Signup = () => {
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const { signup, industries } = useAuth()
+  const { signup, industries, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+
+  // Debug: Log industries
+  console.log("Industries in Signup:", industries, "Loading:", authLoading)
 
   const handleChange = (e) => {
     setFormData({
@@ -168,10 +171,13 @@ const Signup = () => {
                 value={formData.industry}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                disabled={authLoading || industries.length === 0}
+                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="">Select your industry</option>
-                {industries.map((industry) => (
+                <option value="">
+                  {authLoading ? "Loading industries..." : industries.length === 0 ? "No industries available" : "Select your industry"}
+                </option>
+                {industries.length > 0 && industries.map((industry) => (
                   <option key={industry.id} value={industry.name}>
                     {industry.icon} {industry.display_name}
                   </option>

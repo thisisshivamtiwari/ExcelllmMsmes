@@ -28,41 +28,24 @@ const Visualization = () => {
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
 
+  // API calls removed - feature disabled for multi-tenant SaaS migration
   useEffect(() => {
-    fetchVisualizationData()
-    fetchExistingFiles()
+    // fetchVisualizationData()
+    // fetchExistingFiles()
+    setExistingFiles({})
+    setVisualizationData(null)
+    setError("Visualization feature is disabled. This feature needs to be migrated to use MongoDB with user authentication.")
+    setLoading(false)
   }, [])
 
   const fetchExistingFiles = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/files`)
-      const data = await response.json()
-      setExistingFiles(data.files || {})
-    } catch (error) {
-      console.error("Error fetching files:", error)
-    }
+    // Disabled - API call removed
   }
 
   const fetchVisualizationData = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await fetch(`${API_BASE_URL}/visualizations/data/all`)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const data = await response.json()
-      if (data.success) {
-        setVisualizationData(data.visualizations)
-      } else {
-        throw new Error("Failed to fetch visualization data")
-      }
-    } catch (error) {
-      console.error("Error fetching visualization data:", error)
-      setError(error.message)
-    } finally {
-      setLoading(false)
-    }
+    // Disabled - API call removed
+    setLoading(false)
+    setError("Visualization feature is disabled. This feature needs to be migrated to use MongoDB with user authentication.")
   }
 
   // Chart options with dark theme

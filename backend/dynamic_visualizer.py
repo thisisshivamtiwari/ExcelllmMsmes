@@ -165,12 +165,23 @@ class DynamicVisualizer:
         
         return result
     
-    def generate_visualizations(self, file_path: Path, file_name: str) -> Dict[str, Any]:
+    def generate_visualizations(self, file_content: bytes, file_name: str, file_type: str = "csv") -> Dict[str, Any]:
         """
-        Generate appropriate visualizations for any CSV file dynamically
+        Generate appropriate visualizations for any CSV/Excel file dynamically
+        
+        Args:
+            file_content: File content as bytes (from MongoDB GridFS)
+            file_name: Original filename
+            file_type: File type ('csv', 'xlsx', 'xls')
         """
         try:
-            df = pd.read_csv(file_path)
+            import io
+            
+            # Load DataFrame from file content
+            if file_type.lower() in ['xlsx', 'xls']:
+                df = pd.read_excel(io.BytesIO(file_content))
+            else:
+                df = pd.read_csv(io.BytesIO(file_content))
             
             if df.empty:
                 return {}
@@ -362,9 +373,191 @@ class DynamicVisualizer:
         
         return metrics
     
+    
+    def _generate_visualizations_for_dataframe(self, df: pd.DataFrame, file_name: str) -> Dict[str, Any]:
+        """
+        Internal method to generate visualizations from a DataFrame
+        """
+        if df.empty:
+            return {}
+        
+        # Detect column types
+        column_types = self.detect_column_types(df)
+        
+        visualizations = {
+            'file_name': file_name,
+            'row_count': len(df),
+            'column_count': len(df.columns),
+            'column_types': column_types,
+            'columns': list(df.columns),
+            'charts': []
+        }
+        
+        # 1. CATEGORICAL ANALYSIS
+        for cat_col in column_types['categorical'][:3]:
+            if df[cat_col].nunique() <= 20:
+                distribution = df[cat_col].value_counts().head(10).to_dict()
+                
+                visualizations['charts'].append({
+                    'type': 'bar',
+                    'title': f'Distribution by {cat_col}',
+                    'data': {
+                        'labels': [str(k) for k in distribution.keys()],
+                        'values': [float(v) for v in distribution.values()]
+                    },
+                    'description': f'Count of records by {cat_col}',
+                    'x_axis': cat_col,
+                    'y_axis': 'Count'
+                })
+        
+        # 2. NUMERIC AGGREGATIONS
+        if column_types['categorical'] and column_types['numeric']:
+            cat_col = column_types['categorical'][0]
+            num_col = column_types['numeric'][0]
+            
+            if df[cat_col].nunique() <= 20:
+                agg_data = df.groupby(cat_col)[num_col].sum().sort_values(ascending=False).head(10).to_dict()
+                
+                visualizations['charts'].append({
+                    'type': 'bar',
+                    'title': f'{num_col} by {cat_col}',
+                    'data': {
+                        'labels': [str(k) for k in agg_data.keys()],
+                        'values': [float(v) for v in agg_data.values()]
+                    },
+                    'description': f'Total {num_col} grouped by {cat_col}',
+                    'x_axis': cat_col,
+                    'y_axis': num_col
+                })
+        
+        # 3. TIME SERIES ANALYSIS
+        if column_types['date'] and column_types['numeric']:
+            date_col = column_types['date'][0]
+            num_col = column_types['numeric'][0]
+            
+            try:
+                df[date_col] = pd.to_datetime(df[date_col])
+                df_sorted = df.sort_values(date_col)
+                
+                # Daily aggregation (last 30 days)
+                daily_data = df_sorted.groupby(df_sorted[date_col].dt.date)[num_col].sum().tail(30)
+                
+                visualizations['charts'].append({
+                    'type': 'line',
+                    'title': f'{num_col} Trend Over Time',
+                    'data': {
+                        'labels': [str(d) for d in daily_data.index],
+                        'values': [float(v) for v in daily_data.tolist()]
+                    },
+                    'description': f'Daily {num_col} over last 30 days',
+                    'x_axis': date_col,
+                    'y_axis': num_col
+                })
+            except Exception as e:
+                logger.warning(f"Could not create time series chart: {e}")
+        
+        # 4. PROPORTIONAL CHARTS (Pie/Doughnut)
+        if column_types['categorical'] and column_types['numeric']:
+            cat_col = column_types['categorical'][0]
+            num_col = column_types['numeric'][0]
+            
+            if df[cat_col].nunique() <= 8:
+                prop_data = df.groupby(cat_col)[num_col].sum().head(8).to_dict()
+                
+                visualizations['charts'].append({
+                    'type': 'pie',
+                    'title': f'{num_col} Distribution by {cat_col}',
+                    'data': {
+                        'labels': [str(k) for k in prop_data.keys()],
+                        'values': [float(v) for v in prop_data.values()]
+                    },
+                    'description': f'Proportional distribution of {num_col}',
+                    'category_column': cat_col,
+                    'value_column': num_col
+                })
+        
+        # 5. COMPARISON CHARTS
+        target_actual = self.find_best_columns(df, column_types, 'target_actual')
+        if 'target' in target_actual and 'actual' in target_actual:
+            target_col = target_actual['target']
+            actual_col = target_actual['actual']
+            
+            comparison = {
+                'Target': float(df[target_col].sum()),
+                'Actual': float(df[actual_col].sum())
+            }
+            
+            visualizations['charts'].append({
+                'type': 'bar',
+                'title': f'{target_col} vs {actual_col}',
+                'data': {
+                    'labels': list(comparison.keys()),
+                    'values': list(comparison.values())
+                },
+                'description': f'Comparison of {target_col} and {actual_col}',
+                'x_axis': 'Type',
+                'y_axis': 'Value'
+            })
+        
+        # 6. CALCULATED METRICS
+        metrics = self.calculate_dynamic_metrics(df, column_types)
+        if metrics:
+            visualizations['metrics'] = metrics
+        
+        return visualizations
+    
+    async def generate_visualizations_for_file(self, file_id: str, file_info: Dict[str, Any], file_content: bytes) -> Dict[str, Any]:
+        """
+        Generate visualizations for a single file from MongoDB
+        
+        Args:
+            file_id: File ID
+            file_info: File metadata from MongoDB
+            file_content: File content bytes from GridFS
+        """
+        try:
+            import io
+            
+            file_name = file_info.get("original_filename", file_id)
+            file_type = file_info.get("file_type", "csv")
+            
+            # Handle Excel files with multiple sheets
+            if file_type.lower() in ['xlsx', 'xls']:
+                excel_file = pd.ExcelFile(io.BytesIO(file_content))
+                all_sheets_viz = {}
+                
+                for sheet_name in excel_file.sheet_names:
+                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                    if not df.empty:
+                        sheet_viz = self._generate_visualizations_for_dataframe(df, f"{file_name} - {sheet_name}")
+                        if sheet_viz:
+                            all_sheets_viz[sheet_name] = sheet_viz
+                
+                excel_file.close()
+                
+                return {
+                    "file_id": file_id,
+                    "file_name": file_name,
+                    "file_type": file_type,
+                    "sheets": all_sheets_viz,
+                    "sheet_count": len(all_sheets_viz)
+                }
+            else:
+                # CSV file
+                df = pd.read_csv(io.BytesIO(file_content))
+                viz_data = self._generate_visualizations_for_dataframe(df, file_name)
+                if viz_data:
+                    viz_data["file_id"] = file_id
+                    viz_data["file_type"] = file_type
+                return viz_data
+                
+        except Exception as e:
+            logger.error(f"Error generating visualizations for file {file_id}: {e}")
+            return {}
+    
     def generate_all_file_visualizations(self, data_dir: Path) -> Dict[str, Any]:
         """
-        Generate visualizations for ALL CSV files in a directory
+        Generate visualizations for ALL CSV files in a directory (legacy method)
         """
         all_visualizations = {}
         
@@ -378,7 +571,10 @@ class DynamicVisualizer:
                 file_name = csv_file.name
                 logger.info(f"Generating visualizations for {file_name}")
                 
-                viz_data = self.generate_visualizations(csv_file, file_name)
+                with open(csv_file, 'rb') as f:
+                    file_content = f.read()
+                
+                viz_data = self.generate_visualizations(file_content, file_name, "csv")
                 if viz_data:
                     # Use file name without extension as key
                     key = file_name.replace('.csv', '')

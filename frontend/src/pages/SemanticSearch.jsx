@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react"
 import { FiSearch, FiLoader, FiDatabase, FiLink, FiFile, FiBarChart2, FiTrendingUp, FiRefreshCw, FiInfo, FiCheckCircle, FiAlertCircle } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/AuthContext"
 
 const SemanticSearch = () => {
+  const { token } = useAuth()
   const [query, setQuery] = useState("")
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState(null)
@@ -16,17 +18,25 @@ const SemanticSearch = () => {
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
 
+  // Load files and stats on mount
   useEffect(() => {
     fetchFiles()
     fetchIndexStats()
-  }, [])
+  }, [token])
 
   const fetchFiles = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/files/list`)
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/files/list`, { headers })
       if (response.ok) {
         const data = await response.json()
         setFiles(data.files || [])
+      } else if (response.status === 401) {
+        console.error("Unauthorized - please login")
       }
     } catch (error) {
       console.error("Error fetching files:", error)
@@ -35,13 +45,23 @@ const SemanticSearch = () => {
 
   const fetchIndexStats = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/semantic/stats`)
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/semantic/stats`, { headers })
       if (response.ok) {
         const data = await response.json()
         setIndexStats(data)
+      } else if (response.status === 401) {
+        setIndexStats({ available: false, message: "Please login to use semantic search" })
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setIndexStats({ available: false, message: errorData.detail || "Vector store not initialized" })
       }
     } catch (error) {
-      console.error("Error fetching index stats:", error)
+      setIndexStats({ available: false, message: "Error loading vector store stats" })
     }
   }
 
@@ -57,6 +77,11 @@ const SemanticSearch = () => {
     setResults(null)
 
     try {
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
       const fileFilter = selectedFile !== "all" ? selectedFile : undefined
       const url = new URL(`${API_BASE_URL}/semantic/search`)
       url.searchParams.append("query", query.trim())
@@ -66,7 +91,8 @@ const SemanticSearch = () => {
       }
 
       const response = await fetch(url.toString(), {
-        method: "POST"
+        method: "POST",
+        headers
       })
 
       if (response.ok) {
@@ -86,13 +112,20 @@ const SemanticSearch = () => {
   const handleIndexFile = async (fileId) => {
     setIndexing(true)
     try {
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
       const response = await fetch(`${API_BASE_URL}/semantic/index/${fileId}`, {
-        method: "POST"
+        method: "POST",
+        headers
       })
+
       if (response.ok) {
         const data = await response.json()
         alert(data.message || "File indexed successfully")
-        fetchIndexStats()
+        await fetchIndexStats()
       } else {
         const errorData = await response.json()
         alert(errorData.detail || "Indexing failed")
@@ -107,13 +140,20 @@ const SemanticSearch = () => {
   const handleIndexAll = async () => {
     setIndexingAll(true)
     try {
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
       const response = await fetch(`${API_BASE_URL}/semantic/index-all`, {
-        method: "POST"
+        method: "POST",
+        headers
       })
+
       if (response.ok) {
         const data = await response.json()
-        alert(`${data.message}\nIndexed: ${data.indexed}, Failed: ${data.failed}`)
-        fetchIndexStats()
+        alert(data.message || `Indexed ${data.indexed} files`)
+        await fetchIndexStats()
       } else {
         const errorData = await response.json()
         alert(errorData.detail || "Indexing failed")
@@ -211,7 +251,7 @@ const SemanticSearch = () => {
                     <option value="all">All Files</option>
                     {files.map((file) => (
                       <option key={file.file_id} value={file.file_id}>
-                        {file.filename}
+                        {file.original_filename || file.filename}
                       </option>
                     ))}
                   </select>

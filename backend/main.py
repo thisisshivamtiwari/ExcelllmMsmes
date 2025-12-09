@@ -163,22 +163,20 @@ async def global_exception_handler(request: Request, exc: Exception):
 UPLOADED_FILES_DIR = BASE_DIR / "uploaded_files"
 UPLOADED_FILES_DIR.mkdir(exist_ok=True)
 
-# Phase 3: Semantic Indexing imports (after BASE_DIR is defined)
-import sys
-sys.path.insert(0, str(BASE_DIR))  # Add project root to path for embeddings module
+# Phase 3: Semantic Indexing imports (now in backend/)
 try:
-    from embeddings import Embedder, VectorStore, Retriever
+    from embeddings import Embedder, MongoDBVectorStore, Retriever
     EMBEDDINGS_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Embeddings module not available: {str(e)}")
     EMBEDDINGS_AVAILABLE = False
     Embedder = None
-    VectorStore = None
+    MongoDBVectorStore = None
     Retriever = None
 
-# Phase 4: LangChain Agent System imports
+# Phase 4: LangChain Agent System imports (now in backend/)
 try:
-    from tools import ExcelRetriever, DataCalculator, TrendAnalyzer, ComparativeAnalyzer, KPICalculator, GraphGenerator
+    from tools import DataCalculator, TrendAnalyzer, ComparativeAnalyzer, KPICalculator, GraphGenerator
     from agent import ExcelAgent
     from agent.tool_wrapper import (
         create_excel_retriever_tool,
@@ -189,40 +187,14 @@ try:
         create_graph_generator_tool
     )
     AGENT_AVAILABLE = True
-    
-    # Check if prompt_engineering is available
-    try:
-        from prompt_engineering.llama4_maverick_optimizer import EnhancedPromptEngineer
-        PROMPT_ENGINEERING_AVAILABLE = True
-        logger.info("✓ Prompt engineering module available")
-    except ImportError as e:
-        PROMPT_ENGINEERING_AVAILABLE = False
-        logger.warning(f"Prompt engineering module not available: {e}")
+    PROMPT_ENGINEERING_AVAILABLE = False  # Removed - no longer in separate directory
+    logger.info("✓ Agent modules imported successfully")
 except ImportError as e:
-    logger.warning(f"Agent module not available: {str(e)}")
+    logger.error(f"Agent module not available: {str(e)}")
+    import traceback
+    logger.error(traceback.format_exc())
     AGENT_AVAILABLE = False
     PROMPT_ENGINEERING_AVAILABLE = False
-
-DATA_GENERATOR_DIR = BASE_DIR / "datagenerator"
-DATA_GENERATOR_SCRIPT = DATA_GENERATOR_DIR / "data_generator.py"
-GENERATED_DATA_DIR = DATA_GENERATOR_DIR / "generated_data"
-
-QUESTION_GENERATOR_DIR = BASE_DIR / "question_generator"
-QUESTION_GENERATOR_SCRIPT = QUESTION_GENERATOR_DIR / "question_generator.py"
-QUESTIONS_FILE = QUESTION_GENERATOR_DIR / "generated_questions.json"
-QUESTIONS_CSV_FILE = QUESTION_GENERATOR_DIR / "generated_questions.csv"
-
-LLM_BENCHMARKING_DIR = BASE_DIR / "llm_benchmarking"
-BENCHMARK_SCRIPT = LLM_BENCHMARKING_DIR / "run_complete_benchmark.py"
-BENCHMARK_RESULTS_DIR = LLM_BENCHMARKING_DIR / "results"
-
-PROMPT_ENGINEERING_DIR = BASE_DIR / "prompt_engineering"
-PROMPT_TEST_SCRIPT = PROMPT_ENGINEERING_DIR / "test_enhanced_prompts.py"
-PROMPT_RESULTS_DIR = PROMPT_ENGINEERING_DIR / "results"
-
-COMPARISON_DIR = BASE_DIR / "enhanced_vs_baseline_vs_groundtruth"
-COMPARISON_SCRIPT = COMPARISON_DIR / "comparison_analysis.py"
-COMPARISON_RESULTS_DIR = COMPARISON_DIR / "results"
 
 
 class GenerateRequest(BaseModel):
@@ -570,6 +542,11 @@ if missing:
 
 @app.post("/api/generate", response_model=GenerateResponse)
 async def generate_data(request: GenerateRequest):
+    """DEPRECATED: Data generator directory removed. Use /api/data-generator/generate instead."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Data generator has been removed. Use /api/data-generator/generate for industry-based data generation."
+    )
     """Trigger data generation with specified parameters."""
     try:
         python_path = find_python()
@@ -677,9 +654,12 @@ async def generate_data(request: GenerateRequest):
         )
 
 
+# DEPRECATED: Old endpoint for listing generated files from local directory
+# This endpoint is kept for backward compatibility but should not be used in production
+# Use /api/files/list instead (MongoDB-based, user-specific)
 @app.get("/api/files")
 async def list_generated_files():
-    """List all generated data files with their row counts."""
+    """DEPRECATED: List all generated data files with their row counts (local storage)."""
     files = {}
     
     if not GENERATED_DATA_DIR.exists():
@@ -850,84 +830,20 @@ async def get_file_stats(file_name: str):
 
 @app.post("/api/question-generator/generate")
 async def generate_questions():
-    """Generate questions from CSV data."""
-    try:
-        python_path = find_python()
-        script_path = str(QUESTION_GENERATOR_SCRIPT)
-        
-        original_cwd = os.getcwd()
-        os.chdir(str(QUESTION_GENERATOR_DIR))
-        
-        try:
-            process = await asyncio.create_subprocess_exec(
-                python_path,
-                script_path,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            
-            stdout, stderr = await process.communicate()
-            output = stdout.decode("utf-8") if stdout else ""
-            error_output = stderr.decode("utf-8") if stderr else ""
-            
-            if process.returncode != 0:
-                return {
-                    "status": "error",
-                    "message": "Question generation failed",
-                    "output": output,
-                    "error": error_output,
-                }
-            
-            # Load generated questions
-            questions_data = {}
-            if QUESTIONS_FILE.exists():
-                with open(QUESTIONS_FILE, "r") as f:
-                    questions_data = json.load(f)
-            
-            return {
-                "status": "success",
-                "message": "Questions generated successfully",
-                "output": output,
-                "questions": questions_data,
-            }
-        finally:
-            os.chdir(original_cwd)
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to generate questions: {str(e)}",
-            "error": str(e),
-        }
+    """DEPRECATED: Question generator directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Question generator directory has been removed."
+    )
 
 
 @app.get("/api/question-generator/questions")
 async def get_questions(category: Optional[str] = Query(None)):
-    """Get generated questions, optionally filtered by category."""
-    try:
-        if not QUESTIONS_FILE.exists():
-            return {
-                "questions": {},
-                "metadata": {},
-                "message": f"No questions file found at {QUESTIONS_FILE}",
-                "file_path": str(QUESTIONS_FILE),
-                "file_exists": False,
-            }
-        
-        with open(QUESTIONS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        
-        if category:
-            questions = data.get("questions", {}).get(category, [])
-            return {"category": category, "questions": questions, "count": len(questions)}
-        
-        return data
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"Error parsing JSON: {str(e)}")
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error reading questions: {str(e)}, Path: {QUESTIONS_FILE}",
-        )
+    """DEPRECATED: Question generator directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Question generator directory has been removed."
+    )
 
 
 # ============================================================================
@@ -943,79 +859,20 @@ class BenchmarkRequest(BaseModel):
 
 @app.post("/api/benchmark/run")
 async def run_benchmark(request: BenchmarkRequest):
-    """Run LLM benchmarking."""
-    try:
-        python_path = find_python()
-        script_path = str(BENCHMARK_SCRIPT)
-        
-        cmd = [python_path, script_path]
-        
-        if request.sample_size:
-            cmd.extend(["--sample", str(request.sample_size)])
-        if request.categories:
-            cmd.extend(["--categories"] + request.categories)
-        if not request.use_gemini:
-            cmd.append("--no-gemini")
-        
-        original_cwd = os.getcwd()
-        os.chdir(str(LLM_BENCHMARKING_DIR))
-        
-        try:
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            
-            stdout, stderr = await process.communicate()
-            output = stdout.decode("utf-8") if stdout else ""
-            error_output = stderr.decode("utf-8") if stderr else ""
-            
-            if process.returncode != 0:
-                return {
-                    "status": "error",
-                    "message": "Benchmark failed",
-                    "output": output,
-                    "error": error_output,
-                }
-            
-            # Load results
-            results_file = BENCHMARK_RESULTS_DIR / "metrics" / "all_results.json"
-            results = {}
-            if results_file.exists():
-                with open(results_file, "r") as f:
-                    results = json.load(f)
-            
-            return {
-                "status": "success",
-                "message": "Benchmark completed successfully",
-                "output": output,
-                "results": results,
-            }
-        finally:
-            os.chdir(original_cwd)
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to run benchmark: {str(e)}",
-            "error": str(e),
-        }
+    """DEPRECATED: LLM benchmarking directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. LLM benchmarking directory has been removed."
+    )
 
 
 @app.get("/api/benchmark/results")
 async def get_benchmark_results():
-    """Get benchmark results."""
-    try:
-        results_file = BENCHMARK_RESULTS_DIR / "metrics" / "all_results.json"
-        if not results_file.exists():
-            return {"results": {}, "message": "No benchmark results found"}
-        
-        with open(results_file, "r") as f:
-            results = json.load(f)
-        
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading results: {str(e)}")
+    """DEPRECATED: LLM benchmarking directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. LLM benchmarking directory has been removed."
+    )
 
 
 # ============================================================================
@@ -1024,71 +881,20 @@ async def get_benchmark_results():
 
 @app.post("/api/prompt-engineering/test")
 async def test_enhanced_prompts():
-    """Test enhanced prompts."""
-    try:
-        python_path = find_python()
-        script_path = str(PROMPT_TEST_SCRIPT)
-        
-        original_cwd = os.getcwd()
-        os.chdir(str(PROMPT_ENGINEERING_DIR))
-        
-        try:
-            process = await asyncio.create_subprocess_exec(
-                python_path,
-                script_path,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            
-            stdout, stderr = await process.communicate()
-            output = stdout.decode("utf-8") if stdout else ""
-            error_output = stderr.decode("utf-8") if stderr else ""
-            
-            if process.returncode != 0:
-                return {
-                    "status": "error",
-                    "message": "Prompt testing failed",
-                    "output": output,
-                    "error": error_output,
-                }
-            
-            # Load results
-            results_file = PROMPT_RESULTS_DIR / "baseline_vs_enhanced_comparison.json"
-            results = {}
-            if results_file.exists():
-                with open(results_file, "r") as f:
-                    results = json.load(f)
-            
-            return {
-                "status": "success",
-                "message": "Prompt testing completed successfully",
-                "output": output,
-                "results": results,
-            }
-        finally:
-            os.chdir(original_cwd)
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to test prompts: {str(e)}",
-            "error": str(e),
-        }
+    """DEPRECATED: Prompt engineering directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Prompt engineering directory has been removed."
+    )
 
 
 @app.get("/api/prompt-engineering/results")
 async def get_prompt_results():
-    """Get prompt engineering results."""
-    try:
-        results_file = PROMPT_RESULTS_DIR / "baseline_vs_enhanced_comparison.json"
-        if not results_file.exists():
-            return {"results": {}, "message": "No prompt results found"}
-        
-        with open(results_file, "r") as f:
-            results = json.load(f)
-        
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading results: {str(e)}")
+    """DEPRECATED: Prompt engineering directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Prompt engineering directory has been removed."
+    )
 
 
 # ============================================================================
@@ -1097,71 +903,20 @@ async def get_prompt_results():
 
 @app.post("/api/comparison/run")
 async def run_comparison():
-    """Run enhanced vs baseline vs ground truth comparison."""
-    try:
-        python_path = find_python()
-        script_path = str(COMPARISON_SCRIPT)
-        
-        original_cwd = os.getcwd()
-        os.chdir(str(COMPARISON_DIR))
-        
-        try:
-            process = await asyncio.create_subprocess_exec(
-                python_path,
-                script_path,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            
-            stdout, stderr = await process.communicate()
-            output = stdout.decode("utf-8") if stdout else ""
-            error_output = stderr.decode("utf-8") if stderr else ""
-            
-            if process.returncode != 0:
-                return {
-                    "status": "error",
-                    "message": "Comparison analysis failed",
-                    "output": output,
-                    "error": error_output,
-                }
-            
-            # Load results
-            results_file = COMPARISON_RESULTS_DIR / "three_way_comparison.json"
-            results = {}
-            if results_file.exists():
-                with open(results_file, "r") as f:
-                    results = json.load(f)
-            
-            return {
-                "status": "success",
-                "message": "Comparison analysis completed successfully",
-                "output": output,
-                "results": results,
-            }
-        finally:
-            os.chdir(original_cwd)
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to run comparison: {str(e)}",
-            "error": str(e),
-        }
+    """DEPRECATED: Comparison analysis directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Comparison analysis directory has been removed."
+    )
 
 
 @app.get("/api/comparison/results")
 async def get_comparison_results():
-    """Get comparison analysis results."""
-    try:
-        results_file = COMPARISON_RESULTS_DIR / "three_way_comparison.json"
-        if not results_file.exists():
-            return {"results": {}, "message": "No comparison results found"}
-        
-        with open(results_file, "r") as f:
-            results = json.load(f)
-        
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading results: {str(e)}")
+    """DEPRECATED: Comparison analysis directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Comparison analysis directory has been removed."
+    )
 
 
 # ============================================================================
@@ -1175,129 +930,69 @@ async def test_visualizations():
     """Test endpoint to verify visualization routes are working."""
     return {
         "status": "ok",
-        "message": "Visualization endpoints are active",
-        "benchmark_dir": str(BENCHMARK_RESULTS_DIR / "visualizations"),
-        "benchmark_exists": (BENCHMARK_RESULTS_DIR / "visualizations").exists(),
-        "prompt_dir": str(PROMPT_RESULTS_DIR / "visualizations"),
-        "prompt_exists": (PROMPT_RESULTS_DIR / "visualizations").exists(),
-        "comparison_dir": str(COMPARISON_RESULTS_DIR / "visualizations"),
-        "comparison_exists": (COMPARISON_RESULTS_DIR / "visualizations").exists(),
+        "message": "Visualization endpoints are active"
     }
 
 
 @app.get("/api/visualizations/benchmark/list")
 async def list_benchmark_visualizations():
-    """List available benchmark visualization images."""
-    viz_dir = BENCHMARK_RESULTS_DIR / "visualizations"
-    images = []
-    if viz_dir.exists():
-        for img_file in sorted(viz_dir.glob("*.png")):
-            images.append({
-                "name": img_file.stem.replace("_", " ").title(),
-                "filename": img_file.name,
-                "url": f"/api/visualizations/benchmark/{img_file.name}",
-            })
-    else:
-        # Debug: return path info if directory doesn't exist
-        return {
-            "images": [],
-            "debug": {
-                "viz_dir": str(viz_dir),
-                "exists": viz_dir.exists(),
-                "benchmark_results_dir": str(BENCHMARK_RESULTS_DIR),
-                "benchmark_results_exists": BENCHMARK_RESULTS_DIR.exists(),
-            }
-        }
-    return {"images": images}
+    """DEPRECATED: LLM benchmarking directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. LLM benchmarking directory has been removed."
+    )
 
 
 @app.get("/api/visualizations/prompt-engineering/list")
 async def list_prompt_visualizations():
-    """List available prompt engineering visualization images."""
-    viz_dir = PROMPT_RESULTS_DIR / "visualizations"
-    images = []
-    if viz_dir.exists():
-        for img_file in sorted(viz_dir.glob("*.png")):
-            images.append({
-                "name": img_file.stem.replace("_", " ").title(),
-                "filename": img_file.name,
-                "url": f"/api/visualizations/prompt-engineering/{img_file.name}",
-            })
-    else:
-        # Debug: return path info if directory doesn't exist
-        return {
-            "images": [],
-            "debug": {
-                "viz_dir": str(viz_dir),
-                "exists": viz_dir.exists(),
-                "prompt_results_dir": str(PROMPT_RESULTS_DIR),
-                "prompt_results_exists": PROMPT_RESULTS_DIR.exists(),
-            }
-        }
-    return {"images": images}
+    """DEPRECATED: Prompt engineering directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Prompt engineering directory has been removed."
+    )
 
 
 @app.get("/api/visualizations/comparison/list")
 async def list_comparison_visualizations():
-    """List available comparison visualization images."""
-    viz_dir = COMPARISON_RESULTS_DIR / "visualizations"
-    images = []
-    if viz_dir.exists():
-        for img_file in sorted(viz_dir.glob("*.png")):
-            images.append({
-                "name": img_file.stem.replace("_", " ").title(),
-                "filename": img_file.name,
-                "url": f"/api/visualizations/comparison/{img_file.name}",
-            })
-    else:
-        # Debug: return path info if directory doesn't exist
-        return {
-            "images": [],
-            "debug": {
-                "viz_dir": str(viz_dir),
-                "exists": viz_dir.exists(),
-                "comparison_results_dir": str(COMPARISON_RESULTS_DIR),
-                "comparison_results_exists": COMPARISON_RESULTS_DIR.exists(),
-            }
-        }
-    return {"images": images}
+    """DEPRECATED: Comparison analysis directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Comparison analysis directory has been removed."
+    )
 
 
 @app.get("/api/visualizations/benchmark/{image_name}")
 async def get_benchmark_visualization(image_name: str):
-    """Serve benchmark visualization images."""
-    image_path = BENCHMARK_RESULTS_DIR / "visualizations" / image_name
-    if not image_path.exists() or not image_path.is_file():
-        raise HTTPException(status_code=404, detail="Image not found")
-    return FileResponse(str(image_path), media_type="image/png")
+    """DEPRECATED: LLM benchmarking directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. LLM benchmarking directory has been removed."
+    )
 
 
 @app.get("/api/visualizations/prompt-engineering/{image_name}")
 async def get_prompt_visualization(image_name: str):
-    """Serve prompt engineering visualization images."""
-    image_path = PROMPT_RESULTS_DIR / "visualizations" / image_name
-    if not image_path.exists() or not image_path.is_file():
-        raise HTTPException(status_code=404, detail="Image not found")
-    return FileResponse(str(image_path), media_type="image/png")
+    """DEPRECATED: Prompt engineering directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Prompt engineering directory has been removed."
+    )
 
 
 @app.get("/api/visualizations/comparison/{image_name}")
 async def get_comparison_visualization(image_name: str):
-    """Serve comparison visualization images."""
-    image_path = COMPARISON_RESULTS_DIR / "visualizations" / image_name
-    if not image_path.exists() or not image_path.is_file():
-        raise HTTPException(status_code=404, detail="Image not found")
-    return FileResponse(str(image_path), media_type="image/png")
+    """DEPRECATED: Comparison analysis directory removed."""
+    raise HTTPException(
+        status_code=410,
+        detail="This endpoint is deprecated. Comparison analysis directory has been removed."
+    )
 
 
 # ============================================================================
 # Phase 1: Excel Parser API Endpoints
 # ============================================================================
 
-# Import Excel Parser modules
-import sys
-sys.path.insert(0, str(BASE_DIR))
-
+# Import Excel Parser modules (now in backend/)
 from excel_parser.excel_loader import ExcelLoader
 from excel_parser.file_validator import FileValidator
 from excel_parser.metadata_extractor import MetadataExtractor
@@ -1344,9 +1039,8 @@ uploaded_files_registry: Dict[str, Dict[str, Any]] = {}
 METADATA_DIR = UPLOADED_FILES_DIR / "metadata"
 METADATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# Phase 3: Semantic Indexing setup
-VECTOR_STORE_DIR = BASE_DIR / "vectorstore"
-VECTOR_STORE_DIR.mkdir(parents=True, exist_ok=True)
+# Phase 3: Semantic Indexing setup - Now using MongoDB instead of local ChromaDB
+# No local vector store directory needed - everything in MongoDB
 
 # Initialize embeddings components (lazy initialization)
 _embedder = None
@@ -1368,16 +1062,21 @@ def get_embedder():
     return _embedder
 
 def get_vector_store():
-    """Get or create vector store instance."""
+    """Get or create MongoDB vector store instance."""
     global _vector_store
     if not EMBEDDINGS_AVAILABLE:
         return None
+    if not MONGODB_AVAILABLE:
+        logger.warning("MongoDB not available - vector store requires MongoDB")
+        return None
     if _vector_store is None:
         try:
-            _vector_store = VectorStore(persist_directory=VECTOR_STORE_DIR)
-            logger.info("✓ Vector store initialized")
+            from database import get_database
+            database = get_database()
+            _vector_store = MongoDBVectorStore(database=database, collection_name="embeddings")
+            logger.info("✓ MongoDB vector store initialized")
         except Exception as e:
-            logger.error(f"Failed to initialize vector store: {str(e)}")
+            logger.error(f"Failed to initialize MongoDB vector store: {str(e)}")
             _vector_store = None
     return _vector_store
 
@@ -1517,421 +1216,431 @@ def save_file_metadata(file_id: str, metadata: Dict[str, Any]) -> bool:
         return False
 
 
-@app.post("/api/files/upload")
-async def upload_file(file: UploadFile = File(...)):
-    """
-    Upload an Excel or CSV file.
-    
-    Returns:
-        File ID and basic metadata
-    """
-    file_id = None
-    saved_file_path = None
-    
-    try:
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="Filename is required")
+if MONGODB_AVAILABLE:
+    @app.post("/api/files/upload")
+    async def upload_file(
+        file: UploadFile = File(...),
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """
+        Upload an Excel or CSV file (requires authentication).
+        Files are stored in MongoDB GridFS with user context.
         
-        logger.info(f"Starting file upload: {file.filename}")
-        
-        # Generate unique file ID
-        file_id = str(uuid.uuid4())
-        
-        # Validate file extension
-        file_ext = Path(file.filename).suffix.lower()
-        if file_ext not in ['.xlsx', '.xls', '.csv']:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported file format: {file_ext}. Supported: .xlsx, .xls, .csv"
+        Returns:
+            File ID and basic metadata
+        """
+        try:
+            if not file.filename:
+                raise HTTPException(status_code=400, detail="Filename is required")
+            
+            logger.info(f"Starting file upload: {file.filename} for user {current_user.id}")
+            
+            # Validate file extension
+            file_ext = Path(file.filename).suffix.lower()
+            if file_ext not in ['.xlsx', '.xls', '.csv']:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unsupported file format: {file_ext}. Supported: .xlsx, .xls, .csv"
+                )
+            
+            # Check for duplicate filename before processing
+            from services.file_service import get_user_files
+            existing_files = await get_user_files(current_user)
+            duplicate_file = next(
+                (f for f in existing_files if f.get("original_filename") == file.filename),
+                None
             )
+            if duplicate_file:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "message": f"File '{file.filename}' already exists",
+                        "existing_file_id": duplicate_file.get("file_id"),
+                        "existing_file": duplicate_file
+                    }
+                )
+            
+            # Read file content
+            file_content = await file.read()
+            if len(file_content) == 0:
+                raise HTTPException(status_code=400, detail="Uploaded file is empty")
+            
+            # Save to temporary file for validation and metadata extraction
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+                tmp_file.write(file_content)
+                tmp_file_path = Path(tmp_file.name)
+            
+            try:
+                # Validate file
+                validation_result = file_validator.validate_file(tmp_file_path)
+                if not validation_result['is_valid']:
+                    raise HTTPException(
+                        status_code=400,
+                        detail={
+                            "message": "File validation failed",
+                            "errors": validation_result['errors'],
+                            "warnings": validation_result['warnings']
+                        }
+                    )
+                
+                # Extract metadata
+                try:
+                    metadata = metadata_extractor.extract_metadata(tmp_file_path, include_sample=True)
+                    if isinstance(metadata, dict) and 'error' in metadata:
+                        logger.warning(f"Metadata extraction returned error: {metadata.get('error')}")
+                except Exception as e:
+                    logger.error(f"Error extracting metadata: {str(e)}")
+                    metadata = {
+                        'error': f"Error extracting metadata: {str(e)}",
+                        'file_name': file.filename,
+                        'file_type': file_ext.replace('.', ''),
+                        'file_size_bytes': len(file_content),
+                        'sheet_names': [],
+                        'sheets': {}
+                    }
+                
+                # Import file service
+                from services.file_service import upload_file_to_gridfs
+                
+                # Upload to MongoDB GridFS
+                result = await upload_file_to_gridfs(
+                    user=current_user,
+                    file_content=file_content,
+                    original_filename=file.filename,
+                    file_metadata=metadata,
+                    industry=current_user.industry
+                )
+                
+                logger.info(f"File upload successful: {result['file_id']} ({file.filename})")
+                
+                return {
+                    "success": True,
+                    "file_id": result["file_id"],
+                    "original_filename": result["original_filename"],
+                    "uploaded_at": result["uploaded_at"],
+                    "file_size_bytes": result["file_size_bytes"],
+                    "metadata": metadata,
+                    "warnings": validation_result.get('warnings', [])
+                }
+            
+            finally:
+                # Clean up temporary file
+                if tmp_file_path.exists():
+                    tmp_file_path.unlink()
         
-        # Ensure uploaded_files directory exists
-        UPLOADED_FILES_DIR.mkdir(parents=True, exist_ok=True)
-        
-        # Save uploaded file
-        saved_file_path = UPLOADED_FILES_DIR / f"{file_id}{file_ext}"
-        
-        # Read and save file
-        file_content = await file.read()
-        if len(file_content) == 0:
-            raise HTTPException(status_code=400, detail="Uploaded file is empty")
-        
-        with open(saved_file_path, "wb") as buffer:
-            buffer.write(file_content)
-        
-        logger.info(f"File saved: {saved_file_path} ({len(file_content)} bytes)")
-        
-        # Validate file
-        validation_result = file_validator.validate_file(saved_file_path)
-        if not validation_result['is_valid']:
-            if saved_file_path.exists():
-                saved_file_path.unlink()
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error uploading file: {str(e)}")
+            logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=400,
+                status_code=500,
                 detail={
-                    "message": "File validation failed",
-                    "errors": validation_result['errors'],
-                    "warnings": validation_result['warnings']
+                    "message": "Error uploading file",
+                    "error": str(e),
+                    "error_type": type(e).__name__
                 }
             )
+
+
+    @app.get("/api/files/list")
+    async def list_uploaded_files(current_user: UserInDB = Depends(get_current_user)):
+        """
+        List all uploaded files for the current user (requires authentication).
         
-        # Extract metadata
+        This endpoint returns files from MongoDB GridFS, filtered by user_id.
+        """
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="File service not available - MongoDB not configured"
+            )
+        
         try:
-            metadata = metadata_extractor.extract_metadata(saved_file_path, include_sample=True)
+            from services.file_service import get_user_files
+            import math
             
-            # Check if metadata extraction returned an error
-            if isinstance(metadata, dict) and 'error' in metadata:
-                logger.warning(f"Metadata extraction returned error: {metadata.get('error')}")
-                # Continue with partial metadata - don't fail upload
-        except Exception as e:
-            logger.error(f"Error extracting metadata: {str(e)}")
-            logger.error(traceback.format_exc())
-            # Create minimal metadata instead of failing
-            file_stat = saved_file_path.stat()
-            metadata = {
-                'error': f"Error extracting metadata: {str(e)}",
-                'file_name': file.filename,
-                'file_type': file_ext.replace('.', ''),
-                'file_size_bytes': file_stat.st_size,
-                'modified_date': datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
-                'sheet_names': [],
-                'sheets': {}
-            }
-        
-        # Create file info structure
-        file_info = {
-            "file_id": file_id,
-            "original_filename": file.filename,
-            "saved_path": str(saved_file_path),
-            "uploaded_at": datetime.now().isoformat(),
-            "metadata": metadata,
-            "validation": validation_result,
-            "user_definitions": {}  # Will be populated by frontend
-        }
-        
-        # Save to registry (in-memory)
-        uploaded_files_registry[file_id] = file_info
-        
-        # Save metadata to JSON file
-        save_file_metadata(file_id, file_info)
-        
-        # Phase 3: Index file in vector store (async, non-blocking)
-        try:
-            if EMBEDDINGS_AVAILABLE:
-                # Index in background (don't block upload response)
-                index_file_in_vector_store(file_id, file_info)
-        except Exception as e:
-            logger.warning(f"Failed to index file {file_id} in vector store: {str(e)}")
-            # Don't fail upload if indexing fails
-        
-        logger.info(f"File upload successful: {file_id} ({file.filename})")
-        
-        return {
-            "status": "success",
-            "file_id": file_id,
-            "filename": file.filename,
-            "metadata": metadata,
-            "warnings": validation_result.get('warnings', [])
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error uploading file: {str(e)}")
-        logger.error(traceback.format_exc())
-        
-        # Clean up file if it was created
-        if saved_file_path and saved_file_path.exists():
-            try:
-                saved_file_path.unlink()
-            except Exception:
-                pass
-        
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "message": "Error uploading file",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
-        )
-
-
-@app.get("/api/files/list")
-async def list_uploaded_files():
-    """List all uploaded files."""
-    files = []
-    
-    # Load from JSON files
-    for metadata_file in METADATA_DIR.glob("*.json"):
-        try:
-            file_id = metadata_file.stem
+            logger.info(f"Listing files for user: {current_user.id} (email: {current_user.email})")
+            # Deduplicate by default - only show most recent file for each filename
+            files = await get_user_files(current_user, deduplicate=True)
             
-            # Skip the relationship cache file - it's not an uploaded file
-            if metadata_file.name == "relationship_cache.json":
-                continue
+            # Sanitize files to remove any invalid float values (inf, nan)
+            def sanitize_value(value):
+                """Recursively sanitize values for JSON serialization"""
+                if isinstance(value, float):
+                    if math.isnan(value) or math.isinf(value):
+                        return None
+                elif isinstance(value, dict):
+                    return {k: sanitize_value(v) for k, v in value.items()}
+                elif isinstance(value, list):
+                    return [sanitize_value(item) for item in value]
+                return value
             
-            # Also skip if it's the cache file by comparing paths
-            if RELATIONSHIP_CACHE_FILE.exists():
-                try:
-                    if metadata_file.samefile(RELATIONSHIP_CACHE_FILE):
-                        continue
-                except (OSError, ValueError):
-                    if str(metadata_file.resolve()) == str(RELATIONSHIP_CACHE_FILE.resolve()):
-                        continue
+            sanitized_files = [sanitize_value(f) for f in files]
             
-            file_info = load_file_metadata(file_id)
-            if file_info:
-                # Only include files that have a saved_path (real uploaded files)
-                # This filters out any cache or system files
-                if file_info.get("saved_path"):
-                    files.append({
-                        "file_id": file_id,
-                        "filename": file_info.get("original_filename", "unknown"),
-                        "uploaded_at": file_info.get("uploaded_at"),
-                        "file_type": file_info.get("metadata", {}).get("file_type"),
-                        "sheet_names": file_info.get("metadata", {}).get("sheet_names", [])
-                    })
-        except Exception as e:
-            logger.error(f"Error loading file info from {metadata_file}: {str(e)}")
-    
-    return {
-        "files": files,
-        "total": len(files)
-    }
-
-
-@app.get("/api/files/{file_id}")
-async def get_file_info(file_id: str):
-    """Get detailed information about an uploaded file."""
-    try:
-        file_info = load_file_metadata(file_id)
-        
-        if not file_info:
-            raise HTTPException(status_code=404, detail="File not found")
-        
-        # Ensure all data is JSON serializable
-        file_info = make_json_serializable(file_info)
-        
-        return file_info
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting file info for {file_id}: {str(e)}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "message": "Error retrieving file information",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
-        )
-
-
-@app.get("/api/files/{file_id}/columns")
-async def get_file_columns(file_id: str, sheet_name: Optional[str] = None):
-    """Get columns for a file (and optionally a specific sheet)."""
-    file_info = load_file_metadata(file_id)
-    
-    if not file_info:
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    metadata = file_info.get("metadata", {})
-    sheets = metadata.get("sheets", {})
-    user_definitions = file_info.get("user_definitions", {})
-    
-    if sheet_name:
-        # Return columns for specific sheet
-        if sheet_name not in sheets:
-            raise HTTPException(status_code=404, detail=f"Sheet '{sheet_name}' not found")
-        
-        sheet_data = sheets[sheet_name]
-        columns = []
-        
-        for col in sheet_data.get("columns", []):
-            col_key = f"{sheet_name}::{col}"
-            columns.append({
-                "name": col,
-                "sheet": sheet_name,
-                "type": sheet_data.get("column_types", {}).get(col, "unknown"),
-                "null_count": sheet_data.get("null_counts", {}).get(col, 0),
-                "unique_count": sheet_data.get("unique_counts", {}).get(col, 0),
-                "user_definition": user_definitions.get(col_key, "")
-            })
-        
-        return {
-            "file_id": file_id,
-            "sheet_name": sheet_name,
-            "columns": columns
-        }
-    else:
-        # Return columns for all sheets
-        all_columns = {}
-        
-        for sheet_name, sheet_data in sheets.items():
-            columns = []
-            for col in sheet_data.get("columns", []):
-                col_key = f"{sheet_name}::{col}"
-                columns.append({
-                    "name": col,
-                    "sheet": sheet_name,
-                    "type": sheet_data.get("column_types", {}).get(col, "unknown"),
-                    "null_count": sheet_data.get("null_counts", {}).get(col, 0),
-                    "unique_count": sheet_data.get("unique_counts", {}).get(col, 0),
-                    "user_definition": user_definitions.get(col_key, "")
-                })
-            all_columns[sheet_name] = columns
-        
-        return {
-            "file_id": file_id,
-            "columns": all_columns
-        }
-
-
-@app.post("/api/files/{file_id}/definitions")
-async def save_column_definitions(file_id: str, definitions: Dict[str, str]):
-    """
-    Save user definitions for columns.
-    
-    Request body:
-    {
-        "Sheet1::column_name": "User definition text",
-        "Sheet2::column_name": "Another definition"
-    }
-    """
-    file_info = load_file_metadata(file_id)
-    
-    if not file_info:
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    # Update user definitions
-    if "user_definitions" not in file_info:
-        file_info["user_definitions"] = {}
-    
-    file_info["user_definitions"].update(definitions)
-    file_info["updated_at"] = datetime.now().isoformat()
-    
-    # Save to JSON file
-    if save_file_metadata(file_id, file_info):
-        # Update in-memory registry
-        uploaded_files_registry[file_id] = file_info
-        
-        return {
-            "status": "success",
-            "message": "Column definitions saved successfully",
-            "definitions_count": len(file_info["user_definitions"])
-        }
-    else:
-        raise HTTPException(status_code=500, detail="Error saving definitions")
-
-
-@app.delete("/api/files/{file_id}")
-async def delete_file(file_id: str):
-    """Delete an uploaded file and its metadata."""
-    try:
-        # Get metadata file path
-        metadata_file = METADATA_DIR / f"{file_id}.json"
-        
-        # Check if this is actually the relationship cache file (not just a file with similar name)
-        if metadata_file.exists() and RELATIONSHIP_CACHE_FILE.exists():
-            try:
-                if metadata_file.samefile(RELATIONSHIP_CACHE_FILE):
-                    raise HTTPException(status_code=400, detail="Cannot delete system cache file. Use /api/relationships/cache endpoint to clear cache.")
-            except (OSError, ValueError):
-                # Files might be on different filesystems or samefile might fail, check by name/path
-                if str(metadata_file) == str(RELATIONSHIP_CACHE_FILE):
-                    raise HTTPException(status_code=400, detail="Cannot delete system cache file. Use /api/relationships/cache endpoint to clear cache.")
-        
-        file_info = load_file_metadata(file_id)
-        
-        if not file_info:
-            # Try to clean up anyway if metadata file exists (but not if it's the cache file)
-            if metadata_file.exists():
-                # Double-check it's not the cache file
-                if RELATIONSHIP_CACHE_FILE.exists():
-                    try:
-                        if metadata_file.samefile(RELATIONSHIP_CACHE_FILE):
-                            raise HTTPException(status_code=400, detail="Cannot delete system cache file")
-                    except (OSError, ValueError):
-                        if str(metadata_file) == str(RELATIONSHIP_CACHE_FILE):
-                            raise HTTPException(status_code=400, detail="Cannot delete system cache file")
-                try:
-                    metadata_file.unlink()
-                    logger.info(f"Deleted orphaned metadata file: {file_id}")
-                except Exception as e:
-                    logger.warning(f"Could not delete metadata file {file_id}: {str(e)}")
-            
-            # Remove from registry if present
-            if file_id in uploaded_files_registry:
-                del uploaded_files_registry[file_id]
+            logger.info(f"Successfully listed {len(sanitized_files)} files for user {current_user.id}")
             
             return {
-                "status": "success",
-                "message": f"File {file_id} metadata cleaned up (file info was missing)"
+                "success": True,
+                "files": sanitized_files,
+                "total": len(sanitized_files),
+                "deduplicated": True
             }
-        
-        # Delete physical file (if path exists and is valid)
-        saved_path = file_info.get("saved_path")
-        if saved_path:
-            try:
-                file_path = Path(saved_path)
-                if file_path.exists() and file_path.is_file():
-                    file_path.unlink()
-                    logger.info(f"Deleted file: {saved_path}")
-                else:
-                    logger.warning(f"File path does not exist or is not a file: {saved_path}")
-            except Exception as e:
-                logger.warning(f"Error deleting physical file {saved_path}: {str(e)}")
-                # Continue with metadata deletion even if file deletion fails
-        else:
-            logger.warning(f"No saved_path in metadata for file {file_id}")
-        
-        # Delete metadata file
-        metadata_file = METADATA_DIR / f"{file_id}.json"
-        if metadata_file.exists():
-            try:
-                metadata_file.unlink()
-                logger.info(f"Deleted metadata file: {metadata_file}")
-            except Exception as e:
-                logger.error(f"Error deleting metadata file {metadata_file}: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Failed to delete metadata file: {str(e)}")
-        
-        # Remove from registry
-        if file_id in uploaded_files_registry:
-            del uploaded_files_registry[file_id]
-        
-        # Clear relationship cache if this file was part of cached analysis
-        try:
-            cache = load_relationship_cache()
-            cached_file_ids = cache.get("file_ids", [])
-            if file_id in cached_file_ids:
-                # Invalidate cache by clearing it
-                if RELATIONSHIP_CACHE_FILE.exists():
-                    RELATIONSHIP_CACHE_FILE.unlink()
-                    logger.info("Relationship cache cleared due to file deletion")
+        except HTTPException:
+            raise
         except Exception as e:
-            logger.warning(f"Error clearing relationship cache: {str(e)}")
-            # Don't fail deletion if cache clearing fails
+            logger.error(f"Error listing files: {str(e)}")
+            logger.error(traceback.format_exc())
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error listing files: {str(e)}"
+            )
+
+
+    @app.get("/api/files/{file_id}")
+    async def get_file_info(
+        file_id: str,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Get detailed information about an uploaded file (requires authentication)."""
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="File service not available - MongoDB not configured"
+            )
         
-        return {
-            "status": "success",
-            "message": f"File {file_id} deleted successfully"
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error deleting file {file_id}: {str(e)}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "message": "Error deleting file",
-                "error": str(e),
-                "error_type": type(e).__name__
+        try:
+            from services.file_service import get_file_metadata
+            file_info = await get_file_metadata(file_id, current_user)
+            
+            if not file_info:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            # Extract user_definitions from metadata for backward compatibility
+            user_definitions = file_info.get("metadata", {}).get("user_definitions", {})
+            
+            return {
+                "success": True,
+                **file_info,
+                "user_definitions": user_definitions  # Add at top level for backward compatibility
             }
-        )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting file info for {file_id}: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+    @app.get("/api/files/{file_id}/columns")
+    async def get_file_columns(
+        file_id: str,
+        sheet_name: Optional[str] = None,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Get columns for a file (and optionally a specific sheet) - requires authentication."""
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="File service not available - MongoDB not configured"
+            )
+        
+        try:
+            from services.file_service import get_file_metadata, get_file_from_gridfs
+            import pandas as pd
+            import io
+            
+            # Get file metadata (user-specific)
+            file_info = await get_file_metadata(file_id, current_user)
+            if not file_info:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            # Get file content from GridFS
+            file_content = await get_file_from_gridfs(file_id, current_user)
+            if not file_content:
+                raise HTTPException(status_code=404, detail="File content not found")
+            
+            # Get user definitions from metadata
+            user_definitions = file_info.get("metadata", {}).get("user_definitions", {})
+            
+            # Load file into pandas
+            file_ext = Path(file_info["original_filename"]).suffix.lower()
+            
+            if file_ext == '.csv':
+                # CSV files have a single sheet
+                df = pd.read_csv(io.BytesIO(file_content))
+                sheet_name_actual = "Sheet1"
+                
+                # Build column objects with metadata
+                columns = []
+                for col in df.columns:
+                    col_key = f"{sheet_name_actual}::{col}"
+                    columns.append({
+                        "name": col,
+                        "sheet": sheet_name_actual,
+                        "type": str(df[col].dtype),
+                        "null_count": int(df[col].isna().sum()),
+                        "unique_count": int(df[col].nunique()),
+                        "user_definition": user_definitions.get(col_key, "")
+                    })
+                
+                return {
+                    "file_id": file_id,
+                    "columns": {
+                        sheet_name_actual: columns
+                    }
+                }
+            else:
+                # Excel files can have multiple sheets
+                excel_file = pd.ExcelFile(io.BytesIO(file_content))
+                all_columns = {}
+                
+                if sheet_name:
+                    # Return columns for specific sheet
+                    if sheet_name not in excel_file.sheet_names:
+                        raise HTTPException(status_code=404, detail=f"Sheet '{sheet_name}' not found")
+                    
+                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                    columns = []
+                    for col in df.columns:
+                        col_key = f"{sheet_name}::{col}"
+                        columns.append({
+                            "name": col,
+                            "sheet": sheet_name,
+                            "type": str(df[col].dtype),
+                            "null_count": int(df[col].isna().sum()),
+                            "unique_count": int(df[col].nunique()),
+                            "user_definition": user_definitions.get(col_key, "")
+                        })
+                    all_columns[sheet_name] = columns
+                    
+                    return {
+                        "file_id": file_id,
+                        "sheet_name": sheet_name,
+                        "columns": all_columns
+                    }
+                else:
+                    # Return columns for all sheets
+                    for sheet_name_actual in excel_file.sheet_names:
+                        df = pd.read_excel(excel_file, sheet_name=sheet_name_actual)
+                        columns = []
+                        for col in df.columns:
+                            col_key = f"{sheet_name_actual}::{col}"
+                            columns.append({
+                                "name": col,
+                                "sheet": sheet_name_actual,
+                                "type": str(df[col].dtype),
+                                "null_count": int(df[col].isna().sum()),
+                                "unique_count": int(df[col].nunique()),
+                                "user_definition": user_definitions.get(col_key, "")
+                            })
+                        all_columns[sheet_name_actual] = columns
+                    
+                    return {
+                        "file_id": file_id,
+                        "columns": all_columns
+                    }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting file columns: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+    @app.post("/api/files/{file_id}/definitions")
+    async def save_column_definitions(
+        file_id: str,
+        definitions: Dict[str, str],
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """
+        Save user definitions for columns (requires authentication).
+        
+        Request body:
+        {
+            "Sheet1::column_name": "User definition text",
+            "Sheet2::column_name": "Another definition"
+        }
+        """
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="File service not available - MongoDB not configured"
+            )
+        
+        try:
+            from database import get_database
+            db = get_database()
+            files_collection = db["files"]
+            
+            # Find file (must belong to user)
+            file_doc = await files_collection.find_one({
+                "file_id": file_id,
+                "user_id": current_user.id
+            })
+            
+            if not file_doc:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            # Get current metadata or initialize it
+            metadata = file_doc.get("metadata", {})
+            
+            # Initialize user_definitions if it doesn't exist
+            if "user_definitions" not in metadata:
+                metadata["user_definitions"] = {}
+            
+            # Merge new definitions with existing ones
+            metadata["user_definitions"].update(definitions)
+            
+            # Update in database using dot notation to ensure nested field is set correctly
+            await files_collection.update_one(
+                {"_id": file_doc["_id"]},
+                {"$set": {"metadata.user_definitions": metadata["user_definitions"]}}
+            )
+            
+            logger.info(f"Updated user_definitions for file {file_id}: {len(metadata['user_definitions'])} definitions")
+            
+            return {
+                "success": True,
+                "message": "Column definitions saved successfully",
+                "definitions_count": len(file_doc["metadata"]["user_definitions"])
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error saving definitions: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+    @app.delete("/api/files/{file_id}")
+    async def delete_file(
+        file_id: str,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Delete an uploaded file and its metadata (requires authentication)."""
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="File service not available - MongoDB not configured"
+            )
+        
+        try:
+            from services.file_service import delete_file as delete_file_service
+            success = await delete_file_service(file_id, current_user)
+            
+            if not success:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            return {
+                "success": True,
+                "message": f"File {file_id} deleted successfully"
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error deleting file: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================
@@ -2245,427 +1954,713 @@ async def analyze_schema(
 # Column Definitions Management API
 # ============================================================================
 
-RELATIONSHIP_CACHE_FILE = METADATA_DIR / "relationship_cache.json"
-
-def load_relationship_cache() -> Dict[str, Any]:
-    """Load cached relationship analysis results."""
-    if RELATIONSHIP_CACHE_FILE.exists():
+if MONGODB_AVAILABLE:
+    @app.get("/api/column-definitions")
+    async def get_all_column_definitions(current_user: UserInDB = Depends(get_current_user)):
+        """Get all column definitions across all files for the current user."""
         try:
-            with open(RELATIONSHIP_CACHE_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Error loading relationship cache: {str(e)}")
-            return {}
-    return {}
-
-def save_relationship_cache(cache_data: Dict[str, Any]) -> bool:
-    """Save relationship analysis cache."""
-    try:
-        with open(RELATIONSHIP_CACHE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(cache_data, f, indent=2, ensure_ascii=False)
-        return True
-    except Exception as e:
-        logger.error(f"Error saving relationship cache: {str(e)}")
-        return False
-
-@app.get("/api/column-definitions")
-async def get_all_column_definitions():
-    """Get all column definitions across all files."""
-    try:
-        all_definitions = {}
-        for file_id in uploaded_files_registry.keys():
-            file_info = load_file_metadata(file_id)
-            if file_info:
-                user_defs = file_info.get("user_definitions", {})
+            from database import get_database
+            db = get_database()
+            files_collection = db["files"]
+            
+            all_definitions = {}
+            
+            # Find all files for user
+            cursor = files_collection.find({"user_id": current_user.id})
+            async for doc in cursor:
+                file_id = doc["file_id"]
+                metadata = doc.get("metadata", {})
+                user_defs = metadata.get("user_definitions", {})
+                
                 for col_key, definition in user_defs.items():
                     all_definitions[f"{file_id}::{col_key}"] = {
                         "file_id": file_id,
                         "column_key": col_key,
                         "definition": definition
                     }
-        return {"definitions": all_definitions}
-    except Exception as e:
-        logger.error(f"Error getting column definitions: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+            
+            return {"definitions": all_definitions}
+        except Exception as e:
+            logger.error(f"Error getting column definitions: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/column-definitions")
-async def save_column_definition(definition_data: Dict[str, Any]):
-    """Save or update a column definition."""
-    try:
-        file_id = definition_data.get("file_id")
-        column_key = definition_data.get("column_key")
-        definition = definition_data.get("definition", "")
+    @app.post("/api/column-definitions")
+    async def save_column_definition(
+        definition_data: Dict[str, Any],
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Save or update a column definition (requires authentication)."""
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Service not available - MongoDB not configured"
+            )
         
-        if not file_id or not column_key:
-            raise HTTPException(status_code=400, detail="file_id and column_key are required")
-        
-        file_info = load_file_metadata(file_id)
-        if not file_info:
-            raise HTTPException(status_code=404, detail="File not found")
-        
-        if "user_definitions" not in file_info:
-            file_info["user_definitions"] = {}
-        
-        file_info["user_definitions"][column_key] = definition
-        uploaded_files_registry[file_id] = file_info
-        
-        if save_file_metadata(file_id, file_info):
+        try:
+            from database import get_database
+            db = get_database()
+            files_collection = db["files"]
+            
+            file_id = definition_data.get("file_id")
+            column_key = definition_data.get("column_key")
+            definition = definition_data.get("definition", "")
+            
+            if not file_id or not column_key:
+                raise HTTPException(status_code=400, detail="file_id and column_key are required")
+            
+            # Find file (must belong to user)
+            file_doc = await files_collection.find_one({
+                "file_id": file_id,
+                "user_id": current_user.id
+            })
+            
+            if not file_doc:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            # Get current metadata or initialize it
+            metadata = file_doc.get("metadata", {})
+            
+            # Initialize user_definitions if it doesn't exist
+            if "user_definitions" not in metadata:
+                metadata["user_definitions"] = {}
+            
+            # Set the definition
+            metadata["user_definitions"][column_key] = definition
+            
+            # Update in database using dot notation to ensure nested field is set correctly
+            await files_collection.update_one(
+                {"_id": file_doc["_id"]},
+                {"$set": {"metadata.user_definitions": metadata["user_definitions"]}}
+            )
+            
+            logger.info(f"Saved definition for {file_id}::{column_key}")
+            
             return {"success": True, "message": "Definition saved"}
-        else:
-            raise HTTPException(status_code=500, detail="Failed to save definition")
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error saving column definition: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error saving column definition: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/api/column-definitions/{file_id}/{column_key:path}")
-async def delete_column_definition(file_id: str, column_key: str):
-    """Delete a column definition."""
-    try:
-        file_info = load_file_metadata(file_id)
-        if not file_info:
-            raise HTTPException(status_code=404, detail="File not found")
+    @app.delete("/api/column-definitions/{file_id}/{column_key:path}")
+    async def delete_column_definition(
+        file_id: str,
+        column_key: str,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Delete a column definition (requires authentication)."""
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Service not available - MongoDB not configured"
+            )
         
-        user_defs = file_info.get("user_definitions", {})
-        if column_key in user_defs:
-            del user_defs[column_key]
-            file_info["user_definitions"] = user_defs
-            uploaded_files_registry[file_id] = file_info
+        try:
+            from database import get_database
+            db = get_database()
+            files_collection = db["files"]
             
-            if save_file_metadata(file_id, file_info):
-                return {"success": True, "message": "Definition deleted"}
-            else:
-                raise HTTPException(status_code=500, detail="Failed to delete definition")
-        else:
-            return {"success": True, "message": "Definition not found (already deleted)"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error deleting column definition: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/relationships/analyze-all")
-async def analyze_all_relationships():
-    """
-    Analyze relationships across ALL files at once.
-    Uses Gemini with all column definitions and metadata.
-    Results are cached and updated only when needed.
-    """
-    try:
-        logger.info("Starting batch relationship analysis across all files...")
-        
-        # Collect all files and their metadata
-        all_files_data = []
-        all_column_definitions = {}
-        
-        for file_id in uploaded_files_registry.keys():
-            file_info = load_file_metadata(file_id)
-            if not file_info:
-                continue
+            # Find file (must belong to user)
+            file_doc = await files_collection.find_one({
+                "file_id": file_id,
+                "user_id": current_user.id
+            })
             
-            # Get columns for this file (extract directly from metadata)
-            try:
-                metadata = file_info.get("metadata", {})
-                sheets = metadata.get("sheets", {})
-                user_defs = file_info.get("user_definitions", {})
+            if not file_doc:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            # Get user definitions
+            metadata = file_doc.get("metadata", {})
+            user_defs = metadata.get("user_definitions", {})
+            
+            if column_key in user_defs:
+                del user_defs[column_key]
                 
-                # Build columns structure
-                columns_by_sheet = {}
-                for sheet_name, sheet_data in sheets.items():
-                    columns = []
-                    for col in sheet_data.get("columns", []):
-                        col_key = f"{sheet_name}::{col}"
-                        columns.append({
-                            "name": col,
-                            "sheet": sheet_name,
-                            "type": sheet_data.get("column_types", {}).get(col, "unknown"),
-                            "null_count": sheet_data.get("null_counts", {}).get(col, 0),
-                            "unique_count": sheet_data.get("unique_counts", {}).get(col, 0),
-                            "user_definition": user_defs.get(col_key, "")
-                        })
-                    columns_by_sheet[sheet_name] = columns
-                
-                # Collect column definitions
-                for col_key, definition in user_defs.items():
-                    all_column_definitions[f"{file_id}::{col_key}"] = definition
-                
-                all_files_data.append({
-                    "file_id": file_id,
-                    "filename": file_info.get("original_filename", "unknown"),
-                    "columns": columns_by_sheet,
-                    "user_definitions": user_defs,
-                    "metadata": metadata
-                })
-            except Exception as e:
-                logger.warning(f"Error processing file {file_id}: {str(e)}")
-                continue
-        
-        if not all_files_data:
-            return {
-                "success": False,
-                "message": "No files found for analysis",
-                "relationships": [],
-                "cached": False
-            }
-        
-        # Check cache
-        cache = load_relationship_cache()
-        cache_key = "all_files_relationships"
-        
-        # Check if cache is valid (has all current files)
-        cached_file_ids = set(cache.get("file_ids", []))
-        current_file_ids = set([f["file_id"] for f in all_files_data])
-        
-        if cached_file_ids == current_file_ids and cache.get(cache_key):
-            logger.info("Using cached relationship analysis")
-            return {
-                "success": True,
-                "message": "Using cached results",
-                "relationships": cache.get(cache_key, []),
-                "cached": True,
-                "analyzed_at": cache.get("analyzed_at"),
-                "file_count": len(all_files_data)
-            }
-        
-        # ========================================================================
-        # PHASE 1: PRIORITY - Gemini AI Analysis (Primary Method)
-        # ========================================================================
-        logger.info(f"PHASE 1: Starting Gemini AI analysis across {len(all_files_data)} files...")
-        
-        relationships = []
-        gemini_success = False
-        gemini_relationships = []
-        
-        if gemini_analyzer and gemini_analyzer.enabled:
-            try:
-                # Prepare comprehensive data for Gemini
-                columns_summary = []
-                for file_data in all_files_data:
-                    file_cols = []
-                    for sheet_name, columns in file_data["columns"].items():
-                        for col in columns:
-                            col_key = f"{sheet_name}::{col['name']}"
-                            user_def = file_data["user_definitions"].get(col_key, "")
-                            file_cols.append({
-                                "file": file_data["filename"],
-                                "sheet": sheet_name,
-                                "column": col["name"],
-                                "type": col.get("type", "unknown"),
-                                "user_definition": user_def
-                            })
-                    columns_summary.extend(file_cols)
-                
-                # Prepare columns format for Gemini with full context
-                gemini_columns = []
-                for col in columns_summary:
-                    gemini_columns.append({
-                        "name": f"{col['file']}::{col['sheet']}::{col['column']}",
-                        "column_name": f"{col['file']}::{col['sheet']}::{col['column']}",  # For compatibility
-                        "type": col["type"],
-                        "detected_type": col["type"],  # For compatibility
-                        "user_definition": col.get("user_definition", "")
-                    })
-                
-                # Get sample data for context (first few rows from each file)
-                sample_data = []
-                for file_data in all_files_data[:5]:  # Limit to first 5 files for context
-                    try:
-                        file_path = Path(file_data["metadata"].get("saved_path", ""))
-                        if file_path.exists():
-                            loader = ExcelLoader()
-                            df = loader.load_file(file_path)
-                            if df is not None and not df.empty:
-                                sample_data.append({
-                                    "file": file_data["filename"],
-                                    "sample_rows": df.head(3).to_dict('records')
-                                })
-                    except Exception as e:
-                        logger.debug(f"Could not load sample data for {file_data['filename']}: {str(e)}")
-                        pass
-                
-                # Call Gemini for batch relationship analysis (PRIORITY)
-                logger.info("Calling Gemini API for relationship analysis...")
-                gemini_relationships = gemini_analyzer.analyze_relationships(
-                    columns=gemini_columns,
-                    sample_data=sample_data if sample_data else None
+                # Update in database using dot notation
+                await files_collection.update_one(
+                    {"_id": file_doc["_id"]},
+                    {"$set": {"metadata.user_definitions": user_defs}}
                 )
                 
-                if gemini_relationships and len(gemini_relationships) > 0:
-                    # Mark Gemini relationships with priority and source
-                    for rel in gemini_relationships:
-                        rel["source"] = "gemini_ai"
-                        rel["priority"] = "high"
-                        # Ensure confidence is set (Gemini provides this)
-                        if "confidence" not in rel:
-                            rel["confidence"] = 0.85  # Default high confidence for Gemini
-                    
-                    relationships.extend(gemini_relationships)
-                    gemini_success = True
-                    logger.info(f"✓ Gemini AI analysis complete: Found {len(gemini_relationships)} relationships")
-                else:
-                    logger.warning("Gemini returned empty results, will use statistical patterns")
-                    
-            except Exception as e:
-                logger.error(f"✗ Gemini AI analysis failed: {str(e)}")
-                logger.info("Falling back to statistical pattern analysis...")
-        else:
-            logger.warning("Gemini analyzer not available, using statistical patterns only")
-        
-        # ========================================================================
-        # PHASE 2: SUPPLEMENTARY - Statistical Pattern Analysis
-        # ========================================================================
-        logger.info("PHASE 2: Running statistical pattern analysis to supplement results...")
-        
-        statistical_relationships = []
-        for file_data in all_files_data:
-            try:
-                file_path = Path(file_data["metadata"].get("saved_path", ""))
-                if file_path.exists():
-                    # Detect schema for this file (without Gemini to avoid duplicate calls)
-                    schema_result = await detect_schema(file_data["file_id"], None, use_gemini=False)
-                    
-                    for sheet_name, sheet_schema in schema_result.get("sheets", {}).items():
-                        sheet_relationships = sheet_schema.get("relationships", [])
-                        for rel in sheet_relationships:
-                            # Add file context and mark as statistical
-                            rel["file_id"] = file_data["file_id"]
-                            rel["file_name"] = file_data["filename"]
-                            rel["sheet"] = sheet_name
-                            rel["source"] = "statistical_pattern"
-                            rel["priority"] = "medium"
-                            # Ensure confidence is set
-                            if "confidence" not in rel:
-                                rel["confidence"] = 0.65  # Default medium confidence for statistical
-                            
-                            statistical_relationships.append(rel)
-            except Exception as e:
-                logger.warning(f"Error detecting statistical relationships for {file_data['file_id']}: {str(e)}")
-        
-        # Merge statistical relationships, avoiding duplicates with Gemini results
-        if statistical_relationships:
-            logger.info(f"✓ Statistical analysis complete: Found {len(statistical_relationships)} relationships")
-            
-            # Add statistical relationships that don't duplicate Gemini ones
-            if gemini_success:
-                # Create a set of Gemini relationship keys for deduplication
-                gemini_keys = set()
-                for rel in gemini_relationships:
-                    key = f"{rel.get('source_column', rel.get('column', ''))}::{rel.get('target_column', '')}::{rel.get('type', '')}"
-                    gemini_keys.add(key)
-                
-                # Only add statistical relationships that are new
-                added_count = 0
-                for stat_rel in statistical_relationships:
-                    stat_key = f"{stat_rel.get('source_column', stat_rel.get('column', ''))}::{stat_rel.get('target_column', '')}::{stat_rel.get('type', '')}"
-                    if stat_key not in gemini_keys:
-                        relationships.append(stat_rel)
-                        added_count += 1
-                
-                logger.info(f"Added {added_count} additional statistical relationships (avoided {len(statistical_relationships) - added_count} duplicates)")
+                logger.info(f"Deleted definition for {file_id}::{column_key}")
+                return {"success": True, "message": "Definition deleted"}
             else:
-                # If Gemini failed, use all statistical relationships
-                relationships.extend(statistical_relationships)
-                logger.info(f"Using all {len(statistical_relationships)} statistical relationships (Gemini unavailable)")
-        
-        # Summary log and analysis breakdown
-        gemini_count = len([r for r in relationships if r.get("source") == "gemini_ai"])
-        statistical_count = len([r for r in relationships if r.get("source") == "statistical_pattern"])
-        
-        # Group relationships by type, strength, and impact for better insights
-        relationships_by_type = {}
-        relationships_by_strength = {"strong": 0, "medium": 0, "weak": 0}
-        relationships_by_impact = {"critical": 0, "important": 0, "informational": 0}
-        cross_file_count = 0
-        
-        for rel in relationships:
-            rel_type = rel.get("type", "unknown")
-            relationships_by_type[rel_type] = relationships_by_type.get(rel_type, 0) + 1
+                return {"success": True, "message": "Definition not found (already deleted)"}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error deleting column definition: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+if MONGODB_AVAILABLE:
+    @app.post("/api/relationships/analyze-all")
+    async def analyze_all_relationships(current_user: UserInDB = Depends(get_current_user)):
+        """
+        Analyze relationships across ALL files at once (requires authentication).
+        Uses Gemini with all column definitions and metadata.
+        Results are cached and updated only when needed.
+        """
+        try:
+            from database import get_database
+            db = get_database()
+            files_collection = db["files"]
             
-            strength = rel.get("strength", "medium")
-            if strength in relationships_by_strength:
-                relationships_by_strength[strength] += 1
+            logger.info(f"Starting batch relationship analysis for user {current_user.id}...")
             
-            impact = rel.get("impact", "informational")
-            if impact in relationships_by_impact:
-                relationships_by_impact[impact] += 1
+            # Collect all files and their metadata for the user
+            all_files_data = []
+            all_column_definitions = {}
             
-            # Check if it's a cross-file relationship
-            source_col = rel.get("source_column", rel.get("column", ""))
-            target_col = rel.get("target_column", "")
-            if source_col and target_col:
-                source_file = source_col.split("::")[0] if "::" in source_col else ""
-                target_file = target_col.split("::")[0] if "::" in target_col else ""
-                if source_file and target_file and source_file != target_file:
-                    cross_file_count += 1
+            # Find all files for user
+            cursor = files_collection.find({"user_id": current_user.id})
+            async for doc in cursor:
+                file_id = doc["file_id"]
+                
+                # Get columns for this file (extract directly from metadata)
+                try:
+                    metadata = doc.get("metadata", {})
+                    sheets = metadata.get("sheets", {})
+                    user_defs = metadata.get("user_definitions", {})
+                    
+                    # Build columns structure
+                    columns_by_sheet = {}
+                    for sheet_name, sheet_data in sheets.items():
+                        columns = []
+                        for col in sheet_data.get("columns", []):
+                            col_key = f"{sheet_name}::{col}"
+                            columns.append({
+                                "name": col,
+                                "sheet": sheet_name,
+                                "type": sheet_data.get("column_types", {}).get(col, "unknown"),
+                                "null_count": sheet_data.get("null_counts", {}).get(col, 0),
+                                "unique_count": sheet_data.get("unique_counts", {}).get(col, 0),
+                                "user_definition": user_defs.get(col_key, "")
+                            })
+                        columns_by_sheet[sheet_name] = columns
+                    
+                    # Collect column definitions
+                    for col_key, definition in user_defs.items():
+                        all_column_definitions[f"{file_id}::{col_key}"] = definition
+                    
+                    all_files_data.append({
+                        "file_id": file_id,
+                        "filename": doc.get("original_filename", "unknown"),
+                        "columns": columns_by_sheet,
+                        "user_definitions": user_defs,
+                        "metadata": metadata
+                    })
+                except Exception as e:
+                    logger.warning(f"Error processing file {file_id}: {str(e)}")
+                    continue
+            
+            if not all_files_data:
+                return {
+                    "success": False,
+                    "message": "No files found for analysis",
+                    "relationships": [],
+                    "cached": False
+                }
+            
+            # Check cache in MongoDB
+            from database import get_database
+            db = get_database()
+            cache_collection = db["relationship_cache"]
+            
+            # Calculate current file IDs (needed for cache check and later for saving)
+            current_file_ids = set([f["file_id"] for f in all_files_data])
+            
+            # Find cache for this user
+            cache_doc = await cache_collection.find_one({"user_id": current_user.id})
+            
+            if cache_doc:
+                cached_file_ids = set(cache_doc.get("file_ids", []))
+                
+                if cached_file_ids == current_file_ids and cache_doc.get("all_files_relationships"):
+                    logger.info("Using cached relationship analysis from MongoDB")
+                    analyzed_at = cache_doc.get("analyzed_at", "")
+                    return {
+                        "success": True,
+                        "message": f"Using cached results from MongoDB (analyzed at {analyzed_at})",
+                        "relationships": cache_doc.get("all_files_relationships", []),
+                        "cached": True,
+                        "analyzed_at": analyzed_at,
+                        "file_count": len(all_files_data),
+                        "note": "Cache is stored in MongoDB relationship_cache collection, not local storage"
+                    }
+            
+            # ========================================================================
+            # PHASE 1: PRIORITY - Gemini AI Analysis (Primary Method)
+            # ========================================================================
+            logger.info(f"PHASE 1: Starting Gemini AI analysis across {len(all_files_data)} files...")
+            
+            relationships = []
+            gemini_success = False
+            gemini_relationships = []
+            
+            if gemini_analyzer and gemini_analyzer.enabled:
+                try:
+                    # Prepare comprehensive data for Gemini
+                    columns_summary = []
+                    for file_data in all_files_data:
+                        file_cols = []
+                        for sheet_name, columns in file_data["columns"].items():
+                            for col in columns:
+                                col_key = f"{sheet_name}::{col['name']}"
+                                user_def = file_data["user_definitions"].get(col_key, "")
+                                file_cols.append({
+                                    "file": file_data["filename"],
+                                    "sheet": sheet_name,
+                                    "column": col["name"],
+                                    "type": col.get("type", "unknown"),
+                                    "user_definition": user_def
+                                })
+                        columns_summary.extend(file_cols)
+                    
+                    # Prepare columns format for Gemini with full context
+                    gemini_columns = []
+                    for col in columns_summary:
+                        gemini_columns.append({
+                            "name": f"{col['file']}::{col['sheet']}::{col['column']}",
+                            "column_name": f"{col['file']}::{col['sheet']}::{col['column']}",  # For compatibility
+                            "type": col["type"],
+                            "detected_type": col["type"],  # For compatibility
+                            "user_definition": col.get("user_definition", "")
+                        })
+                    
+                    # Get sample data for context (first few rows from each file) - from GridFS
+                    sample_data = []
+                    from services.file_service import get_file_from_gridfs
+                    import pandas as pd
+                    import io
+                    
+                    for file_data in all_files_data[:5]:  # Limit to first 5 files for context
+                        try:
+                            # Get file content from GridFS
+                            file_content = await get_file_from_gridfs(file_data["file_id"], current_user)
+                            if file_content:
+                                file_ext = Path(file_data["filename"]).suffix.lower()
+                                if file_ext == '.csv':
+                                    df = pd.read_csv(io.BytesIO(file_content))
+                                else:
+                                    df = pd.read_excel(io.BytesIO(file_content))  # Reads first sheet by default
+                                
+                                if df is not None and not df.empty:
+                                    sample_data.append({
+                                        "file": file_data["filename"],
+                                        "sample_rows": df.head(3).to_dict('records')
+                                    })
+                        except Exception as e:
+                            logger.debug(f"Could not load sample data for {file_data['filename']}: {str(e)}")
+                            pass
+                    
+                    # Call Gemini for batch relationship analysis (PRIORITY)
+                    logger.info("Calling Gemini API for relationship analysis...")
+                    gemini_relationships = gemini_analyzer.analyze_relationships(
+                        columns=gemini_columns,
+                        sample_data=sample_data if sample_data else None
+                    )
+                    
+                    if gemini_relationships and len(gemini_relationships) > 0:
+                        # Mark Gemini relationships with priority and source
+                        for rel in gemini_relationships:
+                            rel["source"] = "gemini_ai"
+                            rel["priority"] = "high"
+                            # Ensure confidence is set (Gemini provides this)
+                            if "confidence" not in rel:
+                                rel["confidence"] = 0.85  # Default high confidence for Gemini
+                        
+                        relationships.extend(gemini_relationships)
+                        gemini_success = True
+                        logger.info(f"✓ Gemini AI analysis complete: Found {len(gemini_relationships)} relationships")
+                    else:
+                        logger.warning("Gemini returned empty results, will use statistical patterns")
+                        
+                except Exception as e:
+                    logger.error(f"✗ Gemini AI analysis failed: {str(e)}")
+                    logger.info("Falling back to statistical pattern analysis...")
+            else:
+                logger.warning("Gemini analyzer not available, using statistical patterns only")
         
-        logger.info(f"Relationship analysis summary: {gemini_count} from Gemini AI, {statistical_count} from statistical patterns, {len(relationships)} total ({cross_file_count} cross-file)")
-        
-        # Save to cache
-        cache_data = {
-            "file_ids": list(current_file_ids),
-            "analyzed_at": datetime.now().isoformat(),
-            "all_files_relationships": relationships,
-            "file_count": len(all_files_data)
-        }
-        save_relationship_cache(cache_data)
-        
-        # Prepare summary message
-        if gemini_success:
-            message = f"Analyzed {len(all_files_data)} files: {gemini_count} relationships from Gemini AI, {statistical_count} from statistical patterns. Found {cross_file_count} cross-file relationships."
-        else:
-            message = f"Analyzed {len(all_files_data)} files: {statistical_count} relationships from statistical patterns (Gemini unavailable)"
-        
-        return {
-            "success": True,
-            "message": message,
-            "relationships": relationships,
-            "cached": False,
-            "analyzed_at": cache_data["analyzed_at"],
-            "file_count": len(all_files_data),
-            "analysis_summary": {
-                "gemini_count": gemini_count,
-                "statistical_count": statistical_count,
-                "total_count": len(relationships),
-                "gemini_success": gemini_success,
-                "cross_file_count": cross_file_count,
-                "by_type": relationships_by_type,
-                "by_strength": relationships_by_strength,
-                "by_impact": relationships_by_impact
+            # ========================================================================
+            # PHASE 2: SUPPLEMENTARY - Statistical Pattern Analysis
+            # ========================================================================
+            logger.info("PHASE 2: Running statistical pattern analysis to supplement results...")
+            
+            statistical_relationships = []
+            from services.file_service import get_file_from_gridfs
+            import pandas as pd
+            import io
+            
+            for file_data in all_files_data:
+                try:
+                    # Get file content from GridFS
+                    file_content = await get_file_from_gridfs(file_data["file_id"], current_user)
+                    if file_content:
+                        file_ext = Path(file_data["filename"]).suffix.lower()
+                        
+                        try:
+                            # Load file into pandas for basic statistical analysis
+                            # Note: We skip full schema detection here since it requires local file paths
+                            # Gemini AI analysis above is the primary method anyway
+                            if file_ext == '.csv':
+                                df = pd.read_csv(io.BytesIO(file_content))
+                                # Simple pattern: check for common column names across files
+                                # This is a simplified statistical check - Gemini handles the complex analysis
+                                for col in df.columns:
+                                    # Check if this column name appears in other files (potential foreign key)
+                                    for other_file in all_files_data:
+                                        if other_file["file_id"] != file_data["file_id"]:
+                                            other_metadata = other_file.get("metadata", {})
+                                            other_sheets = other_metadata.get("sheets", {})
+                                            for other_sheet_name, other_sheet_data in other_sheets.items():
+                                                if col in other_sheet_data.get("columns", []):
+                                                    statistical_relationships.append({
+                                                        "source_column": f"{file_data['filename']}::Sheet1::{col}",
+                                                        "target_column": f"{other_file['filename']}::{other_sheet_name}::{col}",
+                                                        "type": "potential_foreign_key",
+                                                        "file_id": file_data["file_id"],
+                                                        "file_name": file_data["filename"],
+                                                        "sheet": "Sheet1",
+                                                        "source": "statistical_pattern",
+                                                        "priority": "medium",
+                                                        "confidence": 0.5,
+                                                        "strength": "weak",
+                                                        "impact": "informational"
+                                                    })
+                            else:
+                                # Excel file - read all sheets
+                                excel_file = pd.ExcelFile(io.BytesIO(file_content))
+                                for sheet_name in excel_file.sheet_names:
+                                    df = pd.read_excel(io.BytesIO(file_content), sheet_name=sheet_name)
+                                    if df is not None and not df.empty:
+                                        for col in df.columns:
+                                            # Check if this column name appears in other files
+                                            for other_file in all_files_data:
+                                                if other_file["file_id"] != file_data["file_id"]:
+                                                    other_metadata = other_file.get("metadata", {})
+                                                    other_sheets = other_metadata.get("sheets", {})
+                                                    for other_sheet_name, other_sheet_data in other_sheets.items():
+                                                        if col in other_sheet_data.get("columns", []):
+                                                            statistical_relationships.append({
+                                                                "source_column": f"{file_data['filename']}::{sheet_name}::{col}",
+                                                                "target_column": f"{other_file['filename']}::{other_sheet_name}::{col}",
+                                                                "type": "potential_foreign_key",
+                                                                "file_id": file_data["file_id"],
+                                                                "file_name": file_data["filename"],
+                                                                "sheet": sheet_name,
+                                                                "source": "statistical_pattern",
+                                                                "priority": "medium",
+                                                                "confidence": 0.5,
+                                                                "strength": "weak",
+                                                                "impact": "informational"
+                                                            })
+                        except Exception as e:
+                            logger.debug(f"Error processing file {file_data['filename']} for statistical analysis: {str(e)}")
+                except Exception as e:
+                    logger.warning(f"Error detecting statistical relationships for {file_data['file_id']}: {str(e)}")
+            
+            # Merge statistical relationships, avoiding duplicates with Gemini results
+            if statistical_relationships:
+                logger.info(f"✓ Statistical analysis complete: Found {len(statistical_relationships)} relationships")
+                
+                # Add statistical relationships that don't duplicate Gemini ones
+                if gemini_success:
+                    # Create a set of Gemini relationship keys for deduplication
+                    gemini_keys = set()
+                    for rel in gemini_relationships:
+                        key = f"{rel.get('source_column', rel.get('column', ''))}::{rel.get('target_column', '')}::{rel.get('type', '')}"
+                        gemini_keys.add(key)
+                    
+                    # Only add statistical relationships that are new
+                    added_count = 0
+                    for stat_rel in statistical_relationships:
+                        stat_key = f"{stat_rel.get('source_column', stat_rel.get('column', ''))}::{stat_rel.get('target_column', '')}::{stat_rel.get('type', '')}"
+                        if stat_key not in gemini_keys:
+                            relationships.append(stat_rel)
+                            added_count += 1
+                    
+                    logger.info(f"Added {added_count} additional statistical relationships (avoided {len(statistical_relationships) - added_count} duplicates)")
+                else:
+                    # If Gemini failed, use all statistical relationships
+                    relationships.extend(statistical_relationships)
+                    logger.info(f"Using all {len(statistical_relationships)} statistical relationships (Gemini unavailable)")
+            
+            # Summary log and analysis breakdown
+            gemini_count = len([r for r in relationships if r.get("source") == "gemini_ai"])
+            statistical_count = len([r for r in relationships if r.get("source") == "statistical_pattern"])
+            
+            # Group relationships by type, strength, and impact for better insights
+            relationships_by_type = {}
+            relationships_by_strength = {"strong": 0, "medium": 0, "weak": 0}
+            relationships_by_impact = {"critical": 0, "important": 0, "informational": 0}
+            cross_file_count = 0
+            
+            for rel in relationships:
+                rel_type = rel.get("type", "unknown")
+                relationships_by_type[rel_type] = relationships_by_type.get(rel_type, 0) + 1
+                
+                strength = rel.get("strength", "medium")
+                if strength in relationships_by_strength:
+                    relationships_by_strength[strength] += 1
+                
+                impact = rel.get("impact", "informational")
+                if impact in relationships_by_impact:
+                    relationships_by_impact[impact] += 1
+                
+                # Check if it's a cross-file relationship
+                source_col = rel.get("source_column", rel.get("column", ""))
+                target_col = rel.get("target_column", "")
+                if source_col and target_col:
+                    source_file = source_col.split("::")[0] if "::" in source_col else ""
+                    target_file = target_col.split("::")[0] if "::" in target_col else ""
+                    if source_file and target_file and source_file != target_file:
+                        cross_file_count += 1
+            
+            logger.info(f"Relationship analysis summary: {gemini_count} from Gemini AI, {statistical_count} from statistical patterns, {len(relationships)} total ({cross_file_count} cross-file)")
+            
+            # Save to cache in MongoDB
+            cache_data = {
+                "user_id": current_user.id,
+                "file_ids": list(current_file_ids),
+                "analyzed_at": datetime.now().isoformat(),
+                "all_files_relationships": relationships,
+                "file_count": len(all_files_data)
             }
-        }
+            
+            # Upsert cache for this user
+            await cache_collection.update_one(
+                {"user_id": current_user.id},
+                {"$set": cache_data},
+                upsert=True
+            )
+            
+            # Prepare summary message
+            if gemini_success:
+                message = f"Analyzed {len(all_files_data)} files: {gemini_count} relationships from Gemini AI, {statistical_count} from statistical patterns. Found {cross_file_count} cross-file relationships."
+            else:
+                message = f"Analyzed {len(all_files_data)} files: {statistical_count} relationships from statistical patterns (Gemini unavailable)"
+            
+            return {
+                "success": True,
+                "message": message,
+                "relationships": relationships,
+                "cached": False,
+                "analyzed_at": cache_data["analyzed_at"],
+                "file_count": len(all_files_data),
+                "analysis_summary": {
+                    "gemini_count": gemini_count,
+                    "statistical_count": statistical_count,
+                    "total_count": len(relationships),
+                    "gemini_success": gemini_success,
+                    "cross_file_count": cross_file_count,
+                    "by_type": relationships_by_type,
+                    "by_strength": relationships_by_strength,
+                    "by_impact": relationships_by_impact
+                }
+            }
         
-    except Exception as e:
-        logger.error(f"Error in batch relationship analysis: {str(e)}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        except Exception as e:
+            logger.error(f"Error in batch relationship analysis: {str(e)}")
+            logger.error(traceback.format_exc())
+            raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/relationships/cached")
-async def get_cached_relationships():
-    """Get cached relationship analysis results."""
-    try:
-        cache = load_relationship_cache()
-        return {
-            "success": True,
-            "relationships": cache.get("all_files_relationships", []),
-            "analyzed_at": cache.get("analyzed_at"),
-            "file_count": cache.get("file_count", 0),
-            "cached": True
-        }
-    except Exception as e:
-        logger.error(f"Error getting cached relationships: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+if MONGODB_AVAILABLE:
+    @app.post("/api/visualizations/cross-file")
+    async def generate_cross_file_visualizations(
+        file_ids: List[str],
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """
+        Generate cross-file relationship visualizations for selected files
+        Uses Gemini API and existing relationship data stored in MongoDB (not local cache)
+        """
+        try:
+            from database import get_database
+            from services.file_service import get_file_metadata
+            from cross_file_visualizer import CrossFileVisualizer
+            
+            db = get_database()
+            cache_collection = db["relationship_cache"]
+            
+            # Get relationships from MongoDB (this is NOT local storage - it's MongoDB)
+            cache_doc = await cache_collection.find_one({"user_id": current_user.id})
+            if not cache_doc:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No relationship analysis found. Please run 'Analyze All Relationships' first from the File Upload page."
+                )
+            
+            relationships = cache_doc.get("all_files_relationships", [])
+            
+            # Get file metadata for selected files and create filename->file_id mapping
+            file_metadata = {}
+            filename_to_fileid = {}  # Map filename to file_id
+            
+            for file_id in file_ids:
+                metadata = await get_file_metadata(file_id, current_user)
+                if metadata:
+                    file_metadata[file_id] = metadata
+                    filename = metadata.get("original_filename", "")
+                    if filename:
+                        filename_to_fileid[filename] = file_id
+                        # Also map without extension
+                        filename_no_ext = filename.rsplit('.', 1)[0] if '.' in filename else filename
+                        filename_to_fileid[filename_no_ext] = file_id
+            
+            if not file_metadata:
+                raise HTTPException(status_code=404, detail="No valid files found")
+            
+            # Generate visualizations with filename mapping
+            visualizer = CrossFileVisualizer()
+            viz_data = await visualizer.generate_cross_file_visualizations(
+                relationships=relationships,
+                file_ids=file_ids,
+                file_metadata=file_metadata,
+                filename_to_fileid=filename_to_fileid
+            )
+            
+            return {
+                "success": True,
+                "visualization": viz_data
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error generating cross-file visualizations: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/api/relationships/cached")
+    async def get_cached_relationships(current_user: UserInDB = Depends(get_current_user)):
+        """Get cached relationship analysis results (requires authentication)."""
+        try:
+            from database import get_database
+            db = get_database()
+            cache_collection = db["relationship_cache"]
+            
+            # Find cache for this user
+            cache_doc = await cache_collection.find_one({"user_id": current_user.id})
+            
+            if cache_doc:
+                return {
+                    "success": True,
+                    "relationships": cache_doc.get("all_files_relationships", []),
+                    "analyzed_at": cache_doc.get("analyzed_at"),
+                    "file_count": cache_doc.get("file_count", 0),
+                    "cached": True
+                }
+            else:
+                return {
+                    "success": True,
+                    "relationships": [],
+                    "analyzed_at": None,
+                    "file_count": 0,
+                    "cached": False
+                }
+        except Exception as e:
+            logger.error(f"Error getting cached relationships: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/api/relationships/cache")
-async def clear_relationship_cache():
-    """Clear relationship analysis cache (forces re-analysis)."""
-    try:
-        if RELATIONSHIP_CACHE_FILE.exists():
-            RELATIONSHIP_CACHE_FILE.unlink()
-        return {"success": True, "message": "Cache cleared"}
-    except Exception as e:
-        logger.error(f"Error clearing cache: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    @app.delete("/api/relationships/cache")
+    async def clear_relationship_cache(current_user: UserInDB = Depends(get_current_user)):
+        """Clear relationship analysis cache for current user (forces re-analysis)."""
+        try:
+            from database import get_database
+            db = get_database()
+            cache_collection = db["relationship_cache"]
+            
+            # Delete cache for this user
+            result = await cache_collection.delete_one({"user_id": current_user.id})
+            
+            if result.deleted_count > 0:
+                return {"success": True, "message": "Cache cleared"}
+            else:
+                return {"success": True, "message": "Cache was already empty"}
+        except Exception as e:
+            logger.error(f"Error clearing cache: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# DATA GENERATOR ENDPOINTS (Industry-based, MongoDB-integrated)
+# ============================================================================
+
+if MONGODB_AVAILABLE:
+    @app.get("/api/data-generator/schema-preview")
+    async def get_schema_preview(
+        use_ai: bool = True,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """
+        Get schema templates (files and columns) for user's industry (requires authentication).
+        
+        Args:
+            use_ai: Whether to use AI to generate dynamic schema templates (default: True)
+        """
+        try:
+            from services.data_generator_service import get_industry_schema_preview
+            
+            result = await get_industry_schema_preview(current_user.industry, use_ai=use_ai)
+            if not result.get("success"):
+                raise HTTPException(status_code=404, detail=result.get("error", "Industry not found"))
+            
+            return result
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting schema preview: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/api/data-generator/existing-files")
+    async def get_existing_files_for_generator(current_user: UserInDB = Depends(get_current_user)):
+        """Get existing files for the user (requires authentication)."""
+        try:
+            from services.data_generator_service import check_existing_user_files
+            
+            result = await check_existing_user_files(current_user)
+            return result
+        except Exception as e:
+            logger.error(f"Error getting existing files: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/api/data-generator/generate")
+    async def generate_industry_data(
+        rows_per_file: Dict[str, int] = None,
+        add_to_existing: bool = False,
+        generate_for_existing_sheets: Optional[Dict[str, Dict[str, int]]] = None,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """
+        Generate data based on user's industry schema templates and upload to MongoDB (requires authentication).
+        
+        Args:
+            rows_per_file: Dictionary mapping file names (from schema templates) to number of rows
+            add_to_existing: Whether to add to existing files or create new ones
+            generate_for_existing_sheets: Optional dict mapping file_id -> {sheet_name: num_rows}
+                                          to generate data for existing sheets
+        """
+        try:
+            from services.data_generator_service import generate_data_for_industry
+            
+            if rows_per_file is None:
+                rows_per_file = {}
+            
+            result = await generate_data_for_industry(
+                user=current_user,
+                industry_name=current_user.industry,
+                rows_per_file=rows_per_file,
+                add_to_existing=add_to_existing,
+                generate_for_existing_sheets=generate_for_existing_sheets
+            )
+            
+            if not result.get("success"):
+                raise HTTPException(status_code=400, detail=result.get("error", "Data generation failed"))
+            
+            return result
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error generating data: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
@@ -2674,19 +2669,27 @@ if __name__ == "__main__":
 # Phase 3: Semantic Indexing & RAG Endpoints
 # ===========================================
 
-def index_file_in_vector_store(file_id: str, file_info: Dict[str, Any]) -> bool:
+async def index_file_in_vector_store(
+    file_id: str, 
+    file_info: Dict[str, Any], 
+    user_id: str,
+    current_user: Optional[Any] = None
+) -> bool:
     """
     Index a file's columns and metadata into the vector store using full excel_parser capabilities.
     
     This function:
-    1. Uses schema detection results (if available) or triggers schema detection
-    2. Incorporates user-provided column definitions
-    3. Includes Gemini semantic analysis results
-    4. Indexes relationship information
+    1. Reads file content from MongoDB GridFS
+    2. Uses schema detection results (if available) or triggers schema detection
+    3. Incorporates user-provided column definitions
+    4. Includes Gemini semantic analysis results
+    5. Indexes relationship information with user_id
     
     Args:
         file_id: File ID
-        file_info: File information dictionary
+        file_info: File information dictionary (from MongoDB)
+        user_id: User ID for multi-tenant support
+        current_user: Optional UserInDB object for GridFS access
         
     Returns:
         True if successful, False otherwise
@@ -2703,13 +2706,34 @@ def index_file_in_vector_store(file_id: str, file_info: Dict[str, Any]) -> bool:
             return False
         
         file_name = file_info.get("original_filename", "unknown")
-        saved_path = file_info.get("saved_path")
-        user_definitions = file_info.get("user_definitions", {})
+        # Get user_definitions from MongoDB metadata structure
+        metadata = file_info.get("metadata", {})
+        user_definitions = metadata.get("user_definitions", {})
         
-        # Check if we have schema detection results, if not, run schema detection
-        schema_result = None
-        if saved_path and Path(saved_path).exists():
+        # Get file content from MongoDB GridFS
+        file_content = None
+        if current_user and MONGODB_AVAILABLE:
             try:
+                from services.file_service import get_file_from_gridfs
+                file_content = await get_file_from_gridfs(file_id, current_user)
+            except Exception as e:
+                logger.warning(f"Could not load file from GridFS: {str(e)}")
+        
+        # If GridFS fails, try local path as fallback (for backward compatibility)
+        saved_path = file_info.get("saved_path")
+        if not file_content and saved_path and Path(saved_path).exists():
+            # Fallback to local file (for migration period)
+            with open(saved_path, 'rb') as f:
+                file_content = f.read()
+        
+        # Check if we have file content to process
+        schema_result = None
+        if file_content:
+            try:
+                import pandas as pd
+                import io
+                import tempfile
+                
                 # Prepare user_definitions in format expected by schema_detector
                 # schema_detector expects: {column_name: {definition: "...", type: "..."}}
                 # but we store: {"file_id::sheet::column": {definition: "..."}}
@@ -2728,66 +2752,77 @@ def index_file_in_vector_store(file_id: str, file_info: Dict[str, Any]) -> bool:
                             column_name = parts[2]
                             schema_user_defs[column_name] = {"definition": col_def}
                 
-                # Run schema detection with user definitions
-                schema_result = schema_detector.detect_schema(
-                    file_path=Path(saved_path),
-                    user_definitions=schema_user_defs if schema_user_defs else None
-                )
+                # Create temporary file for schema detection
+                file_ext = Path(file_name).suffix.lower()
+                with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+                    tmp_file.write(file_content)
+                    tmp_file_path = Path(tmp_file.name)
                 
-                # Enhance with Gemini if available
-                if gemini_analyzer and gemini_analyzer.enabled:
-                    try:
-                        import pandas as pd
-                        file_ext = Path(saved_path).suffix.lower()
-                        
-                        # Load sample data for Gemini
-                        if file_ext in ['.xlsx', '.xls']:
-                            excel_file = pd.ExcelFile(saved_path)
-                            dfs = {sheet: pd.read_excel(excel_file, sheet_name=sheet, nrows=100) 
-                                   for sheet in excel_file.sheet_names}
-                            excel_file.close()
-                        else:
-                            dfs = {'Sheet1': pd.read_csv(saved_path, nrows=100)}
-                        
-                        # Enhance each column with Gemini analysis
-                        for sheet_name_key, sheet_schema in schema_result.get('sheets', {}).items():
-                            df = dfs.get(sheet_name_key)
-                            if df is None:
-                                continue
-                                
-                            for col_name, col_schema in sheet_schema.get('columns', {}).items():
-                                if col_name not in df.columns:
+                try:
+                    # Run schema detection with user definitions
+                    schema_result = schema_detector.detect_schema(
+                        file_path=tmp_file_path,
+                        user_definitions=schema_user_defs if schema_user_defs else None
+                    )
+                    
+                    # Enhance with Gemini if available
+                    if gemini_analyzer and gemini_analyzer.enabled:
+                        try:
+                            # Load sample data for Gemini from file_content
+                            if file_ext in ['.xlsx', '.xls']:
+                                excel_file = pd.ExcelFile(io.BytesIO(file_content))
+                                dfs = {sheet: pd.read_excel(excel_file, sheet_name=sheet, nrows=100) 
+                                       for sheet in excel_file.sheet_names}
+                                excel_file.close()
+                            else:
+                                dfs = {'Sheet1': pd.read_csv(io.BytesIO(file_content), nrows=100)}
+                            
+                            # Enhance each column with Gemini analysis
+                            for sheet_name_key, sheet_schema in schema_result.get('sheets', {}).items():
+                                df = dfs.get(sheet_name_key)
+                                if df is None:
                                     continue
                                     
-                                sample_values = df[col_name].dropna().head(20).tolist()
-                                
-                                # Get user definition for this column
-                                col_key = f"{file_id}::{sheet_name_key}::{col_name}"
-                                user_def_dict = user_definitions.get(col_key, {})
-                                if isinstance(user_def_dict, dict):
-                                    user_def_for_gemini = user_def_dict
-                                else:
-                                    user_def_for_gemini = None
-                                
-                                gemini_result = gemini_analyzer.analyze_column_semantics(
-                                    column_name=col_name,
-                                    sample_values=sample_values,
-                                    detected_type=col_schema.get('detected_type', 'unknown'),
-                                    user_definition=user_def_for_gemini
-                                )
-                                
-                                # Merge Gemini results
-                                col_schema['gemini_analysis'] = gemini_result
-                                if gemini_result.get('semantic_type') != 'unknown':
-                                    col_schema['semantic_type'] = gemini_result.get('semantic_type')
-                                if gemini_result.get('description'):
-                                    col_schema['description'] = gemini_result.get('description')
-                    except Exception as gemini_error:
-                        logger.warning(f"Gemini enhancement failed during indexing: {str(gemini_error)}")
-                        # Continue without Gemini - schema detection results are still valuable
-            except Exception as schema_error:
-                logger.warning(f"Schema detection failed during indexing: {str(schema_error)}")
-                # Fall back to basic metadata
+                                for col_name, col_schema in sheet_schema.get('columns', {}).items():
+                                    if col_name not in df.columns:
+                                        continue
+                                        
+                                    sample_values = df[col_name].dropna().head(20).tolist()
+                                    
+                                    # Get user definition for this column
+                                    col_key = f"{file_id}::{sheet_name_key}::{col_name}"
+                                    user_def_dict = user_definitions.get(col_key, {})
+                                    if isinstance(user_def_dict, dict):
+                                        user_def_for_gemini = user_def_dict
+                                    else:
+                                        user_def_for_gemini = None
+                                    
+                                    gemini_result = gemini_analyzer.analyze_column_semantics(
+                                        column_name=col_name,
+                                        sample_values=sample_values,
+                                        detected_type=col_schema.get('detected_type', 'unknown'),
+                                        user_definition=user_def_for_gemini
+                                    )
+                                    
+                                    # Merge Gemini results
+                                    col_schema['gemini_analysis'] = gemini_result
+                                    if gemini_result.get('semantic_type') != 'unknown':
+                                        col_schema['semantic_type'] = gemini_result.get('semantic_type')
+                                    if gemini_result.get('description'):
+                                        col_schema['description'] = gemini_result.get('description')
+                        except Exception as gemini_error:
+                            logger.warning(f"Gemini enhancement failed during indexing: {str(gemini_error)}")
+                            # Continue without Gemini - schema detection results are still valuable
+                except Exception as schema_error:
+                    logger.warning(f"Schema detection failed during indexing: {str(schema_error)}")
+                    # Fall back to basic metadata
+                    schema_result = None
+                finally:
+                    # Clean up temporary file
+                    if tmp_file_path.exists():
+                        tmp_file_path.unlink()
+            except Exception as file_error:
+                logger.warning(f"Could not process file content: {str(file_error)}")
                 schema_result = None
         
         # Use schema results if available, otherwise fall back to basic metadata
@@ -2842,14 +2877,15 @@ def index_file_in_vector_store(file_id: str, file_info: Dict[str, Any]) -> bool:
                     col_metadata['statistics'] = stats
                     col_metadata['semantic_type'] = semantic_type
                     
-                    # Add to vector store
-                    vector_store.add_column(
+                    # Add to vector store with user_id (async for MongoDB)
+                    await vector_store.add_column(
                         file_id=file_id,
                         file_name=file_name,
                         sheet_name=sheet_name,
                         column_name=column_name,
                         embedding=col_metadata["context_embedding"],
-                        metadata=col_metadata
+                        metadata=col_metadata,
+                        user_id=user_id
                     )
                     indexed_count += 1
                 
@@ -2858,9 +2894,10 @@ def index_file_in_vector_store(file_id: str, file_info: Dict[str, Any]) -> bool:
                 for rel in relationships:
                     try:
                         rel_embedding_data = embedder.embed_relationship(rel)
-                        vector_store.add_relationship(
+                        await vector_store.add_relationship(
                             relationship=rel,
-                            embedding=rel_embedding_data["embedding"]
+                            embedding=rel_embedding_data["embedding"],
+                            user_id=user_id
                         )
                     except Exception as rel_error:
                         logger.warning(f"Failed to index relationship: {str(rel_error)}")
@@ -2902,14 +2939,15 @@ def index_file_in_vector_store(file_id: str, file_info: Dict[str, Any]) -> bool:
                         sample_values=sample_values
                     )
                     
-                    # Add to vector store
-                    vector_store.add_column(
+                    # Add to vector store with user_id (async for MongoDB)
+                    await vector_store.add_column(
                         file_id=file_id,
                         file_name=file_name,
                         sheet_name=sheet_name,
                         column_name=column_name,
                         embedding=col_metadata["context_embedding"],
-                        metadata=col_metadata
+                        metadata=col_metadata,
+                        user_id=user_id
                     )
                     indexed_count += 1
             
@@ -2923,39 +2961,49 @@ def index_file_in_vector_store(file_id: str, file_info: Dict[str, Any]) -> bool:
         return False
 
 
-@app.post("/api/semantic/index/{file_id}")
-async def index_file(file_id: str):
-    """Index a file into the semantic vector store."""
-    try:
-        file_info = load_file_metadata(file_id)
-        if not file_info:
-            raise HTTPException(status_code=404, detail=f"File {file_id} not found")
+if MONGODB_AVAILABLE:
+    @app.post("/api/semantic/index/{file_id}")
+    async def index_file(
+        file_id: str,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Index a file into the semantic vector store (requires authentication)."""
+        if not EMBEDDINGS_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Semantic indexing not available - embeddings not initialized"
+            )
         
-        success = index_file_in_vector_store(file_id, file_info)
-        
-        if success:
-            return {
-                "success": True,
-                "message": f"File {file_id} indexed successfully",
-                "file_id": file_id
-            }
-        else:
-            return {
-                "success": False,
-                "message": "Indexing failed - embeddings not available",
-                "file_id": file_id
-            }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error indexing file: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        try:
+            # Get file info from MongoDB
+            from services.file_service import get_file_metadata
+            file_info = await get_file_metadata(file_id, current_user)
+            if not file_info:
+                raise HTTPException(status_code=404, detail=f"File {file_id} not found")
+            
+            success = await index_file_in_vector_store(file_id, file_info, current_user.id, current_user)
+            
+            if success:
+                return {
+                    "success": True,
+                    "message": f"File {file_id} indexed successfully",
+                    "file_id": file_id
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "Indexing failed - embeddings not available",
+                    "file_id": file_id
+                }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error indexing file: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.post("/api/semantic/index-all")
-async def index_all_files():
-    """Index all uploaded files into the semantic vector store."""
-    try:
+    @app.post("/api/semantic/index-all")
+    async def index_all_files(current_user: UserInDB = Depends(get_current_user)):
+        """Index all uploaded files into the semantic vector store (requires authentication)."""
         if not EMBEDDINGS_AVAILABLE:
             return {
                 "success": False,
@@ -2964,124 +3012,142 @@ async def index_all_files():
                 "total": 0
             }
         
-        # Get all files
-        files_response = await list_uploaded_files()
-        files = files_response.get("files", [])
-        
-        indexed_count = 0
-        failed_count = 0
-        
-        for file_info in files:
-            file_id = file_info.get("file_id")
-            if file_id:
-                full_info = load_file_metadata(file_id)
-                if full_info:
-                    if index_file_in_vector_store(file_id, full_info):
+        try:
+            # Get all files for this user from MongoDB
+            from services.file_service import get_user_files
+            files = await get_user_files(current_user)
+            
+            indexed_count = 0
+            failed_count = 0
+            
+            for file_info in files:
+                file_id = file_info.get("file_id")
+                if file_id:
+                    success = await index_file_in_vector_store(file_id, file_info, current_user.id, current_user)
+                    if success:
                         indexed_count += 1
                     else:
                         failed_count += 1
-        
-        return {
-            "success": True,
-            "message": f"Indexed {indexed_count} files, {failed_count} failed",
-            "indexed": indexed_count,
-            "failed": failed_count,
-            "total": len(files)
-        }
-    except Exception as e:
-        logger.error(f"Error indexing all files: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/semantic/search")
-async def semantic_search(
-    query: str = Query(..., description="Natural language query"),
-    n_results: int = Query(10, ge=1, le=50, description="Number of results"),
-    file_id: Optional[str] = Query(None, description="Filter by file ID")
-):
-    """Perform semantic search over indexed Excel data."""
-    try:
-        retriever = get_retriever()
-        if not retriever:
-            raise HTTPException(
-                status_code=503,
-                detail="Semantic search not available - embeddings not initialized"
-            )
-        
-        # Retrieve context
-        context = retriever.retrieve_context(
-            query=query,
-            n_columns=n_results,
-            n_relationships=min(5, n_results // 2),
-            file_filter=file_id
-        )
-        
-        return {
-            "success": True,
-            "query": query,
-            "results": context,
-            "total_columns": len(context["columns"]),
-            "total_relationships": len(context["relationships"])
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in semantic search: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/semantic/stats")
-async def get_vector_store_stats():
-    """Get statistics about the vector store."""
-    try:
-        vector_store = get_vector_store()
-        if not vector_store:
-            return {
-                "available": False,
-                "message": "Vector store not initialized"
-            }
-        
-        stats = vector_store.get_collection_stats()
-        return {
-            "available": True,
-            "stats": stats
-        }
-    except Exception as e:
-        logger.error(f"Error getting vector store stats: {str(e)}")
-        return {
-            "available": False,
-            "error": str(e)
-        }
-
-
-@app.delete("/api/semantic/index/{file_id}")
-async def remove_file_from_index(file_id: str):
-    """Remove a file from the semantic index."""
-    try:
-        vector_store = get_vector_store()
-        if not vector_store:
-            raise HTTPException(
-                status_code=503,
-                detail="Vector store not available"
-            )
-        
-        success = vector_store.delete_file(file_id)
-        
-        if success:
+            
             return {
                 "success": True,
-                "message": f"File {file_id} removed from index"
+                "message": f"Indexed {indexed_count} files, {failed_count} failed",
+                "indexed": indexed_count,
+                "failed": failed_count,
+                "total": len(files)
             }
-        else:
+        except Exception as e:
+            logger.error(f"Error indexing all files: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+    @app.post("/api/semantic/search")
+    async def semantic_search(
+        query: str = Query(..., description="Natural language query"),
+        n_results: int = Query(10, ge=1, le=50, description="Number of results"),
+        file_id: Optional[str] = Query(None, description="Filter by file ID"),
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Perform semantic search over indexed Excel data (requires authentication)."""
+        try:
+            retriever = get_retriever()
+            if not retriever:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Semantic search not available - embeddings not initialized"
+                )
+            
+            # Verify file belongs to user if file_id is provided
+            if file_id:
+                from services.file_service import get_file_metadata
+                file_info = await get_file_metadata(file_id, current_user)
+                if not file_info:
+                    raise HTTPException(status_code=404, detail="File not found")
+            
+            # Retrieve context (filtered by user_id) - async for MongoDB
+            context = await retriever.retrieve_context(
+                query=query,
+                n_columns=n_results,
+                n_relationships=min(5, n_results // 2),
+                file_filter=file_id,
+                user_id=current_user.id
+            )
+            
             return {
-                "success": False,
-                "message": f"Failed to remove file {file_id} from index"
+                "success": True,
+                "query": query,
+                "results": context,
+                "total_columns": len(context["columns"]),
+                "total_relationships": len(context["relationships"])
             }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error removing file from index: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in semantic search: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+    @app.get("/api/semantic/stats")
+    async def get_vector_store_stats(current_user: UserInDB = Depends(get_current_user)):
+        """Get statistics about the vector store (requires authentication)."""
+        try:
+            vector_store = get_vector_store()
+            if not vector_store:
+                return {
+                    "available": False,
+                    "message": "Vector store not initialized"
+                }
+            
+            stats = await vector_store.get_collection_stats(user_id=current_user.id)
+            return {
+                "available": True,
+                "stats": stats
+            }
+        except Exception as e:
+            logger.error(f"Error getting vector store stats: {str(e)}")
+            return {
+                "available": False,
+                "error": str(e)
+            }
+
+
+    @app.delete("/api/semantic/index/{file_id}")
+    async def remove_file_from_index(
+        file_id: str,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Remove a file from the semantic index (requires authentication)."""
+        try:
+            # Verify file belongs to user
+            from services.file_service import get_file_metadata
+            file_info = await get_file_metadata(file_id, current_user)
+            if not file_info:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            vector_store = get_vector_store()
+            if not vector_store:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Vector store not available"
+                )
+            
+            success = await vector_store.delete_file(file_id, user_id=current_user.id)
+            
+            if success:
+                return {
+                    "success": True,
+                    "message": f"File {file_id} removed from index"
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Failed to remove file {file_id} from index"
+                }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error removing file from index: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================
@@ -3091,19 +3157,40 @@ async def remove_file_from_index(file_id: str):
 # Global agent instances (one per provider)
 _agent_instances = {}
 
-def get_agent_tools():
-    """Get common tools for all agents."""
-    excel_retriever = ExcelRetriever(
-        files_base_path=UPLOADED_FILES_DIR,
-        metadata_base_path=METADATA_DIR
-    )
+def get_agent_tools(user_id: Optional[str] = None):
+    """
+    Get common tools for all agents with MongoDB support.
+    
+    Args:
+        user_id: User ID for multi-tenant filtering (required for MongoDB mode)
+    """
+    if not user_id:
+        raise ValueError("user_id is required for MongoDB-based agent tools")
+    
+    # Use MongoDBExcelRetriever (has synchronous wrapper methods)
+    try:
+        from tools.mongodb_excel_retriever import MongoDBExcelRetriever
+        
+        excel_retriever = MongoDBExcelRetriever(user_id=user_id)
+        logger.info(f"✓ Using MongoDBExcelRetriever for user_id: {user_id}")
+    except ImportError as e:
+        logger.error(f"Failed to import BackendExcelRetriever: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise ValueError("BackendExcelRetriever not available - MongoDB tools require MongoDB support")
+    except Exception as e:
+        logger.error(f"Failed to initialize BackendExcelRetriever: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise ValueError(f"Failed to initialize MongoDB retriever: {e}")
+    
     data_calculator = DataCalculator()
     trend_analyzer = TrendAnalyzer()
     comparative_analyzer = ComparativeAnalyzer()
     kpi_calculator = KPICalculator()
     graph_generator = GraphGenerator()
     
-    # Get semantic retriever
+    # Get semantic retriever (already supports user_id)
     semantic_retriever = get_retriever()
     if not semantic_retriever:
         logger.warning("Semantic retriever not available - agent will have limited capabilities")
@@ -3112,17 +3199,24 @@ def get_agent_tools():
     tools = []
     
     if semantic_retriever:
-        tools.append(create_excel_retriever_tool(excel_retriever, semantic_retriever))
+        # Pass user_id to semantic retriever for filtering
+        tools.append(create_excel_retriever_tool(excel_retriever, semantic_retriever, user_id=user_id))
     tools.append(create_data_calculator_tool(data_calculator))
-    tools.append(create_trend_analyzer_tool(trend_analyzer, excel_retriever, semantic_retriever))
-    tools.append(create_comparative_analyzer_tool(comparative_analyzer, excel_retriever, semantic_retriever))
-    tools.append(create_kpi_calculator_tool(kpi_calculator, excel_retriever, semantic_retriever))
-    tools.append(create_graph_generator_tool(graph_generator, excel_retriever, semantic_retriever))
+    tools.append(create_trend_analyzer_tool(trend_analyzer, excel_retriever, semantic_retriever, user_id=user_id))
+    tools.append(create_comparative_analyzer_tool(comparative_analyzer, excel_retriever, semantic_retriever, user_id=user_id))
+    tools.append(create_kpi_calculator_tool(kpi_calculator, excel_retriever, semantic_retriever, user_id=user_id))
+    tools.append(create_graph_generator_tool(graph_generator, excel_retriever, semantic_retriever, user_id=user_id))
     
     return tools
 
-def get_agent_instance(provider: str = "groq"):
-    """Get or create agent instance for specified provider."""
+def get_agent_instance(provider: str = "groq", user_id: Optional[str] = None):
+    """
+    Get or create agent instance for specified provider.
+    
+    Args:
+        provider: Provider name ("groq" or "gemini")
+        user_id: User ID for multi-tenant filtering (creates user-specific agent instance)
+    """
     global _agent_instances
     
     if not AGENT_AVAILABLE:
@@ -3130,13 +3224,18 @@ def get_agent_instance(provider: str = "groq"):
     
     provider = provider.lower()
     
+    # Create cache key with user_id for multi-tenant support
+    cache_key = f"{provider}_{user_id}" if user_id else provider
+    
     # Return cached instance if available
-    if provider in _agent_instances and _agent_instances[provider] is not None:
-        return _agent_instances[provider]
+    if cache_key in _agent_instances and _agent_instances[cache_key] is not None:
+        return _agent_instances[cache_key]
     
     try:
-        # Get tools
-        tools = get_agent_tools()
+        # Get tools with user_id for multi-tenant filtering
+        logger.info(f"Initializing {provider} agent for user_id: {user_id}")
+        tools = get_agent_tools(user_id=user_id)
+        logger.info(f"✓ Got {len(tools)} tools for agent")
         
         # Create agent based on provider
         if provider == "gemini":
@@ -3146,14 +3245,15 @@ def get_agent_instance(provider: str = "groq"):
                 raise ValueError("GEMINI_API_KEY is required for Gemini agent")
             
             model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+            logger.info(f"Creating Gemini agent with model: {model_name}")
             
-            _agent_instances[provider] = ExcelAgent(
+            _agent_instances[cache_key] = ExcelAgent(
                 tools=tools,
                 provider="gemini",
                 model_name=model_name,
                 gemini_api_key=gemini_api_key
             )
-            logger.info(f"✓ Gemini agent initialized successfully with model: {model_name}")
+            logger.info(f"✓ Gemini agent initialized successfully with model: {model_name} (user_id: {user_id})")
             
         elif provider == "groq":
             groq_api_key = os.getenv("GROQ_API_KEY")
@@ -3163,22 +3263,24 @@ def get_agent_instance(provider: str = "groq"):
             
             model_name = os.getenv("AGENT_MODEL_NAME", "meta-llama/llama-4-maverick-17b-128e-instruct")
             
-            _agent_instances[provider] = ExcelAgent(
+            _agent_instances[cache_key] = ExcelAgent(
                 tools=tools,
                 provider="groq",
                 model_name=model_name,
                 groq_api_key=groq_api_key
             )
-            logger.info(f"✓ Groq agent initialized successfully with model: {model_name}")
+            logger.info(f"✓ Groq agent initialized successfully with model: {model_name} (user_id: {user_id})")
         else:
             raise ValueError(f"Unknown provider: {provider}. Must be 'groq' or 'gemini'")
         
     except Exception as e:
         logger.error(f"Failed to initialize {provider} agent: {str(e)}")
-        _agent_instances[provider] = None
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        _agent_instances[cache_key] = None
         return None
     
-    return _agent_instances[provider]
+    return _agent_instances[cache_key]
 
 
 class AgentQueryRequest(BaseModel):
@@ -3187,98 +3289,152 @@ class AgentQueryRequest(BaseModel):
     provider: Optional[str] = "groq"  # "groq" or "gemini"
 
 
-@app.post("/api/agent/query")
-async def agent_query(request: AgentQueryRequest):
-    """Process a natural language query using the agent."""
-    try:
-        if not AGENT_AVAILABLE:
-            raise HTTPException(
-                status_code=503,
-                detail="Agent system not available - dependencies not installed"
-            )
-        
-        provider = request.provider.lower() if request.provider else "groq"
-        if provider not in ["groq", "gemini"]:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid provider: {provider}. Must be 'groq' or 'gemini'"
-            )
-        
-        agent = get_agent_instance(provider=provider)
-        if not agent:
-            raise HTTPException(
-                status_code=503,
-                detail=f"{provider.capitalize()} agent not initialized - check logs and API keys"
-            )
-        
-        # Process query
-        result = agent.query(request.question)
-        result["provider"] = provider
-        result["model_name"] = agent.model_name
-        
-        return result
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error processing agent query: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+if MONGODB_AVAILABLE:
+    @app.post("/api/agent/query")
+    async def agent_query(
+        request: AgentQueryRequest,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Process a natural language query using the agent (requires authentication)."""
+        try:
+            if not AGENT_AVAILABLE:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Agent system not available - dependencies not installed"
+                )
+            
+            provider = request.provider.lower() if request.provider else "groq"
+            if provider not in ["groq", "gemini"]:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid provider: {provider}. Must be 'groq' or 'gemini'"
+                )
+            
+            # Get user-specific agent instance
+            user_id = str(current_user.id)
+            agent = get_agent_instance(provider=provider, user_id=user_id)
+            if not agent:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"{provider.capitalize()} agent not initialized - check logs and API keys"
+                )
+            
+            # Process query
+            result = agent.query(request.question)
+            result["provider"] = provider
+            result["model_name"] = agent.model_name
+            
+            return result
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error processing agent query: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+else:
+    @app.post("/api/agent/query")
+    async def agent_query(request: AgentQueryRequest):
+        """Process a natural language query using the agent (MongoDB not available)."""
+        raise HTTPException(
+            status_code=503,
+            detail="MongoDB not available - agent chat requires MongoDB for multi-tenant support"
+        )
 
 
-@app.get("/api/agent/status")
-async def get_agent_status():
-    """Get agent system status for all providers."""
-    try:
-        prompt_eng_available = PROMPT_ENGINEERING_AVAILABLE if 'PROMPT_ENGINEERING_AVAILABLE' in globals() else False
-        
-        # Check Groq availability
-        groq_available = False
-        groq_agent = None
-        groq_model = None
+if MONGODB_AVAILABLE:
+    @app.get("/api/agent/status")
+    async def get_agent_status(current_user: UserInDB = Depends(get_current_user)):
+        """Get agent system status for all providers (requires authentication)."""
         try:
-            groq_agent = get_agent_instance(provider="groq")
-            groq_available = groq_agent is not None
-            if groq_agent:
-                groq_model = groq_agent.model_name
-        except Exception as e:
-            logger.debug(f"Groq agent not available: {e}")
-        
-        # Check Gemini availability
-        gemini_available = False
-        gemini_agent = None
-        gemini_model = None
-        try:
-            gemini_agent = get_agent_instance(provider="gemini")
-            gemini_available = gemini_agent is not None
-            if gemini_agent:
-                gemini_model = gemini_agent.model_name
-        except Exception as e:
-            logger.debug(f"Gemini agent not available: {e}")
-        
-        return {
-            "available": AGENT_AVAILABLE and (groq_available or gemini_available),
-            "embeddings_available": EMBEDDINGS_AVAILABLE,
-            "prompt_engineering": prompt_eng_available,
-            "providers": {
-                "groq": {
-                    "available": groq_available,
-                    "initialized": groq_agent is not None,
-                    "model_name": groq_model or os.getenv("AGENT_MODEL_NAME", "meta-llama/llama-4-maverick-17b-128e-instruct"),
-                    "api_key_set": bool(os.getenv("GROQ_API_KEY"))
-                },
-                "gemini": {
-                    "available": gemini_available,
-                    "initialized": gemini_agent is not None,
-                    "model_name": gemini_model or os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash"),
-                    "api_key_set": bool(os.getenv("GEMINI_API_KEY"))
+            prompt_eng_available = PROMPT_ENGINEERING_AVAILABLE if 'PROMPT_ENGINEERING_AVAILABLE' in globals() else False
+            
+            # Get user_id for user-specific agent instances
+            user_id = str(current_user.id)
+            
+            # Check Groq availability
+            groq_available = False
+            groq_agent = None
+            groq_model = None
+            groq_error = None
+            try:
+                logger.info(f"Attempting to initialize Groq agent for user_id: {user_id}")
+                groq_agent = get_agent_instance(provider="groq", user_id=user_id)
+                groq_available = groq_agent is not None
+                if groq_agent:
+                    groq_model = groq_agent.model_name
+                    logger.info(f"✓ Groq agent initialized successfully: {groq_model}")
+                else:
+                    groq_error = "Agent initialization returned None - check logs for details"
+                    logger.error("Groq agent initialization returned None")
+            except Exception as e:
+                groq_error = str(e)
+                logger.error(f"Groq agent initialization failed: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+            
+            # Check Gemini availability
+            gemini_available = False
+            gemini_agent = None
+            gemini_model = None
+            gemini_error = None
+            try:
+                logger.info(f"Attempting to initialize Gemini agent for user_id: {user_id}")
+                gemini_agent = get_agent_instance(provider="gemini", user_id=user_id)
+                gemini_available = gemini_agent is not None
+                if gemini_agent:
+                    gemini_model = gemini_agent.model_name
+                    logger.info(f"✓ Gemini agent initialized successfully: {gemini_model}")
+                else:
+                    gemini_error = "Agent initialization returned None - check logs for details"
+                    logger.error("Gemini agent initialization returned None")
+            except Exception as e:
+                gemini_error = str(e)
+                logger.error(f"Gemini agent initialization failed: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+            
+            return {
+                "available": AGENT_AVAILABLE and (groq_available or gemini_available),
+                "embeddings_available": EMBEDDINGS_AVAILABLE,
+                "prompt_engineering": prompt_eng_available,
+                "providers": {
+                    "groq": {
+                        "available": groq_available,
+                        "initialized": groq_agent is not None,
+                        "model_name": groq_model or os.getenv("AGENT_MODEL_NAME", "meta-llama/llama-4-maverick-17b-128e-instruct"),
+                        "api_key_set": bool(os.getenv("GROQ_API_KEY")),
+                        "error": groq_error
+                    },
+                    "gemini": {
+                        "available": gemini_available,
+                        "initialized": gemini_agent is not None,
+                        "model_name": gemini_model or os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash"),
+                        "api_key_set": bool(os.getenv("GEMINI_API_KEY")),
+                        "error": gemini_error if not gemini_available else None
+                    }
                 }
             }
-        }
-    except Exception as e:
-        logger.error(f"Error getting agent status: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error getting agent status: {str(e)}")
+            return {
+                "available": False,
+                "error": str(e),
+                "providers": {
+                    "groq": {"available": False},
+                    "gemini": {"available": False}
+                }
+            }
+else:
+    @app.get("/api/agent/status")
+    async def get_agent_status():
+        """Get agent system status for all providers (MongoDB not available)."""
         return {
             "available": False,
-            "error": str(e)
+            "error": "MongoDB not available - agent chat requires MongoDB for multi-tenant support",
+            "providers": {
+                "groq": {"available": False},
+                "gemini": {"available": False}
+            }
         }
 
 
@@ -3414,22 +3570,282 @@ from dynamic_visualizer import DynamicVisualizer
 # Initialize dynamic visualizer
 dynamic_visualizer = DynamicVisualizer()
 
-@app.get("/api/visualizations/data/all")
-async def get_all_visualization_data():
-    """Get all data for visualizations - DYNAMIC VERSION"""
-    try:
-        data_dir = BASE_DIR / "datagenerator" / "generated_data"
-        
-        # Use dynamic visualizer - works with ANY CSV files
-        visualizations = dynamic_visualizer.generate_all_file_visualizations(data_dir)
-        
-        return {
-            "success": True,
-            "visualizations": visualizations
-        }
-    except Exception as e:
-        logger.error(f"Error generating visualization data: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+if MONGODB_AVAILABLE:
+    @app.get("/api/visualizations/data/all")
+    async def get_all_visualization_data(current_user: UserInDB = Depends(get_current_user)):
+        """Get all visualization data for user's files - DYNAMIC VERSION (requires authentication)"""
+        try:
+            from services.file_service import get_user_files, get_file_from_gridfs
+            
+            # Get all user's files
+            files = await get_user_files(current_user)
+            
+            all_visualizations = {}
+            
+            for file_info in files:
+                file_id = file_info.get("file_id")
+                if not file_id:
+                    continue
+                
+                try:
+                    # Get file content from GridFS
+                    file_content = await get_file_from_gridfs(file_id, current_user)
+                    
+                    # Generate visualizations dynamically
+                    viz_data = await dynamic_visualizer.generate_visualizations_for_file(
+                        file_id, file_info, file_content
+                    )
+                    
+                    if viz_data:
+                        all_visualizations[file_id] = viz_data
+                        
+                except Exception as e:
+                    logger.warning(f"Error generating visualizations for file {file_id}: {e}")
+                    continue
+            
+            return {
+                "success": True,
+                "visualizations": all_visualizations,
+                "file_count": len(all_visualizations)
+            }
+        except Exception as e:
+            logger.error(f"Error generating visualization data: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/api/visualizations/file/{file_id}")
+    async def get_file_visualizations(
+        file_id: str,
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Get visualizations for a specific file (requires authentication)"""
+        try:
+            from services.file_service import get_file_metadata, get_file_from_gridfs
+            
+            # Get file metadata
+            file_info = await get_file_metadata(file_id, current_user)
+            if not file_info:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            # Get file content from GridFS
+            file_content = await get_file_from_gridfs(file_id, current_user)
+            
+            # Generate visualizations dynamically
+            viz_data = await dynamic_visualizer.generate_visualizations_for_file(
+                file_id, file_info, file_content
+            )
+            
+            if not viz_data:
+                raise HTTPException(status_code=500, detail="Failed to generate visualizations")
+            
+            return {
+                "success": True,
+                "visualization": viz_data
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error generating visualizations for file {file_id}: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/api/visualizations/file/{file_id}/data")
+    async def get_file_data(
+        file_id: str,
+        sheet_name: Optional[str] = None,
+        page: int = Query(1, ge=1),
+        page_size: int = Query(100, ge=1, le=1000),
+        filters: Optional[str] = Query(None, description="JSON string of filters"),
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Get paginated and filtered data from a file (requires authentication)"""
+        try:
+            import json
+            import pandas as pd
+            import numpy as np
+            import io
+            
+            from services.file_service import get_file_metadata, get_file_from_gridfs
+            
+            # Get file metadata
+            file_info = await get_file_metadata(file_id, current_user)
+            if not file_info:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            # Get file content from GridFS
+            file_content = await get_file_from_gridfs(file_id, current_user)
+            
+            file_type = file_info.get("file_type", "csv")
+            
+            # Load DataFrame
+            if file_type.lower() in ['xlsx', 'xls']:
+                excel_file = pd.ExcelFile(io.BytesIO(file_content))
+                if sheet_name:
+                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                else:
+                    # Use first sheet if no sheet specified
+                    df = pd.read_excel(excel_file, sheet_name=excel_file.sheet_names[0])
+                excel_file.close()
+            else:
+                # Handle CSV files - try different encodings
+                try:
+                    df = pd.read_csv(io.BytesIO(file_content))
+                except UnicodeDecodeError:
+                    # Try with different encoding
+                    df = pd.read_csv(io.BytesIO(file_content), encoding='latin-1')
+            
+            if df.empty:
+                return {
+                    "success": True,
+                    "data": [],
+                    "columns": [],
+                    "pagination": {
+                        "page": page,
+                        "page_size": page_size,
+                        "total_rows": 0,
+                        "total_pages": 0
+                    }
+                }
+            
+            # Apply filters if provided
+            if filters:
+                try:
+                    filter_dict = json.loads(filters)
+                    for col, value in filter_dict.items():
+                        if col in df.columns:
+                            if isinstance(value, list):
+                                df = df[df[col].isin(value)]
+                            else:
+                                df = df[df[col] == value]
+                except Exception as e:
+                    logger.warning(f"Error applying filters: {e}")
+            
+            # Pagination
+            total_rows = len(df)
+            start_idx = (page - 1) * page_size
+            end_idx = min(start_idx + page_size, total_rows)  # Ensure we don't go beyond dataframe
+            paginated_df = df.iloc[start_idx:end_idx] if total_rows > 0 else df.iloc[0:0]
+            
+            # Convert to records
+            records = paginated_df.to_dict('records')
+            
+            # Convert numpy types to Python types
+            for record in records:
+                for key, value in record.items():
+                    if pd.isna(value):
+                        record[key] = None
+                    elif isinstance(value, (np.integer, np.int64)):
+                        record[key] = int(value)
+                    elif isinstance(value, (np.floating, np.float64)):
+                        record[key] = float(value)
+                    elif isinstance(value, pd.Timestamp):
+                        record[key] = value.isoformat()
+                    else:
+                        record[key] = str(value) if value is not None else None
+            
+            return {
+                "success": True,
+                "data": records,
+                "columns": list(df.columns),
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total_rows": total_rows,
+                    "total_pages": (total_rows + page_size - 1) // page_size if total_rows > 0 else 0
+                }
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting file data: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/api/visualizations/file/{file_id}/filter-options")
+    async def get_file_filter_options(
+        file_id: str,
+        sheet_name: Optional[str] = Query(None),
+        column: Optional[str] = Query(None),
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Get unique filter options for a column (requires authentication)"""
+        try:
+            import pandas as pd
+            import io
+            
+            from services.file_service import get_file_metadata, get_file_from_gridfs
+            
+            # Get file metadata
+            file_info = await get_file_metadata(file_id, current_user)
+            if not file_info:
+                raise HTTPException(status_code=404, detail="File not found")
+            
+            # Get file content from GridFS
+            file_content = await get_file_from_gridfs(file_id, current_user)
+            
+            file_type = file_info.get("file_type", "csv")
+            
+            # Load DataFrame
+            if file_type.lower() in ['xlsx', 'xls']:
+                excel_file = pd.ExcelFile(io.BytesIO(file_content))
+                if sheet_name:
+                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                else:
+                    df = pd.read_excel(excel_file, sheet_name=excel_file.sheet_names[0])
+                excel_file.close()
+            else:
+                df = pd.read_csv(io.BytesIO(file_content))
+            
+            # If column specified, return unique values for that column
+            if column and column in df.columns:
+                unique_values = df[column].dropna().unique().tolist()
+                # Convert to strings and limit to 100 values
+                unique_values = [str(v) for v in unique_values[:100]]
+                return {
+                    "success": True,
+                    "column": column,
+                    "options": unique_values
+                }
+            
+            # Otherwise return all columns with their types
+            column_info = {}
+            for col in df.columns:
+                if df[col].dtype == 'object':
+                    unique_count = df[col].nunique()
+                    if unique_count <= 50:
+                        column_info[col] = {
+                            "type": "categorical",
+                            "unique_count": int(unique_count),
+                            "options": [str(v) for v in df[col].dropna().unique().tolist()[:50]]
+                        }
+                    else:
+                        column_info[col] = {
+                            "type": "text",
+                            "unique_count": int(unique_count)
+                        }
+                elif pd.api.types.is_numeric_dtype(df[col]):
+                    column_info[col] = {
+                        "type": "numeric",
+                        "min": float(df[col].min()) if not df[col].isna().all() else None,
+                        "max": float(df[col].max()) if not df[col].isna().all() else None
+                    }
+                elif pd.api.types.is_datetime64_any_dtype(df[col]):
+                    column_info[col] = {
+                        "type": "date",
+                        "min": df[col].min().isoformat() if not df[col].isna().all() else None,
+                        "max": df[col].max().isoformat() if not df[col].isna().all() else None
+                    }
+                else:
+                    column_info[col] = {
+                        "type": "unknown"
+                    }
+            
+            return {
+                "success": True,
+                "columns": column_info
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting filter options: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/system/logs")

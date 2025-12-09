@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react"
 import { useDropzone } from "react-dropzone"
 import { FiUpload, FiX, FiFile, FiCheckCircle, FiAlertCircle, FiLoader, FiSave, FiTrash2, FiEdit2, FiBarChart2, FiLink, FiDatabase, FiArrowRight, FiArrowDown, FiFilter, FiTrendingUp, FiTarget, FiActivity } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/AuthContext"
 
 const FileUpload = () => {
+  const { token } = useAuth()
   const [files, setFiles] = useState([])
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
@@ -34,10 +36,19 @@ const FileUpload = () => {
 
   const fetchFiles = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/files/list`)
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/files/list`, {
+        headers
+      })
       if (response.ok) {
         const data = await response.json()
         setFiles(data.files || [])
+      } else if (response.status === 401) {
+        console.error("Unauthorized - please login")
       }
     } catch (error) {
       console.error("Error fetching files:", error)
@@ -65,8 +76,14 @@ const FileUpload = () => {
         const formData = new FormData()
         formData.append("file", file)
 
+        const headers = {}
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`
+        }
+
         const response = await fetch(`${API_BASE_URL}/files/upload`, {
           method: "POST",
+          headers,
           body: formData,
         })
 
@@ -106,17 +123,24 @@ const FileUpload = () => {
 
   const loadFileColumns = async (fileId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/files/${fileId}/columns`)
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/files/${fileId}/columns`, { headers })
       if (response.ok) {
         const data = await response.json()
         setSelectedFile(fileId)
         setColumns(data.columns || {})
         
         // Load existing definitions
-        const fileInfoResponse = await fetch(`${API_BASE_URL}/files/${fileId}`)
+        const fileInfoResponse = await fetch(`${API_BASE_URL}/files/${fileId}`, { headers })
         if (fileInfoResponse.ok) {
           const fileInfo = await fileInfoResponse.json()
-          setDefinitions(fileInfo.user_definitions || {})
+          // Handle both old and new structure
+          const userDefs = fileInfo.user_definitions || fileInfo.metadata?.user_definitions || {}
+          setDefinitions(userDefs)
         }
         
         // Don't auto-load schema analysis - user will trigger it manually
@@ -130,12 +154,19 @@ const FileUpload = () => {
 
   const loadCachedRelationships = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/relationships/cached`)
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/relationships/cached`, { headers })
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.relationships && data.relationships.length > 0) {
           setBatchRelationships(data)
         }
+      } else if (response.status === 401) {
+        console.error("Unauthorized - please login")
       }
     } catch (error) {
       console.error("Error loading cached relationships:", error)
@@ -144,10 +175,17 @@ const FileUpload = () => {
 
   const loadAllColumnDefinitions = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/column-definitions`)
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/column-definitions`, { headers })
       if (response.ok) {
         const data = await response.json()
         setAllColumnDefinitions(data.definitions || {})
+      } else if (response.status === 401) {
+        console.error("Unauthorized - please login")
       }
     } catch (error) {
       console.error("Error loading column definitions:", error)
@@ -159,8 +197,16 @@ const FileUpload = () => {
       setAnalyzingBatch(true)
       setMessage({ type: "info", text: "Analyzing relationships across all files... This may take a moment." })
       
+      const headers = {
+        "Content-Type": "application/json"
+      }
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
       const response = await fetch(`${API_BASE_URL}/relationships/analyze-all`, {
-        method: "POST"
+        method: "POST",
+        headers
       })
       
       if (response.ok) {
@@ -169,8 +215,8 @@ const FileUpload = () => {
         setMessage({ 
           type: "success", 
           text: data.cached 
-            ? `Using cached results from ${new Date(data.analyzed_at).toLocaleString()}` 
-            : `Analysis complete! Found ${data.relationships?.length || 0} relationships across ${data.file_count || 0} files.` 
+            ? `Using cached results from MongoDB (analyzed at ${new Date(data.analyzed_at).toLocaleString()}) - Cache is stored in MongoDB, not local storage` 
+            : `Analysis complete! Found ${data.relationships?.length || 0} relationships across ${data.file_count || 0} files. Results saved to MongoDB.` 
         })
       } else {
         const errorData = await response.json()
@@ -196,11 +242,16 @@ const FileUpload = () => {
 
     setSaving(true)
     try {
+      const headers = {
+        "Content-Type": "application/json",
+      }
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
       const response = await fetch(`${API_BASE_URL}/files/${selectedFile}/definitions`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(definitions),
       })
 
@@ -222,8 +273,14 @@ const FileUpload = () => {
     if (!confirm("Are you sure you want to delete this file?")) return
 
     try {
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
       const response = await fetch(`${API_BASE_URL}/files/${fileId}`, {
         method: "DELETE",
+        headers,
       })
 
       if (response.ok) {
@@ -298,7 +355,7 @@ const FileUpload = () => {
                 Cross-File Relationship Analysis
               </h2>
               <p className="mt-1 text-sm text-gray-400">
-                Analyze relationships across all uploaded files using Gemini AI. Results are cached and updated automatically when files or definitions change.
+                Analyze relationships across all uploaded files using Gemini AI. Results are cached in MongoDB and updated automatically when files or definitions change.
               </p>
             </div>
             <Button

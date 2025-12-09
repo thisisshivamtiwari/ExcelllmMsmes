@@ -1,0 +1,55 @@
+{
+  "total_tests": 5,
+  "passed": 1,
+  "failed": 4,
+  "pass_rate": 20.0,
+  "results": [
+    {
+      "query": "What is the total production quantity?",
+      "agent_answer": "The total production quantity is 265,662 units.",
+      "verified": false,
+      "errors": [
+        "Value mismatch: expected 265662.0, got 265.0, difference: 265397.0"
+      ],
+      "warnings": [],
+      "details": {
+        "extracted_value": 265.0
+      }
+    },
+    {
+      "query": "What is the average downtime minutes?",
+      "agent_answer": "The average downtime minutes is 12.77.",
+      "verified": true,
+      "errors": [],
+      "warnings": [],
+      "details": {
+        "extracted_value": 12.77,
+        "difference": 0.0
+      }
+    },
+    {
+      "query": "Show quality metrics by inspector as a radar chart",
+      "verified": false,
+      "errors": [
+        "No chart JSON found"
+      ]
+    },
+    {
+      "query": "Display downtime trends over time as a line chart",
+      "verified": false,
+      "errors": [
+        "No chart JSON found"
+      ]
+    },
+    {
+      "query": "What columns are available in the quality control file?",
+      "verified": false,
+      "errors": [
+        "Could not load file metadata"
+      ],
+      "warnings": [],
+      "details": {}
+    }
+  ],
+  "timestamp": "2025-12-09T01:20:13.304505"
+}

@@ -13,8 +13,10 @@ const QuestionGenerator = () => {
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
 
+  // API calls removed - feature disabled for multi-tenant SaaS migration
   useEffect(() => {
-    fetchQuestions()
+    // fetchQuestions()
+    setQuestions(null)
   }, [])
 
   // Auto-select first category with questions when questions load
@@ -30,27 +32,19 @@ const QuestionGenerator = () => {
   }, [questions])
 
   const fetchQuestions = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/question-generator/questions`)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const data = await response.json()
-      if (data && Object.keys(data).length > 0) {
-        setQuestions(data)
-      }
-    } catch (error) {
-      console.error("Error fetching questions:", error)
-    }
+    // Disabled - API call removed
   }
 
   const handleGenerate = async () => {
     setIsGenerating(true)
-    setStatus(null)
-    setMessage("")
+    setStatus("error")
+    setMessage("Question generator feature is disabled. This feature needs to be migrated to use MongoDB with user authentication.")
     setOutput("")
-
-    try {
+    setIsGenerating(false)
+    return
+    
+    // Original API call code removed
+    /* try {
       const response = await fetch(`${API_BASE_URL}/question-generator/generate`, {
         method: "POST",
       })
@@ -64,7 +58,6 @@ const QuestionGenerator = () => {
         if (data.questions) {
           setQuestions(data.questions)
         } else {
-          // Refresh questions after generation
           setTimeout(() => fetchQuestions(), 1000)
         }
       } else {
@@ -77,7 +70,7 @@ const QuestionGenerator = () => {
       setMessage(`Error: ${error.message}`)
     } finally {
       setIsGenerating(false)
-    }
+    } */
   }
 
   const categories = ["Easy", "Medium", "Complex"]
