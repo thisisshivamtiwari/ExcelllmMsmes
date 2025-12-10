@@ -1,0 +1,2390 @@
+[
+  {
+    "question_id": "Complex_13",
+    "question_text": "How does the average rework count for 'Widget-A' differ between Line-1 and Line-2?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 19.298460029s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 19\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "line",
+        "rework_count",
+        "product"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "quality_control"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "line",
+        "rework_count",
+        "product"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "rework_count",
+        "line",
+        "product"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 251.59811973571777,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:50:40.636706"
+  },
+  {
+    "question_id": "Easy_15",
+    "question_text": "Which inspector had the highest number of reworked items?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 12.677380112s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 12\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "sum",
+        "rework_count",
+        "inspector_name"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "quality_control"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "rework_count",
+        "inspector_name"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "rework_count",
+        "inspector_name"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 275.3138542175293,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:50:47.261614"
+  },
+  {
+    "question_id": "Easy_4",
+    "question_text": "What is the total number of components reworked in Line-2?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 5.729837459s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 5\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "line",
+        "rework_count"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "quality_control"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "line",
+        "rework_count"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "rework_count",
+        "line"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 660.651683807373,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:50:54.212726"
+  },
+  {
+    "question_id": "Complex_26",
+    "question_text": "What is the impact of preventive maintenance on the subsequent breakdown frequency for Machine-M1?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 59.222906798s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 59\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "breakdown_date",
+        "daystobreakdown",
+        "maintenance_date",
+        "machine"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "breakdown_date",
+        "maintenance_type",
+        "maintenance_date",
+        "machine"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "breakdown_date",
+        "maintenance_type",
+        "maintenance_date",
+        "machine"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 254.6093463897705,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:51:00.715287"
+  },
+  {
+    "question_id": "Medium_2",
+    "question_text": "What is the total cost of maintenance for Machine-M2 in 2026?",
+    "category": "Medium",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 52.601129368s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 52\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "cost_rupees",
+        "machine"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "cost_rupees",
+        "maintenance_date",
+        "machine"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "cost_rupees",
+        "maintenance_date",
+        "machine"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 269.1972255706787,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:51:07.338187"
+  },
+  {
+    "question_id": "Easy_32",
+    "question_text": "What is the percentage of failed quantity for each product?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 46.098246775s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 46\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "0 / inspected_qty",
+        "failed_qty",
+        "product"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "quality_control"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "inspected_qty",
+        "failed_qty",
+        "product"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "inspected_qty",
+        "failed_qty",
+        "product"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 275.7730484008789,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:51:13.839109"
+  },
+  {
+    "question_id": "Easy_29",
+    "question_text": "What is the maximum downtime hours recorded for any breakdown?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 39.587865679s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 39\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "downtime_hours",
+        "maintenance_type"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "downtime_hours",
+        "maintenance_type"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "downtime_hours",
+        "maintenance_type"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 269.07992362976074,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:51:20.352870"
+  },
+  {
+    "question_id": "Easy_18",
+    "question_text": "How many preventive maintenance activities were performed on Machine-M2 this year?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 33.050525924s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 33\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "machine"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "maintenance_type",
+        "maintenance_date",
+        "machine"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "maintenance_date",
+        "maintenance_type",
+        "machine"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 271.2533473968506,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:51:26.896014"
+  },
+  {
+    "question_id": "Complex_32",
+    "question_text": "Which machine has the highest average downtime due to breakdowns in the last quarter, and what is the total cost associated with those breakdowns?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 26.507910148s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 26\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "maintenance_type",
+        "machine",
+        "downtime_hours",
+        "avgdowntime",
+        "cost_rupees",
+        "totalcost"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "cost_rupees",
+        "maintenance_type",
+        "machine",
+        "downtime_hours",
+        "maintenance_date"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "maintenance_type",
+        "machine",
+        "downtime_hours",
+        "cost_rupees",
+        "maintenance_date"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 291.72682762145996,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:51:33.427528"
+  },
+  {
+    "question_id": "Easy_14",
+    "question_text": "What is the total wastage in kilograms for 'Steel Sheet 101' this year?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 19.58576458s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 19\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "wastage_kg"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "inventory_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "wastage_kg",
+        "material_name",
+        "date"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "wastage_kg",
+        "material_name",
+        "date"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 269.35362815856934,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:51:40.354227"
+  },
+  {
+    "question_id": "Complex_18",
+    "question_text": "What is the average unit cost of materials purchased from each supplier, and which supplier has the lowest average cost?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 12.964044052s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 12\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "unit_cost_rupees",
+        "supplier",
+        "avgunitcost"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "inventory_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "unit_cost_rupees",
+        "supplier"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "unit_cost_rupees",
+        "supplier"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 261.02304458618164,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:51:46.975379"
+  },
+  {
+    "question_id": "Complex_1",
+    "question_text": "What is the average downtime (in minutes) per shift for each machine in the last quarter?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 6.320723834s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 6\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "shift",
+        "line_machine",
+        "pl",
+        "downtime_minutes"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "production_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "shift",
+        "line_machine",
+        "date",
+        "downtime_minutes"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "shift",
+        "line_machine",
+        "date",
+        "downtime_minutes"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 387.1474266052246,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:51:53.618776"
+  },
+  {
+    "question_id": "Easy_12",
+    "question_text": "How many breakdown maintenance events occurred in the last quarter?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 59.815344204s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 59\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "maintenance_type"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "breakdown_date",
+        "maintenance_type"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "breakdown_date",
+        "maintenance_type"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 249.2232322692871,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:00.122665"
+  },
+  {
+    "question_id": "Complex_7",
+    "question_text": "What are the top 3 defect types that lead to rework for Widget-B, and what is their total rework count?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 53.013773825s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 53\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "total_rework_count",
+        "rework_count",
+        "defect_type",
+        "product"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "quality_control"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "rework_count",
+        "defect_type",
+        "product"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "rework_count",
+        "defect_type",
+        "product"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 540.8837795257568,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:06.930747"
+  },
+  {
+    "question_id": "Medium_21",
+    "question_text": "What is the average downtime per shift for Machine-M1 in October 2026?",
+    "category": "Medium",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 46.48664199s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 46\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "shift",
+        "downtime_minutes"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "production_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "shift",
+        "line_machine",
+        "date",
+        "downtime_minutes"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "shift",
+        "line_machine",
+        "date",
+        "downtime_minutes"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 270.1437473297119,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:13.450953"
+  },
+  {
+    "question_id": "Easy_5",
+    "question_text": "How many breakdown maintenances were performed on Machine-M2 in Q3 2026?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 39.999621734s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 39\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "machine"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "maintenance_type",
+        "maintenance_date",
+        "machine"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "maintenance_date",
+        "maintenance_type",
+        "machine"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 249.6817111968994,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:19.940038"
+  },
+  {
+    "question_id": "Complex_33",
+    "question_text": "What are the top 3 most frequently replaced parts across all machines, and what is the total cost associated with replacing these parts?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 33.48097398s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 33\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "cost_rupees",
+        "parts_replaced",
+        "replacementcount"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "cost_rupees",
+        "parts_replaced"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "cost_rupees",
+        "parts_replaced"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 261.95311546325684,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:26.459041"
+  },
+  {
+    "question_id": "Complex_23",
+    "question_text": "What is the correlation between Downtime_Minutes and Failed_Qty on a daily basis?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 26.979541756s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 26\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "quality_control",
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "corrtotaldowntime",
+        "date",
+        "downtime_minutes",
+        "pl",
+        "totalfailures",
+        "failed_qty"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "production_logs",
+        "quality_control"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "inspection_date",
+        "date",
+        "failed_qty",
+        "downtime_minutes"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "quality_control",
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "inspection_date",
+        "date",
+        "failed_qty",
+        "downtime_minutes"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 259.9828243255615,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:32.958409"
+  },
+  {
+    "question_id": "Easy_28",
+    "question_text": "What is the total cost of parts replaced for Machine-M3?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 20.453609135s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 20\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "cost_rupees",
+        "machine"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "cost_rupees",
+        "machine"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "cost_rupees",
+        "machine"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 279.19745445251465,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:39.490481"
+  },
+  {
+    "question_id": "Easy_30",
+    "question_text": "How much total waste was recorded in 2025?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 13.973653931s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 13\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "wastage_kg"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "inventory_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "wastage_kg",
+        "date"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "wastage_kg",
+        "date"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 241.1937713623047,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:45.968760"
+  },
+  {
+    "question_id": "Medium_31",
+    "question_text": "What is the average downtime (in minutes) per shift for Machine-M1 on Line-1 during the last quarter?",
+    "category": "Medium",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 7.403335569s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 7\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "shift",
+        "line_machine",
+        "downtime_minutes"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "production_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "shift",
+        "line_machine",
+        "date",
+        "downtime_minutes"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "shift",
+        "line_machine",
+        "date",
+        "downtime_minutes"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 283.64014625549316,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:52.538315"
+  },
+  {
+    "question_id": "Complex_9",
+    "question_text": "Which supplier provides the material with the lowest unit cost, considering only materials consumed after 2026-01-01?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 833.481907ms. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "date",
+        "unit_cost_rupees",
+        "min",
+        "material_name",
+        "supplier"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "inventory_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "unit_cost_rupees",
+        "material_name",
+        "supplier",
+        "date"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "unit_cost_rupees",
+        "material_name",
+        "supplier",
+        "date"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 295.73726654052734,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:52:59.111958"
+  },
+  {
+    "question_id": "Complex_19",
+    "question_text": "How does the 'Downtime_Minutes' in production relate to the 'Downtime_Hours' in maintenance logs when the 'Issue_Description' involves 'Motor overheating and failure to start'?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 54.298868734s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 54\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "maintenance_logs",
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "downtime_hours",
+        "downtime_minutes"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "maintenance_logs",
+        "production_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "breakdown_date",
+        "issue_description",
+        "date",
+        "downtime_minutes",
+        "downtime_hours"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "maintenance_logs",
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "date",
+        "downtime_minutes",
+        "downtime_hours",
+        "breakdown_date",
+        "issue_description"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 278.61905097961426,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:53:05.640869"
+  },
+  {
+    "question_id": "Complex_3",
+    "question_text": "What is the correlation between downtime minutes and failed quantity per line machine and product?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 47.683871942s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 47\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "quality_control",
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "failed_qty",
+        "downtime_minutes"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "production_logs",
+        "quality_control"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "date",
+        "failed_qty",
+        "downtime_minutes",
+        "product"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "quality_control",
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "date",
+        "failed_qty",
+        "downtime_minutes",
+        "product"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 361.88220977783203,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:53:12.252276"
+  },
+  {
+    "question_id": "Easy_26",
+    "question_text": "What is the average target quantity for all products?",
+    "category": "Easy",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 41.18983158s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 41\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "target_qty"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "production_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "target_qty"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "target_qty"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 256.6790580749512,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:53:18.774327"
+  },
+  {
+    "question_id": "Complex_24",
+    "question_text": "For Material Steel-101, what is the trend of wastage (increase or decrease) over the past 6 months?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 34.614232398s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 34\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "case when select totalwastage",
+        "material_code",
+        "date",
+        "strftime%y-%m",
+        "wastage_kg",
+        "month",
+        "strftime",
+        "totalwastage"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "inventory_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "wastage_kg",
+        "material_code",
+        "date"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "wastage_kg",
+        "material_code",
+        "date"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 268.9073085784912,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:53:25.324639"
+  },
+  {
+    "question_id": "Medium_20",
+    "question_text": "Which supplier had the lowest average unit cost for 'Rubber-RB' in the last 6 months?",
+    "category": "Medium",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 28.079623058s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 28\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "unit_cost_rupees",
+        "supplier",
+        "material_code",
+        "avgcost"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "inventory_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "unit_cost_rupees",
+        "material_code",
+        "date",
+        "supplier"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "unit_cost_rupees",
+        "material_code",
+        "date",
+        "supplier"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 281.9786071777344,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:53:31.860228"
+  },
+  {
+    "question_id": "Complex_29",
+    "question_text": "How does the rework count vary by defect type and product?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 21.358629348s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 21\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "rework_count",
+        "defect_type",
+        "product"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "quality_control"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "rework_count",
+        "defect_type",
+        "product"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "quality_control"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "rework_count",
+        "defect_type",
+        "product"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 260.21790504455566,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:53:38.579595"
+  },
+  {
+    "question_id": "Medium_24",
+    "question_text": "Which material has the highest wastage (in Kg) from July 2026 to Dec 2026?",
+    "category": "Medium",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 14.792017892s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 14\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "wastage_kg",
+        "sum",
+        "material_name"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "inventory_logs"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "wastage_kg",
+        "material_name",
+        "date"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "inventory_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "wastage_kg",
+        "material_name",
+        "date"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 323.7309455871582,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:53:45.162297"
+  },
+  {
+    "question_id": "Complex_31",
+    "question_text": "What is the correlation between downtime (in minutes) and failed quantity for each product?",
+    "category": "Complex",
+    "model_id": "gemma2-9b-it",
+    "methodology_response": "",
+    "sql_response": "",
+    "table_selection_response": "",
+    "methodology_score": 0,
+    "sql_score": 0.0,
+    "table_column_score": 0.0,
+    "response_quality_score": 0,
+    "overall_score": 0.0,
+    "methodology_details": {
+      "similarity_score": 0,
+      "matching_concepts": [],
+      "missing_concepts": [],
+      "extra_concepts": [],
+      "reasoning": "API error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 200, model: gemini-2.0-flash\nPlease retry in 8.240626758s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.0-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 200\n}\n, retry_delay {\n  seconds: 8\n}\n]"
+    },
+    "sql_details": {
+      "table_match": 0.0,
+      "column_match": 0.0,
+      "aggregate_match": 0.0,
+      "clause_match": 0.0,
+      "fuzzy_score": 0.0,
+      "overall_score": 0.0,
+      "expected_tables": [
+        "quality_control",
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "downtime_minutes",
+        "pl",
+        "qc",
+        "totalfailedqty",
+        "failed_qty",
+        "totaldowntime",
+        "product"
+      ],
+      "generated_columns": [],
+      "has_valid_sql": false
+    },
+    "table_column_details": {
+      "overall_score": 0.0,
+      "table_score": 0,
+      "column_score": 0,
+      "table_precision": 0,
+      "table_recall": 0.0,
+      "column_precision": 0,
+      "column_recall": 0.0,
+      "tables_correct": [],
+      "tables_missing": [
+        "production_logs",
+        "quality_control"
+      ],
+      "tables_extra": [],
+      "columns_correct": [],
+      "columns_missing": [
+        "failed_qty",
+        "downtime_minutes",
+        "product"
+      ],
+      "columns_extra": [],
+      "expected_tables": [
+        "quality_control",
+        "production_logs"
+      ],
+      "generated_tables": [],
+      "expected_columns": [
+        "failed_qty",
+        "downtime_minutes",
+        "product"
+      ],
+      "generated_columns": []
+    },
+    "total_latency_ms": 286.405086517334,
+    "total_tokens": 0,
+    "errors": [
+      "methodology: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "sql: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}",
+      "table_selection: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}"
+    ],
+    "timestamp": "2025-11-29T17:53:51.700317"
+  }
+]

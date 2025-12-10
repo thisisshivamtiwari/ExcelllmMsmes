@@ -23,7 +23,12 @@ const ComparisonAnalysis = () => {
   const fetchVisualizations = async () => {
     setLoadingVisualizations(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/visualizations/comparison/list`)
+      const response = await fetch(`${API_BASE_URL}/visualizations/comparison/list?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         console.log("Comparison visualizations:", data)
@@ -42,15 +47,28 @@ const ComparisonAnalysis = () => {
 
   const fetchResults = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/comparison/results`)
+      // Add cache-busting query parameter
+      const response = await fetch(`${API_BASE_URL}/comparison/results?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
-      if (data.results && Object.keys(data.results).length > 0) {
-        setResults(data.results)
-      } else if (data.report || data.detailed_results) {
+      console.log("Comparison results data:", data)
+      // Handle both nested results and direct structure
+      // API returns {status: "success", results: {...}, report: {...}, detailed_results: [...]}
+      if (data.report || data.detailed_results) {
+        // Data is spread at top level, use it directly
         setResults(data)
+      } else if (data.results && (data.results.report || data.results.detailed_results)) {
+        // Data is nested in results key
+        setResults(data.results)
+      } else if (data.results && Object.keys(data.results).length > 0) {
+        setResults(data.results)
       } else {
         setResults(null)
       }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useDropzone } from "react-dropzone"
-import { FiUpload, FiX, FiFile, FiCheckCircle, FiAlertCircle, FiLoader, FiSave, FiTrash2, FiEdit2, FiBarChart2, FiLink, FiDatabase, FiArrowRight, FiArrowDown, FiFilter, FiTrendingUp, FiTarget, FiActivity } from "react-icons/fi"
+import { FiUpload, FiX, FiFile, FiCheckCircle, FiAlertCircle, FiLoader, FiSave, FiTrash2, FiEdit2, FiBarChart2, FiLink, FiDatabase, FiArrowRight, FiArrowDown, FiFilter, FiTrendingUp, FiTarget, FiActivity, FiRefreshCw } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -23,6 +23,8 @@ const FileUpload = () => {
   const [relationshipFilter, setRelationshipFilter] = useState("all") // all, cross_file, by_type, by_strength
   const [selectedType, setSelectedType] = useState("all")
   const [expandedRelationship, setExpandedRelationship] = useState(null)
+  const [normalizingFiles, setNormalizingFiles] = useState({}) // Track which files are being normalized
+  const [indexingFiles, setIndexingFiles] = useState({}) // Track which files are being indexed
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
 
@@ -301,6 +303,76 @@ const FileUpload = () => {
       }
     } catch (error) {
       setMessage({ type: "error", text: `Error deleting file: ${error.message}` })
+    }
+  }
+
+  const handleNormalize = async (fileId) => {
+    setNormalizingFiles(prev => ({ ...prev, [fileId]: true }))
+    setMessage({ type: "info", text: "Normalizing file data..." })
+    
+    try {
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/question-generator/normalize/${fileId}`, {
+        method: "POST",
+        headers
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok && data.status === "success") {
+        setMessage({ 
+          type: "success", 
+          text: `File normalized successfully! ${data.normalized_count || 0} rows processed.` 
+        })
+      } else {
+        setMessage({ 
+          type: "error", 
+          text: data.error || data.detail || "Failed to normalize file" 
+        })
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: `Error normalizing file: ${error.message}` })
+    } finally {
+      setNormalizingFiles(prev => ({ ...prev, [fileId]: false }))
+    }
+  }
+
+  const handleIndex = async (fileId) => {
+    setIndexingFiles(prev => ({ ...prev, [fileId]: true }))
+    setMessage({ type: "info", text: "Indexing file for semantic search..." })
+    
+    try {
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/semantic/index/${fileId}`, {
+        method: "POST",
+        headers
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        setMessage({ 
+          type: "success", 
+          text: data.message || "File indexed successfully for semantic search" 
+        })
+      } else {
+        setMessage({ 
+          type: "error", 
+          text: data.detail || "Failed to index file" 
+        })
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: `Error indexing file: ${error.message}` })
+    } finally {
+      setIndexingFiles(prev => ({ ...prev, [fileId]: false }))
     }
   }
 
@@ -664,6 +736,36 @@ const FileUpload = () => {
                             </div>
                           </div>
                           <div className="flex gap-2 items-center" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleNormalize(file.file_id)
+                              }}
+                              disabled={normalizingFiles[file.file_id]}
+                              className="p-1 text-gray-400 transition-colors hover:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Normalize file data for agent queries"
+                            >
+                              {normalizingFiles[file.file_id] ? (
+                                <FiLoader className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <FiRefreshCw className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleIndex(file.file_id)
+                              }}
+                              disabled={indexingFiles[file.file_id]}
+                              className="p-1 text-gray-400 transition-colors hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Index file for semantic search"
+                            >
+                              {indexingFiles[file.file_id] ? (
+                                <FiLoader className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <FiDatabase className="w-4 h-4" />
+                              )}
+                            </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()

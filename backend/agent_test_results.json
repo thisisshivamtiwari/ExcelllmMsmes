@@ -1,0 +1,206 @@
+{
+  "timestamp": "2025-12-09T15:28:23.498465",
+  "provider": "gemini",
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "success_rate": 0.0,
+    "avg_latency_ms": 6841.0
+  },
+  "results": [
+    {
+      "question_id": "q_047222e5_Sheet1_aggregation_1",
+      "question": "What is the total target quantity?",
+      "status": "failed",
+      "error": "Value mismatch",
+      "answer": "The total target quantity is 308420. This was calculated by summing the 'Target_Qty' column from the 'Sheet1' table.",
+      "expected": 316002,
+      "actual": 308420.0,
+      "tools_called": [
+        "table_loader",
+        "agg_helper"
+      ],
+      "latency_ms": 6841,
+      "provenance": {
+        "table_loader": {
+          "mongo_query": {
+            "user_id": "69366c8393481cfdf197af6a",
+            "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+            "table_name": "Sheet1"
+          },
+          "matched_row_count": 924,
+          "sample_rows": [
+            {
+              "_id": "6937d7aa02d28717d84e52d0",
+              "user_id": "69366c8393481cfdf197af6a",
+              "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+              "table_name": "Sheet1",
+              "row_id": 1,
+              "row": {
+                "Date": "2025-11-02",
+                "Shift": "Morning",
+                "Line_Machine": "Line-1/Machine-M1",
+                "Product": "Widget-A",
+                "Target_Qty": 300,
+                "Actual_Qty": 258,
+                "Downtime_Minutes": 15,
+                "Operator": "Rajesh Kumar"
+              },
+              "created_at": "2025-12-09 08:02:50.284000"
+            },
+            {
+              "_id": "6937d7aa02d28717d84e52d1",
+              "user_id": "69366c8393481cfdf197af6a",
+              "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+              "table_name": "Sheet1",
+              "row_id": 2,
+              "row": {
+                "Date": "2025-11-03",
+                "Shift": "Afternoon",
+                "Line_Machine": "Line-1/Machine-M1",
+                "Product": "Widget-A",
+                "Target_Qty": 300,
+                "Actual_Qty": 245,
+                "Downtime_Minutes": 20,
+                "Operator": "Priya Sharma"
+              },
+              "created_at": "2025-12-09 08:02:50.284000"
+            },
+            {
+              "_id": "6937d7aa02d28717d84e52d2",
+              "user_id": "69366c8393481cfdf197af6a",
+              "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+              "table_name": "Sheet1",
+              "row_id": 3,
+              "row": {
+                "Date": "2025-11-04",
+                "Shift": "Night",
+                "Line_Machine": "Line-1/Machine-M1",
+                "Product": "Widget-A",
+                "Target_Qty": 300,
+                "Actual_Qty": 250,
+                "Downtime_Minutes": 10,
+                "Operator": "Amit Patel"
+              },
+              "created_at": "2025-12-09 08:02:50.284000"
+            },
+            {
+              "_id": "6937d7aa02d28717d84e52d3",
+              "user_id": "69366c8393481cfdf197af6a",
+              "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+              "table_name": "Sheet1",
+              "row_id": 4,
+              "row": {
+                "Date": "2025-11-05",
+                "Shift": "Morning",
+                "Line_Machine": "Line-1/Machine-M2",
+                "Product": "Widget-B",
+                "Target_Qty": 250,
+                "Actual_Qty": 210,
+                "Downtime_Minutes": 5,
+                "Operator": "Sneha Desai"
+              },
+              "created_at": "2025-12-09 08:02:50.284000"
+            },
+            {
+              "_id": "6937d7aa02d28717d84e52d4",
+              "user_id": "69366c8393481cfdf197af6a",
+              "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+              "table_name": "Sheet1",
+              "row_id": 5,
+              "row": {
+                "Date": "2025-11-06",
+                "Shift": "Afternoon",
+                "Line_Machine": "Line-1/Machine-M2",
+                "Product": "Widget-B",
+                "Target_Qty": 250,
+                "Actual_Qty": 215,
+                "Downtime_Minutes": 0,
+                "Operator": "Vikram Singh"
+              },
+              "created_at": "2025-12-09 08:02:50.284000"
+            }
+          ]
+        },
+        "agg_helper": {
+          "mongo_pipeline": [
+            {
+              "$match": {
+                "user_id": "69366c8393481cfdf197af6a",
+                "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+                "table_name": "Sheet1"
+              }
+            },
+            {
+              "$group": {
+                "_id": null,
+                "total_target_qty": {
+                  "$sum": "$row.Target_Qty"
+                }
+              }
+            }
+          ],
+          "matched_row_count": 924,
+          "sample_rows": [
+            {
+              "_id": "6937d7aa02d28717d84e52d0",
+              "user_id": "69366c8393481cfdf197af6a",
+              "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+              "table_name": "Sheet1",
+              "row_id": 1,
+              "row": {
+                "Date": "2025-11-02",
+                "Shift": "Morning",
+                "Line_Machine": "Line-1/Machine-M1",
+                "Product": "Widget-A",
+                "Target_Qty": 300,
+                "Actual_Qty": 258,
+                "Downtime_Minutes": 15,
+                "Operator": "Rajesh Kumar"
+              },
+              "created_at": "2025-12-09 08:02:50.284000"
+            },
+            {
+              "_id": "6937d7aa02d28717d84e52d1",
+              "user_id": "69366c8393481cfdf197af6a",
+              "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+              "table_name": "Sheet1",
+              "row_id": 2,
+              "row": {
+                "Date": "2025-11-03",
+                "Shift": "Afternoon",
+                "Line_Machine": "Line-1/Machine-M1",
+                "Product": "Widget-A",
+                "Target_Qty": 300,
+                "Actual_Qty": 245,
+                "Downtime_Minutes": 20,
+                "Operator": "Priya Sharma"
+              },
+              "created_at": "2025-12-09 08:02:50.284000"
+            },
+            {
+              "_id": "6937d7aa02d28717d84e52d2",
+              "user_id": "69366c8393481cfdf197af6a",
+              "file_id": "047222e5-7e82-4526-a715-52984b56f591",
+              "table_name": "Sheet1",
+              "row_id": 3,
+              "row": {
+                "Date": "2025-11-04",
+                "Shift": "Night",
+                "Line_Machine": "Line-1/Machine-M1",
+                "Product": "Widget-A",
+                "Target_Qty": 300,
+                "Actual_Qty": 250,
+                "Downtime_Minutes": 10,
+                "Operator": "Amit Patel"
+              },
+              "created_at": "2025-12-09 08:02:50.284000"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

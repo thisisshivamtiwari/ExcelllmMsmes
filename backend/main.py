@@ -3,12 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 import subprocess
 import os
 import json
+import random
 import csv
+import re
 from pathlib import Path
 import asyncio
 from datetime import datetime
@@ -112,14 +114,48 @@ async def shutdown_event():
             logger.error(f"Error closing MongoDB connection: {e}")
 
 # CORS middleware - MUST be added BEFORE exception handlers
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],  # Vite default ports
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+# Get allowed origins from environment or use defaults
+ALLOWED_ORIGINS_ENV = os.getenv("CORS_ORIGINS", "")
+if ALLOWED_ORIGINS_ENV:
+    ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_ENV.split(",")]
+else:
+    # Default: common development ports
+    ALLOWED_ORIGINS = [
+        "http://localhost:5173",  # Vite default
+        "http://localhost:3000",  # React default
+        "http://localhost:5174",  # Vite alternate
+        "http://localhost:5175",  # Vite alternate
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175",
+    ]
+
+# In development, be more permissive - allow any localhost origin
+if os.getenv("ENVIRONMENT", "development").lower() == "development":
+    # Use regex to allow any localhost port for development
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+        max_age=3600,
+    )
+    logger.info("CORS configured for development: allowing all localhost origins")
+else:
+    # Production: use explicit origins only
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+        max_age=3600,
+    )
+    logger.info(f"CORS configured for production with origins: {ALLOWED_ORIGINS}")
 
 # Exception handler for HTTPException (to ensure CORS headers)
 @app.exception_handler(StarletteHTTPException)
@@ -128,6 +164,15 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         status_code=exc.status_code,
         content={"detail": exc.detail}
     )
+    # CORS headers should be added by middleware, but ensure they're present
+    origin = request.headers.get("origin")
+    if origin:
+        # Check if origin is allowed (for development, localhost is allowed)
+        if os.getenv("ENVIRONMENT", "development").lower() == "development":
+            import re
+            if re.match(r"https?://(localhost|127\.0\.0\.1)(:\d+)?", origin):
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
 # Exception handler for RequestValidationError
@@ -828,22 +873,322 @@ async def get_file_stats(file_name: str):
 # Question Generator Endpoints
 # ============================================================================
 
+class QuestionGenerationRequest(BaseModel):
+    """Request model for question generation."""
+    file_id: Optional[str] = Field(None, description="File ID to generate questions for (required if generate_all_files is False)")
+    table_name: Optional[str] = Field(None, description="Table/Sheet name to generate questions for")
+    question_types: Optional[List[str]] = Field(None, description="Types of questions to generate (factual, aggregation, comparative, trend)")
+    num_questions: int = Field(10, ge=1, le=100, description="Number of questions to generate per file/table")
+    generate_all_files: bool = Field(False, description="Generate questions for all files")
+
+
 @app.post("/api/question-generator/generate")
-async def generate_questions():
-    """DEPRECATED: Question generator directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Question generator directory has been removed."
-    )
+async def generate_questions(
+    request: QuestionGenerationRequest,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    """Generate verified questions for a specific file/table or all files using MongoDB-based question generator."""
+    try:
+        from services.question_generator_service import MongoDBQuestionGenerator
+        from services.file_service import get_user_files
+        
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="MongoDB not available - question generator requires MongoDB"
+            )
+        
+        generator = MongoDBQuestionGenerator(current_user)
+        all_results = []
+        total_generated = 0
+        total_failed = 0
+        total_verified = 0
+        
+        if request.generate_all_files:
+            # Generate for all files
+            files = await get_user_files(current_user, deduplicate=True)
+            if not files:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No files found. Please upload files first."
+                )
+            
+            for file_info in files:
+                file_id = file_info.get("file_id")
+                metadata = file_info.get("metadata", {})
+                sheets = metadata.get("sheets", {})
+                
+                for sheet_name in sheets.keys():
+                    result = await generator.generate_questions_for_file(
+                        file_id=file_id,
+                        table_name=sheet_name,
+                        question_types=request.question_types,
+                        num_questions=request.num_questions
+                    )
+                    
+                    if result.get("success"):
+                        all_results.append({
+                            "file_id": file_id,
+                            "table_name": sheet_name,
+                            "result": result
+                        })
+                        total_generated += result.get("generated", 0)
+                        total_failed += result.get("failed", 0)
+                        total_verified += result.get("verified", 0)
+        else:
+            # Generate for specific file/table
+            if not request.file_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="file_id is required when generate_all_files is False"
+                )
+            
+            if not request.table_name:
+                raise HTTPException(
+                    status_code=400,
+                    detail="table_name is required when generate_all_files is False"
+                )
+            
+            result = await generator.generate_questions_for_file(
+                file_id=request.file_id,
+                table_name=request.table_name,
+                question_types=request.question_types,
+                num_questions=request.num_questions
+            )
+            
+            if not result.get("success"):
+                raise HTTPException(
+                    status_code=500,
+                    detail=result.get("error", "Failed to generate questions")
+                )
+            
+            all_results.append({
+                "file_id": request.file_id,
+                "table_name": request.table_name,
+                "result": result
+            })
+            total_generated = result.get("generated", 0)
+            total_failed = result.get("failed", 0)
+            total_verified = result.get("verified", 0)
+        
+        return {
+            "status": "success",
+            "message": f"Generated {total_verified} verified questions ({total_generated} total, {total_failed} failed)",
+            "result": {
+                "generated": total_generated,
+                "failed": total_failed,
+                "verified": total_verified,
+                "details": all_results
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating questions: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating questions: {str(e)}"
+        )
+
+
+@app.post("/api/question-generator/normalize/{file_id}")
+async def normalize_file(
+    file_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    """Normalize file data into tables collection for question generation."""
+    try:
+        from services.question_generator_service import MongoDBQuestionGenerator
+        
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="MongoDB not available - question generator requires MongoDB"
+            )
+        
+        generator = MongoDBQuestionGenerator(current_user)
+        result = await generator.normalize_file_to_tables(file_id)
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=500,
+                detail=result.get("error", "Failed to normalize file")
+            )
+        
+        return {
+            "status": "success",
+            "message": f"Normalized {result.get('normalized_count', 0)} rows from file",
+            "normalized_count": result.get("normalized_count", 0)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error normalizing file: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error normalizing file: {str(e)}"
+        )
+
+
+@app.post("/api/question-generator/verify-all")
+async def verify_all_questions(
+    current_user: UserInDB = Depends(get_current_user)
+):
+    """Verify all unverified questions in the QA bank."""
+    try:
+        from services.question_generator_service import MongoDBQuestionGenerator
+        from database import get_database
+        
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="MongoDB not available - question generator requires MongoDB"
+            )
+        
+        db = get_database()
+        qa_bank_collection = db["qa_bank"]
+        tables_collection = db["tables"]
+        
+        # Get all unverified questions for this user
+        unverified_questions = await qa_bank_collection.find({
+            "user_id": current_user.id,
+            "verified": False
+        }).to_list(length=1000)
+        
+        if not unverified_questions:
+            return {
+                "success": True,
+                "message": "No unverified questions found",
+                "verified": 0,
+                "still_unverified": 0
+            }
+        
+        verified_count = 0
+        still_unverified = 0
+        error_details = []
+        
+        generator = MongoDBQuestionGenerator(current_user)
+        
+        for q in unverified_questions:
+            try:
+                file_id = q.get("file_id")
+                table_name = q.get("table_name", "Sheet1")
+                verification_query = q.get("verification_query", {})
+                expected_answer = q.get("answer_structured", {})
+                
+                if not verification_query:
+                    still_unverified += 1
+                    continue
+                
+                # Verify the answer
+                is_verified, verification_result = await generator.verify_answer(
+                    file_id=file_id,
+                    table_name=table_name,
+                    verification_query=verification_query,
+                    expected_answer=expected_answer,
+                    answer_text=q.get("answer_text")
+                )
+                
+                if is_verified:
+                    # Update question as verified
+                    await qa_bank_collection.update_one(
+                        {"_id": q["_id"]},
+                        {"$set": {"verified": True, "verification_result": verification_result}}
+                    )
+                    verified_count += 1
+                else:
+                    still_unverified += 1
+                    error_details.append({
+                        "question": q.get("question_text", ""),
+                        "expected": str(expected_answer.get("value", "")),
+                        "computed": str(verification_result.get("computed_value", "")),
+                        "error": verification_result.get("error", "Mismatch")
+                    })
+            except Exception as e:
+                still_unverified += 1
+                error_details.append({
+                    "question": q.get("question_text", ""),
+                    "error": str(e)
+                })
+        
+        return {
+            "success": True,
+            "message": f"Verified {verified_count} questions, {still_unverified} still unverified",
+            "verified": verified_count,
+            "still_unverified": still_unverified,
+            "error_details": error_details[:10],  # Limit to first 10 errors
+            "tables_count": await tables_collection.count_documents({"user_id": current_user.id})
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying questions: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error verifying questions: {str(e)}"
+        )
 
 
 @app.get("/api/question-generator/questions")
-async def get_questions(category: Optional[str] = Query(None)):
-    """DEPRECATED: Question generator directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Question generator directory has been removed."
-    )
+async def get_questions(
+    category: Optional[str] = Query(None),
+    current_user: UserInDB = Depends(get_current_user)
+):
+    """Get all verified questions from QA bank for the authenticated user."""
+    try:
+        from services.question_generator_service import MongoDBQuestionGenerator
+        from database import get_database
+        
+        if not MONGODB_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="MongoDB not available - question generator requires MongoDB"
+            )
+        
+        # Use MongoDBQuestionGenerator to get questions
+        generator = MongoDBQuestionGenerator(current_user)
+        result = await generator.get_all_questions()
+        
+        # Calculate verified count
+        verified_count = 0
+        for difficulty_questions in result.get("questions", {}).values():
+            verified_count += sum(1 for q in difficulty_questions if q.get("verified", False))
+        
+        # Filter by category if provided
+        if category:
+            category_lower = category.lower()
+            filtered_questions = {}
+            for diff, questions in result.get("questions", {}).items():
+                if category_lower in diff.lower():
+                    filtered_questions[diff] = questions
+            result["questions"] = filtered_questions
+        
+        return {
+            "success": True,
+            "questions": result,
+            "total_questions": result.get("metadata", {}).get("total_questions", 0),
+            "verified_count": verified_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching questions: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching questions: {str(e)}"
+        )
 
 
 # ============================================================================
@@ -858,21 +1203,135 @@ class BenchmarkRequest(BaseModel):
 
 
 @app.post("/api/benchmark/run")
-async def run_benchmark(request: BenchmarkRequest):
-    """DEPRECATED: LLM benchmarking directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. LLM benchmarking directory has been removed."
-    )
+async def run_benchmark(request: Optional[BenchmarkRequest] = None):
+    """Run LLM benchmarking (placeholder - actual execution would run benchmark scripts)."""
+    benchmark_dir = BASE_DIR / "backend" / "visualizations" / "llm_benchmarking"
+    results_dir = benchmark_dir / "results"
+    
+    if not results_dir.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Benchmark results directory not found. Please run the benchmark script first."
+        )
+    
+    return {
+        "status": "success",
+        "message": "Benchmark execution triggered. Results will be available at /api/benchmark/results",
+        "output": "Note: This endpoint is a placeholder. Actual benchmark execution should be done via scripts."
+    }
 
 
 @app.get("/api/benchmark/results")
 async def get_benchmark_results():
-    """DEPRECATED: LLM benchmarking directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. LLM benchmarking directory has been removed."
-    )
+    """Get LLM benchmarking results from the results directory."""
+    benchmark_dir = BASE_DIR / "backend" / "visualizations" / "llm_benchmarking"
+    results_dir = benchmark_dir / "results"
+    metrics_dir = results_dir / "metrics"
+    raw_responses_dir = results_dir / "raw_responses"
+    
+    if not results_dir.exists():
+        return {
+            "status": "not_found",
+            "message": "Benchmark results not found. Please run the benchmark first.",
+            "results": None
+        }
+    
+    try:
+        # Load summary.json
+        summary_file = metrics_dir / "summary.json"
+        summary_data = {}
+        if summary_file.exists():
+            with open(summary_file, 'r') as f:
+                summary_data = json.load(f)
+        
+        # Load all_results.json
+        all_results_file = metrics_dir / "all_results.json"
+        all_results_data = {}
+        if all_results_file.exists():
+            with open(all_results_file, 'r') as f:
+                all_results_data = json.load(f)
+        
+        # Load CSV files
+        model_comparison_file = results_dir / "model_comparison.csv"
+        category_breakdown_file = results_dir / "category_breakdown.csv"
+        
+        model_comparison = []
+        category_breakdown = []
+        
+        if model_comparison_file.exists():
+            with open(model_comparison_file, 'r') as f:
+                reader = csv.DictReader(f)
+                model_comparison = list(reader)
+        
+        if category_breakdown_file.exists():
+            with open(category_breakdown_file, 'r') as f:
+                reader = csv.DictReader(f)
+                category_breakdown = list(reader)
+        
+        # Load raw responses if available
+        raw_responses = {}
+        if raw_responses_dir.exists():
+            for model_dir in raw_responses_dir.iterdir():
+                if model_dir.is_dir():
+                    results_file = model_dir / "results.json"
+                    if results_file.exists():
+                        with open(results_file, 'r') as f:
+                            raw_responses[model_dir.name] = json.load(f)
+        
+        # Extract results array from all_results_data
+        results_array = []
+        if isinstance(all_results_data, dict) and "results" in all_results_data:
+            results_array = all_results_data["results"]
+        elif isinstance(all_results_data, list):
+            results_array = all_results_data
+        
+        # Load all_results.csv as well for additional data
+        all_results_csv = []
+        all_results_csv_file = metrics_dir / "all_results.csv"
+        if all_results_csv_file.exists():
+            with open(all_results_csv_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                all_results_csv = list(reader)
+        
+        # Structure response to match frontend expectations
+        # Frontend expects either:
+        # 1. results.results (array) - from all_results.json
+        # 2. results.by_model and results.by_category - from summary.json
+        response_data = {
+            "status": "success",
+            "results": {
+                # Include summary data with by_model and by_category for frontend
+                "by_model": summary_data.get("by_model", {}),
+                "by_category": summary_data.get("by_category", {}),
+                "total_evaluations": summary_data.get("total_evaluations", 0),
+                "models_evaluated": summary_data.get("models_evaluated", []),
+                "categories_evaluated": summary_data.get("categories_evaluated", []),
+                # Include results array for frontend processing
+                "results": results_array,
+                # Include all data for completeness
+                "summary": summary_data,
+                "all_results": all_results_data,
+                "all_results_csv": all_results_csv,
+                "model_comparison": model_comparison,
+                "category_breakdown": category_breakdown,
+                "raw_responses": raw_responses
+            },
+            # Also include at top level for backward compatibility
+            "summary": summary_data,
+            "all_results": all_results_data,
+            "by_model": summary_data.get("by_model", {}),
+            "by_category": summary_data.get("by_category", {})
+        }
+        
+        return response_data
+    except Exception as e:
+        logger.error(f"Error loading benchmark results: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error loading benchmark results: {str(e)}"
+        )
 
 
 # ============================================================================
@@ -881,20 +1340,77 @@ async def get_benchmark_results():
 
 @app.post("/api/prompt-engineering/test")
 async def test_enhanced_prompts():
-    """DEPRECATED: Prompt engineering directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Prompt engineering directory has been removed."
-    )
+    """Run prompt engineering test (placeholder - actual execution would run test scripts)."""
+    prompt_dir = BASE_DIR / "backend" / "visualizations" / "prompt_engineering"
+    results_dir = prompt_dir / "results"
+    
+    if not results_dir.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Prompt engineering results directory not found. Please run the test script first."
+        )
+    
+    return {
+        "status": "success",
+        "message": "Prompt engineering test triggered. Results will be available at /api/prompt-engineering/results",
+        "output": "Note: This endpoint is a placeholder. Actual test execution should be done via scripts."
+    }
 
 
 @app.get("/api/prompt-engineering/results")
 async def get_prompt_results():
-    """DEPRECATED: Prompt engineering directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Prompt engineering directory has been removed."
-    )
+    """Get prompt engineering results from the results directory."""
+    prompt_dir = BASE_DIR / "backend" / "visualizations" / "prompt_engineering"
+    results_dir = prompt_dir / "results"
+    
+    if not results_dir.exists():
+        return {
+            "status": "not_found",
+            "message": "Prompt engineering results not found. Please run the test first.",
+            "results": None
+        }
+    
+    try:
+        # Load baseline_vs_enhanced_comparison.json
+        comparison_file = results_dir / "baseline_vs_enhanced_comparison.json"
+        comparison_data = {}
+        if comparison_file.exists():
+            with open(comparison_file, 'r') as f:
+                comparison_data = json.load(f)
+        
+        # Load enhanced_prompt_results.json
+        enhanced_file = results_dir / "enhanced_prompt_results.json"
+        enhanced_data = {}
+        if enhanced_file.exists():
+            with open(enhanced_file, 'r') as f:
+                enhanced_data = json.load(f)
+        
+        # Load CSV file
+        csv_file = results_dir / "baseline_vs_enhanced_comparison.csv"
+        csv_data = []
+        if csv_file.exists():
+            with open(csv_file, 'r') as f:
+                reader = csv.DictReader(f)
+                csv_data = list(reader)
+        
+        # Extract report and detailed_results from comparison_data
+        report = comparison_data.get("report", {})
+        detailed_results = comparison_data.get("detailed_results", [])
+        
+        return {
+            "status": "success",
+            "report": report,
+            "detailed_results": detailed_results,
+            "enhanced_results": enhanced_data,
+            "csv_data": csv_data,
+            "results": comparison_data  # Include full data for backward compatibility
+        }
+    except Exception as e:
+        logger.error(f"Error loading prompt engineering results: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error loading prompt engineering results: {str(e)}"
+        )
 
 
 # ============================================================================
@@ -903,20 +1419,77 @@ async def get_prompt_results():
 
 @app.post("/api/comparison/run")
 async def run_comparison():
-    """DEPRECATED: Comparison analysis directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Comparison analysis directory has been removed."
-    )
+    """Run comparison analysis (placeholder - actual execution would run comparison scripts)."""
+    comparison_dir = BASE_DIR / "backend" / "visualizations" / "enhanced_vs_baseline_vs_groundtruth"
+    results_dir = comparison_dir / "results"
+    
+    if not results_dir.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Comparison results directory not found. Please run the comparison script first."
+        )
+    
+    return {
+        "status": "success",
+        "message": "Comparison analysis triggered. Results will be available at /api/comparison/results",
+        "output": "Note: This endpoint is a placeholder. Actual comparison execution should be done via scripts."
+    }
 
 
 @app.get("/api/comparison/results")
 async def get_comparison_results():
-    """DEPRECATED: Comparison analysis directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Comparison analysis directory has been removed."
-    )
+    """Get comparison analysis results from the results directory."""
+    comparison_dir = BASE_DIR / "backend" / "visualizations" / "enhanced_vs_baseline_vs_groundtruth"
+    results_dir = comparison_dir / "results"
+    
+    if not results_dir.exists():
+        return {
+            "status": "not_found",
+            "message": "Comparison results not found. Please run the comparison first.",
+            "results": None
+        }
+    
+    try:
+        # Load three_way_comparison.json
+        comparison_file = results_dir / "three_way_comparison.json"
+        comparison_data = {}
+        if comparison_file.exists():
+            with open(comparison_file, 'r') as f:
+                comparison_data = json.load(f)
+        
+        # Load CSV file
+        csv_file = results_dir / "three_way_comparison.csv"
+        csv_data = []
+        if csv_file.exists():
+            with open(csv_file, 'r') as f:
+                reader = csv.DictReader(f)
+                csv_data = list(reader)
+        
+        # Load comparison report text
+        report_file = results_dir / "comparison_report.txt"
+        report_text = ""
+        if report_file.exists():
+            with open(report_file, 'r') as f:
+                report_text = f.read()
+        
+        # Extract report and detailed_results from comparison_data
+        report = comparison_data.get("report", {})
+        detailed_results = comparison_data.get("detailed_results", [])
+        
+        return {
+            "status": "success",
+            "report": report,
+            "detailed_results": detailed_results,
+            "report_text": report_text,
+            "csv_data": csv_data,
+            "results": comparison_data  # Include full data for backward compatibility
+        }
+    except Exception as e:
+        logger.error(f"Error loading comparison results: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error loading comparison results: {str(e)}"
+        )
 
 
 # ============================================================================
@@ -936,55 +1509,181 @@ async def test_visualizations():
 
 @app.get("/api/visualizations/benchmark/list")
 async def list_benchmark_visualizations():
-    """DEPRECATED: LLM benchmarking directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. LLM benchmarking directory has been removed."
-    )
+    """List all benchmark visualization images."""
+    benchmark_dir = BASE_DIR / "backend" / "visualizations" / "llm_benchmarking"
+    viz_dir = benchmark_dir / "results" / "visualizations"
+    
+    if not viz_dir.exists():
+        return {
+            "status": "not_found",
+            "images": [],
+            "message": "Visualization directory not found"
+        }
+    
+    try:
+        # Get all PNG files
+        image_files = list(viz_dir.glob("*.png"))
+        images = []
+        
+        for img_file in sorted(image_files):
+            images.append({
+                "name": img_file.name,
+                "url": f"/api/visualizations/benchmark/{img_file.name}",
+                "size": img_file.stat().st_size,
+                "modified": datetime.fromtimestamp(img_file.stat().st_mtime).isoformat()
+            })
+        
+        return {
+            "status": "success",
+            "images": images,
+            "count": len(images)
+        }
+    except Exception as e:
+        logger.error(f"Error listing benchmark visualizations: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error listing benchmark visualizations: {str(e)}"
+        )
 
 
 @app.get("/api/visualizations/prompt-engineering/list")
 async def list_prompt_visualizations():
-    """DEPRECATED: Prompt engineering directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Prompt engineering directory has been removed."
-    )
+    """List all prompt engineering visualization images."""
+    prompt_dir = BASE_DIR / "backend" / "visualizations" / "prompt_engineering"
+    viz_dir = prompt_dir / "results" / "visualizations"
+    
+    if not viz_dir.exists():
+        return {
+            "status": "not_found",
+            "images": [],
+            "message": "Visualization directory not found"
+        }
+    
+    try:
+        # Get all PNG files
+        image_files = list(viz_dir.glob("*.png"))
+        images = []
+        
+        for img_file in sorted(image_files):
+            images.append({
+                "name": img_file.name,
+                "url": f"/api/visualizations/prompt-engineering/{img_file.name}",
+                "size": img_file.stat().st_size,
+                "modified": datetime.fromtimestamp(img_file.stat().st_mtime).isoformat()
+            })
+        
+        return {
+            "status": "success",
+            "images": images,
+            "count": len(images)
+        }
+    except Exception as e:
+        logger.error(f"Error listing prompt engineering visualizations: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error listing prompt engineering visualizations: {str(e)}"
+        )
 
 
 @app.get("/api/visualizations/comparison/list")
 async def list_comparison_visualizations():
-    """DEPRECATED: Comparison analysis directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Comparison analysis directory has been removed."
-    )
+    """List all comparison visualization images."""
+    comparison_dir = BASE_DIR / "backend" / "visualizations" / "enhanced_vs_baseline_vs_groundtruth"
+    viz_dir = comparison_dir / "results" / "visualizations"
+    
+    if not viz_dir.exists():
+        return {
+            "status": "not_found",
+            "images": [],
+            "message": "Visualization directory not found"
+        }
+    
+    try:
+        # Get all PNG files
+        image_files = list(viz_dir.glob("*.png"))
+        images = []
+        
+        for img_file in sorted(image_files):
+            images.append({
+                "name": img_file.name,
+                "url": f"/api/visualizations/comparison/{img_file.name}",
+                "size": img_file.stat().st_size,
+                "modified": datetime.fromtimestamp(img_file.stat().st_mtime).isoformat()
+            })
+        
+        return {
+            "status": "success",
+            "images": images,
+            "count": len(images)
+        }
+    except Exception as e:
+        logger.error(f"Error listing comparison visualizations: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error listing comparison visualizations: {str(e)}"
+        )
 
 
 @app.get("/api/visualizations/benchmark/{image_name}")
 async def get_benchmark_visualization(image_name: str):
-    """DEPRECATED: LLM benchmarking directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. LLM benchmarking directory has been removed."
+    """Get a specific benchmark visualization image."""
+    benchmark_dir = BASE_DIR / "backend" / "visualizations" / "llm_benchmarking"
+    viz_dir = benchmark_dir / "results" / "visualizations"
+    image_path = viz_dir / image_name
+    
+    # Security: prevent directory traversal
+    if ".." in image_name or not image_name.endswith((".png", ".jpg", ".jpeg", ".gif", ".svg")):
+        raise HTTPException(status_code=400, detail="Invalid image name")
+    
+    if not image_path.exists() or not image_path.is_file():
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    return FileResponse(
+        path=str(image_path),
+        media_type="image/png",
+        filename=image_name
     )
 
 
 @app.get("/api/visualizations/prompt-engineering/{image_name}")
 async def get_prompt_visualization(image_name: str):
-    """DEPRECATED: Prompt engineering directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Prompt engineering directory has been removed."
+    """Get a specific prompt engineering visualization image."""
+    prompt_dir = BASE_DIR / "backend" / "visualizations" / "prompt_engineering"
+    viz_dir = prompt_dir / "results" / "visualizations"
+    image_path = viz_dir / image_name
+    
+    # Security: prevent directory traversal
+    if ".." in image_name or not image_name.endswith((".png", ".jpg", ".jpeg", ".gif", ".svg")):
+        raise HTTPException(status_code=400, detail="Invalid image name")
+    
+    if not image_path.exists() or not image_path.is_file():
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    return FileResponse(
+        path=str(image_path),
+        media_type="image/png",
+        filename=image_name
     )
 
 
 @app.get("/api/visualizations/comparison/{image_name}")
 async def get_comparison_visualization(image_name: str):
-    """DEPRECATED: Comparison analysis directory removed."""
-    raise HTTPException(
-        status_code=410,
-        detail="This endpoint is deprecated. Comparison analysis directory has been removed."
+    """Get a specific comparison visualization image."""
+    comparison_dir = BASE_DIR / "backend" / "visualizations" / "enhanced_vs_baseline_vs_groundtruth"
+    viz_dir = comparison_dir / "results" / "visualizations"
+    image_path = viz_dir / image_name
+    
+    # Security: prevent directory traversal
+    if ".." in image_name or not image_name.endswith((".png", ".jpg", ".jpeg", ".gif", ".svg")):
+        raise HTTPException(status_code=400, detail="Invalid image name")
+    
+    if not image_path.exists() or not image_path.is_file():
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    return FileResponse(
+        path=str(image_path),
+        media_type="image/png",
+        filename=image_name
     )
 
 
@@ -3286,50 +3985,86 @@ def get_agent_instance(provider: str = "groq", user_id: Optional[str] = None):
 class AgentQueryRequest(BaseModel):
     """Request model for agent query."""
     question: str
-    provider: Optional[str] = "groq"  # "groq" or "gemini"
+    provider: Optional[str] = "gemini"  # "groq" or "gemini"
+    file_id: Optional[str] = None
+    conversation_id: Optional[str] = None
+    date_range: Optional[Dict[str, Optional[str]]] = None
 
 
 if MONGODB_AVAILABLE:
+    # Try to import MongoDB-based agent system
+    try:
+        from agent.mongodb_agent import execute_agent_query
+        from agent.agent_schemas import AgentQueryRequest as NewAgentQueryRequest
+        MONGODB_AGENT_AVAILABLE = True
+    except ImportError as e:
+        logger.warning(f"MongoDB agent system not available: {str(e)}")
+        MONGODB_AGENT_AVAILABLE = False
+    
     @app.post("/api/agent/query")
     async def agent_query(
         request: AgentQueryRequest,
         current_user: UserInDB = Depends(get_current_user)
     ):
-        """Process a natural language query using the agent (requires authentication)."""
+        """Process a natural language query using the MongoDB-based agent (requires authentication)."""
         try:
-            if not AGENT_AVAILABLE:
-                raise HTTPException(
-                    status_code=503,
-                    detail="Agent system not available - dependencies not installed"
+            # Use MongoDB-based agent if available
+            if MONGODB_AGENT_AVAILABLE:
+                provider = request.provider.lower() if request.provider else "gemini"
+                if provider not in ["groq", "gemini"]:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid provider: {provider}. Must be 'groq' or 'gemini'"
+                    )
+                
+                # Execute query using MongoDB agent
+                result = await execute_agent_query(
+                    question=request.question,
+                    user_id=str(current_user.id),
+                    file_id=request.file_id,
+                    provider=provider,
+                    conversation_id=request.conversation_id,
+                    date_range=request.date_range
                 )
-            
-            provider = request.provider.lower() if request.provider else "groq"
-            if provider not in ["groq", "gemini"]:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid provider: {provider}. Must be 'groq' or 'gemini'"
-                )
-            
-            # Get user-specific agent instance
-            user_id = str(current_user.id)
-            agent = get_agent_instance(provider=provider, user_id=user_id)
-            if not agent:
-                raise HTTPException(
-                    status_code=503,
-                    detail=f"{provider.capitalize()} agent not initialized - check logs and API keys"
-                )
-            
-            # Process query
-            result = agent.query(request.question)
-            result["provider"] = provider
-            result["model_name"] = agent.model_name
-            
-            return result
+                
+                return result
+            else:
+                # Fallback to old agent system
+                if not AGENT_AVAILABLE:
+                    raise HTTPException(
+                        status_code=503,
+                        detail="Agent system not available - dependencies not installed"
+                    )
+                
+                provider = request.provider.lower() if request.provider else "groq"
+                if provider not in ["groq", "gemini"]:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid provider: {provider}. Must be 'groq' or 'gemini'"
+                    )
+                
+                # Get user-specific agent instance
+                user_id = str(current_user.id)
+                agent = get_agent_instance(provider=provider, user_id=user_id)
+                if not agent:
+                    raise HTTPException(
+                        status_code=503,
+                        detail=f"{provider.capitalize()} agent not initialized - check logs and API keys"
+                    )
+                
+                # Process query
+                result = agent.query(request.question)
+                result["provider"] = provider
+                result["model_name"] = agent.model_name
+                
+                return result
             
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"Error processing agent query: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 else:
     @app.post("/api/agent/query")
@@ -3348,66 +4083,74 @@ if MONGODB_AVAILABLE:
         try:
             prompt_eng_available = PROMPT_ENGINEERING_AVAILABLE if 'PROMPT_ENGINEERING_AVAILABLE' in globals() else False
             
-            # Get user_id for user-specific agent instances
-            user_id = str(current_user.id)
-            
-            # Check Groq availability
+            # Check MongoDB agent availability
             groq_available = False
-            groq_agent = None
             groq_model = None
             groq_error = None
-            try:
-                logger.info(f"Attempting to initialize Groq agent for user_id: {user_id}")
-                groq_agent = get_agent_instance(provider="groq", user_id=user_id)
-                groq_available = groq_agent is not None
-                if groq_agent:
-                    groq_model = groq_agent.model_name
-                    logger.info(f"✓ Groq agent initialized successfully: {groq_model}")
-                else:
-                    groq_error = "Agent initialization returned None - check logs for details"
-                    logger.error("Groq agent initialization returned None")
-            except Exception as e:
-                groq_error = str(e)
-                logger.error(f"Groq agent initialization failed: {e}")
-                import traceback
-                logger.error(f"Traceback: {traceback.format_exc()}")
-            
-            # Check Gemini availability
             gemini_available = False
-            gemini_agent = None
             gemini_model = None
             gemini_error = None
+            mongodb_agent_available = False
+            
+            # Try to use MongoDB agent system first
             try:
-                logger.info(f"Attempting to initialize Gemini agent for user_id: {user_id}")
-                gemini_agent = get_agent_instance(provider="gemini", user_id=user_id)
-                gemini_available = gemini_agent is not None
-                if gemini_agent:
-                    gemini_model = gemini_agent.model_name
-                    logger.info(f"✓ Gemini agent initialized successfully: {gemini_model}")
-                else:
-                    gemini_error = "Agent initialization returned None - check logs for details"
-                    logger.error("Gemini agent initialization returned None")
-            except Exception as e:
-                gemini_error = str(e)
-                logger.error(f"Gemini agent initialization failed: {e}")
-                import traceback
-                logger.error(f"Traceback: {traceback.format_exc()}")
+                from agent.mongodb_agent import get_llm_instance
+                mongodb_agent_available = True
+                
+                # Test Groq LLM instance
+                try:
+                    groq_llm = get_llm_instance(provider="groq", temperature=0.0)
+                    groq_available = groq_llm is not None
+                    groq_model = os.getenv("AGENT_MODEL_NAME", "meta-llama/llama-4-maverick-17b-128e-instruct")
+                    logger.info(f"✓ Groq LLM available: {groq_model}")
+                except Exception as e:
+                    groq_error = str(e)
+                    logger.error(f"Groq LLM test failed: {e}")
+                
+                # Test Gemini LLM instance
+                try:
+                    gemini_llm = get_llm_instance(provider="gemini", temperature=0.0)
+                    gemini_available = gemini_llm is not None
+                    gemini_model = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+                    logger.info(f"✓ Gemini LLM available: {gemini_model}")
+                except Exception as e:
+                    gemini_error = str(e)
+                    logger.error(f"Gemini LLM test failed: {e}")
+            except ImportError:
+                # Fallback to old agent system check
+                mongodb_agent_available = False
+                user_id = str(current_user.id)
+                try:
+                    groq_agent = get_agent_instance(provider="groq", user_id=user_id)
+                    groq_available = groq_agent is not None
+                    if groq_agent:
+                        groq_model = groq_agent.model_name
+                except Exception as e:
+                    groq_error = str(e)
+                
+                try:
+                    gemini_agent = get_agent_instance(provider="gemini", user_id=user_id)
+                    gemini_available = gemini_agent is not None
+                    if gemini_agent:
+                        gemini_model = gemini_agent.model_name
+                except Exception as e:
+                    gemini_error = str(e)
             
             return {
-                "available": AGENT_AVAILABLE and (groq_available or gemini_available),
+                "available": mongodb_agent_available and (groq_available or gemini_available),
                 "embeddings_available": EMBEDDINGS_AVAILABLE,
                 "prompt_engineering": prompt_eng_available,
                 "providers": {
                     "groq": {
                         "available": groq_available,
-                        "initialized": groq_agent is not None,
+                        "initialized": groq_available,
                         "model_name": groq_model or os.getenv("AGENT_MODEL_NAME", "meta-llama/llama-4-maverick-17b-128e-instruct"),
                         "api_key_set": bool(os.getenv("GROQ_API_KEY")),
-                        "error": groq_error
+                        "error": groq_error if not groq_available else None
                     },
                     "gemini": {
                         "available": gemini_available,
-                        "initialized": gemini_agent is not None,
+                        "initialized": gemini_available,
                         "model_name": gemini_model or os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash"),
                         "api_key_set": bool(os.getenv("GEMINI_API_KEY")),
                         "error": gemini_error if not gemini_available else None
@@ -3416,6 +4159,8 @@ if MONGODB_AVAILABLE:
             }
         except Exception as e:
             logger.error(f"Error getting agent status: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {
                 "available": False,
                 "error": str(e),
@@ -3423,6 +4168,569 @@ if MONGODB_AVAILABLE:
                     "groq": {"available": False},
                     "gemini": {"available": False}
                 }
+            }
+
+    @app.get("/api/agent/suggestions")
+    async def get_agent_suggestions(
+        regenerate: bool = Query(False, description="Force regeneration of suggestions using Gemini API"),
+        current_user: UserInDB = Depends(get_current_user)
+    ):
+        """Get dynamic question suggestions from verified QA bank and fallback to generated suggestions (requires authentication).
+        
+        Args:
+            regenerate: If True, skip QA bank and force regeneration using Gemini API
+        """
+        try:
+            from services.file_service import get_user_files
+            from services.question_generator_service import MongoDBQuestionGenerator
+            from database import get_database
+            
+            db = get_database()
+            text_queries = []
+            graph_queries = []
+            
+            logger.info(f"Getting agent suggestions - regenerate={regenerate}, user_id={current_user.id}")
+            
+            # First, try to get verified questions from QA bank (unless regenerate is True)
+            if not regenerate:
+                try:
+                    qa_bank_collection = db["qa_bank"]
+                    
+                    # Get verified questions for this user - get more to have better variety
+                    # Use random sampling to get different questions each time
+                    all_verified = await qa_bank_collection.find({
+                        "user_id": current_user.id,
+                        "verified": True
+                    }).to_list(length=None)  # Get all verified questions
+                    
+                    if all_verified and len(all_verified) > 0:
+                        # Randomly sample up to 100 questions for variety
+                        verified_questions = random.sample(all_verified, min(100, len(all_verified)))
+                        
+                        # Categorize verified questions more intelligently
+                        for q in verified_questions:
+                            question_text = q.get("question_text", q.get("question", ""))
+                            question_type = q.get("question_type", q.get("type", "")).lower()
+                            expects_chart = q.get("expects_chart", False)
+                            
+                            if not question_text:
+                                continue
+                            
+                            question_lower = question_text.lower()
+                            
+                            # Check if question mentions chart/graph/visualization
+                            chart_keywords = ["chart", "graph", "plot", "visualize", "show", "display", "trend", "comparison", "bar chart", "line chart", "pie chart", "scatter", "visualization"]
+                            has_chart_keyword = any(keyword in question_lower for keyword in chart_keywords)
+                            
+                            # Questions that typically need charts
+                            chart_indicators = [
+                                "which", "who", "compare", "comparison", "distribution", 
+                                "over time", "by", "across", "between", "top", "bottom",
+                                "highest", "lowest", "most", "least", "rank"
+                            ]
+                            has_chart_indicator = any(indicator in question_lower for indicator in chart_indicators)
+                            
+                            # Categorize based on type, keywords, and question structure
+                            # More nuanced categorization
+                            is_graph_query = (
+                                expects_chart or 
+                                has_chart_keyword or 
+                                question_type in ["trend", "comparative", "distribution"] or
+                                (has_chart_indicator and question_type in ["comparative"]) or
+                                (question_type == "aggregation" and has_chart_indicator and ("which" in question_lower or "who" in question_lower))
+                            )
+                            
+                            # Simple aggregation questions (what is the total/average) are text queries
+                            is_simple_aggregation = (
+                                question_type == "aggregation" and 
+                                not has_chart_keyword and
+                                not has_chart_indicator and
+                                ("what is" in question_lower or "what are" in question_lower or "how many" in question_lower)
+                            )
+                            
+                            if is_graph_query and not is_simple_aggregation:
+                                if question_text not in graph_queries:
+                                    graph_queries.append(question_text)
+                            else:
+                                if question_text not in text_queries:
+                                    text_queries.append(question_text)
+                        
+                        # Shuffle to get variety, then limit - use random sample for more variety
+                        random.shuffle(text_queries)
+                        random.shuffle(graph_queries)
+                        
+                        # Randomly sample from available questions to get different sets each time
+                        # Take a random subset to ensure variety
+                        if len(text_queries) > 12:
+                            # Randomly select 12 from available text queries
+                            text_queries = random.sample(text_queries, min(12, len(text_queries)))
+                        else:
+                            text_queries = text_queries[:12]
+                        
+                        if len(graph_queries) > 12:
+                            # Randomly select 12 from available graph queries
+                            graph_queries = random.sample(graph_queries, min(12, len(graph_queries)))
+                        else:
+                            graph_queries = graph_queries[:12]
+                        
+                        # Return verified questions with randomization
+                        return {
+                            "success": True,
+                            "text_queries": text_queries,
+                            "graph_queries": graph_queries,
+                            "source": "qa_bank",
+                            "total_verified": len(verified_questions),
+                            "text_count": len(text_queries),
+                            "graph_count": len(graph_queries)
+                        }
+                except Exception as e:
+                    logger.warning(f"Could not fetch from QA bank, falling back to generated suggestions: {str(e)}")
+            else:
+                logger.info("Regenerate flag is True, skipping QA bank and generating new suggestions with Gemini")
+            
+            # Fallback: Generate suggestions using Gemini API based on actual data
+            files = await get_user_files(current_user, deduplicate=True)
+            
+            if not files:
+                return {
+                    "success": True,
+                    "text_queries": text_queries[:12] if text_queries else [],
+                    "graph_queries": graph_queries[:12] if graph_queries else [],
+                    "message": "No files uploaded yet. Upload files to get suggestions.",
+                    "source": "generated"
+                }
+            
+            # Collect detailed schema information from all files
+            all_files_info = []
+            tables_collection = db["tables"]
+            
+            for file_info in files:
+                file_id = file_info.get("file_id")
+                filename = file_info.get("filename", "Unknown")
+                
+                # Get actual data schema from MongoDB
+                try:
+                    # Get sample rows and column info from actual data
+                    sample_query = {
+                        "user_id": current_user.id,
+                        "file_id": file_id,
+                        "table_name": "Sheet1"
+                    }
+                    
+                    sample_rows = await tables_collection.find(sample_query).limit(5).to_list(length=5)
+                    
+                    if sample_rows:
+                        # Extract columns from actual data
+                        first_row = sample_rows[0].get("row", {})
+                        columns_info = {}
+                        numeric_cols = []
+                        date_cols = []
+                        text_cols = []
+                        
+                        for col_name, col_value in first_row.items():
+                            if col_value is None:
+                                continue
+                            
+                            col_type = type(col_value).__name__
+                            columns_info[col_name] = {
+                                "type": col_type,
+                                "sample_value": str(col_value)[:50] if col_value else None
+                            }
+                            
+                            # Categorize columns
+                            if col_type in ["int", "float", "Decimal"] or isinstance(col_value, (int, float)):
+                                numeric_cols.append(col_name)
+                            elif col_type in ["datetime", "date"] or "date" in col_name.lower() or "time" in col_name.lower():
+                                date_cols.append(col_name)
+                            else:
+                                text_cols.append(col_name)
+                        
+                        # Get row count
+                        row_count = await tables_collection.count_documents(sample_query)
+                        
+                        all_files_info.append({
+                            "filename": filename,
+                            "file_id": file_id,
+                            "table_name": "Sheet1",
+                            "columns": columns_info,
+                            "numeric_columns": numeric_cols,
+                            "date_columns": date_cols,
+                            "text_columns": text_cols,
+                            "row_count": row_count,
+                            "sample_rows": [r.get("row", {}) for r in sample_rows[:3]]
+                        })
+                except Exception as e:
+                    logger.warning(f"Error getting schema for file {file_id}: {str(e)}")
+                    continue
+            
+            # Use Gemini API to generate questions based on actual data
+            try:
+                from agent.mongodb_agent import get_llm_instance
+                gemini_llm = get_llm_instance(provider="gemini", temperature=0.7)
+                
+                # Build context for Gemini
+                schema_context = "Available data files and their schemas:\n\n"
+                for file_info in all_files_info:
+                    schema_context += f"File: {file_info['filename']} (file_id: {file_info['file_id']}, {file_info['row_count']} rows)\n"
+                    schema_context += f"Table: {file_info['table_name']}\n"
+                    schema_context += f"Columns:\n"
+                    for col_name, col_info in file_info['columns'].items():
+                        schema_context += f"  - {col_name} ({col_info['type']}): sample = {col_info.get('sample_value', 'N/A')}\n"
+                    schema_context += f"\nNumeric columns: {', '.join(file_info['numeric_columns'])}\n"
+                    schema_context += f"Date columns: {', '.join(file_info['date_columns'])}\n"
+                    schema_context += f"Text columns: {', '.join(file_info['text_columns'])}\n\n"
+                
+                # Generate text queries (aggregation questions)
+                # Add variety by asking for different question types
+                text_prompt = f"""Based on the following database schema, generate 20 diverse natural language questions that users might ask to get text-based answers.
+
+{schema_context}
+
+Generate a VARIETY of questions including:
+1. Aggregations: total, average, mean, sum, count, min, max, median
+2. Comparisons: compare values between different entities
+3. Calculations: percentages, ratios, differences
+4. Specific lookups: find specific values or records
+5. Statistical questions: variance, standard deviation, ranges
+
+IMPORTANT:
+- Use ACTUAL column names from the schema above
+- Make each question UNIQUE and different from others
+- Vary the question phrasing (don't repeat the same pattern)
+- Don't ask for charts/visualizations (those will be separate)
+- Be creative and think of different ways to ask about the data
+
+Return ONLY a JSON array of question strings, no explanations. Example format:
+["What is the total opening stock in Kg?", "What is the average downtime in hours?", "How many maintenance records are there?", ...]
+
+Generate 20 diverse questions:"""
+                
+                logger.info("Calling Gemini API to generate text queries...")
+                text_response = gemini_llm.invoke(text_prompt)
+                text_response_text = text_response.content if hasattr(text_response, 'content') else str(text_response)
+                logger.debug(f"Gemini text response: {text_response_text[:500]}")
+                
+                # Parse JSON array from response
+                try:
+                    # Extract JSON array from response
+                    json_match = re.search(r'\[.*?\]', text_response_text, re.DOTALL)
+                    if json_match:
+                        text_queries_generated = json.loads(json_match.group())
+                        if isinstance(text_queries_generated, list):
+                            text_queries.extend(text_queries_generated)
+                            logger.info(f"Successfully parsed {len(text_queries_generated)} text queries from Gemini")
+                        else:
+                            logger.warning(f"Gemini returned non-list for text queries: {type(text_queries_generated)}")
+                    else:
+                        # Fallback: split by lines and clean
+                        lines = [l.strip().strip('"').strip("'") for l in text_response_text.split('\n') if l.strip() and not l.strip().startswith('#')]
+                        text_queries.extend([l for l in lines if l and len(l) > 10][:20])
+                        logger.info(f"Used fallback parsing, extracted {len([l for l in lines if l and len(l) > 10][:20])} text queries")
+                except Exception as e:
+                    logger.warning(f"Error parsing text queries from Gemini: {str(e)}")
+                    logger.debug(f"Full response was: {text_response_text}")
+                
+                # Generate graph queries (visualization questions)
+                graph_prompt = f"""Based on the following database schema, generate 20 diverse natural language questions that users might ask to visualize data (charts, graphs, trends).
+
+{schema_context}
+
+Generate a VARIETY of visualization questions including:
+1. Bar charts: comparisons, rankings, distributions
+2. Line charts: trends over time, time series
+3. Pie charts: proportions, percentages, distributions
+4. Scatter plots: correlations, relationships
+5. Ranking questions: "which", "who", "top N", "bottom N"
+6. Comparison questions: compare entities side-by-side
+7. Trend questions: changes over time, patterns
+
+IMPORTANT:
+- Use ACTUAL column names from the schema above
+- Make each question UNIQUE and different from others
+- Vary the question phrasing and chart types
+- Explicitly mention chart types when appropriate
+- Be creative with different visualization scenarios
+
+Return ONLY a JSON array of question strings, no explanations. Example format:
+["Show opening stock by supplier as a bar chart", "Which operator has the highest number of entries?", "Display the trend of downtime over time as a line chart", ...]
+
+Generate 20 diverse visualization questions:"""
+                
+                logger.info("Calling Gemini API to generate graph queries...")
+                graph_response = gemini_llm.invoke(graph_prompt)
+                graph_response_text = graph_response.content if hasattr(graph_response, 'content') else str(graph_response)
+                logger.debug(f"Gemini graph response: {graph_response_text[:500]}")
+                
+                # Parse JSON array from response
+                try:
+                    # Extract JSON array from response
+                    json_match = re.search(r'\[.*?\]', graph_response_text, re.DOTALL)
+                    if json_match:
+                        graph_queries_generated = json.loads(json_match.group())
+                        if isinstance(graph_queries_generated, list):
+                            graph_queries.extend(graph_queries_generated)
+                            logger.info(f"Successfully parsed {len(graph_queries_generated)} graph queries from Gemini")
+                        else:
+                            logger.warning(f"Gemini returned non-list for graph queries: {type(graph_queries_generated)}")
+                    else:
+                        # Fallback: split by lines and clean
+                        lines = [l.strip().strip('"').strip("'") for l in graph_response_text.split('\n') if l.strip() and not l.strip().startswith('#')]
+                        graph_queries.extend([l for l in lines if l and len(l) > 10][:20])
+                        logger.info(f"Used fallback parsing, extracted {len([l for l in lines if l and len(l) > 10][:20])} graph queries")
+                except Exception as e:
+                    logger.warning(f"Error parsing graph queries from Gemini: {str(e)}")
+                    logger.debug(f"Full response was: {graph_response_text}")
+                
+            except Exception as e:
+                logger.error(f"Error generating suggestions with Gemini: {str(e)}")
+                import traceback
+                logger.error(traceback.format_exc())
+                # Fallback to simple template-based generation
+                all_numeric_cols = []
+                all_date_cols = []
+                all_text_cols = []
+                
+                for file_info in all_files_info:
+                    all_numeric_cols.extend(file_info.get("numeric_columns", []))
+                    all_date_cols.extend(file_info.get("date_columns", []))
+                    all_text_cols.extend(file_info.get("text_columns", []))
+                
+                # Simple fallback queries
+                if all_numeric_cols:
+                    for col in list(set(all_numeric_cols))[:5]:
+                        text_queries.append(f"What is the total {col.lower()}?")
+                        text_queries.append(f"What is the average {col.lower()}?")
+                
+                if all_numeric_cols and all_text_cols:
+                    metric_col = list(set(all_numeric_cols))[0] if all_numeric_cols else None
+                    entity_col = list(set(all_text_cols))[0] if all_text_cols else None
+                    if metric_col and entity_col:
+                        graph_queries.append(f"Show {metric_col.lower()} by {entity_col.lower()} as a bar chart")
+                        graph_queries.append(f"Which {entity_col.lower()} has the highest {metric_col.lower()}?")
+            
+            # Remove duplicates and limit
+            text_queries = list(dict.fromkeys(text_queries))[:20]  # Max 20 text queries
+            graph_queries = list(dict.fromkeys(graph_queries))[:20]  # Max 20 graph queries
+            
+            logger.info(f"Generated {len(text_queries)} text queries and {len(graph_queries)} graph queries using Gemini")
+            
+            # Collect column counts
+            total_numeric = sum(len(f.get("numeric_columns", [])) for f in all_files_info)
+            total_date = sum(len(f.get("date_columns", [])) for f in all_files_info)
+            total_text = sum(len(f.get("text_columns", [])) for f in all_files_info)
+            
+            return {
+                "success": True,
+                "text_queries": text_queries,
+                "graph_queries": graph_queries,
+                "total_files": len(files),
+                "source": "gemini" if regenerate else "generated",
+                "total_columns": {
+                    "numeric": total_numeric,
+                    "date": total_date,
+                    "text": total_text
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating suggestions: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {
+                "success": False,
+                "text_queries": [],
+                "graph_queries": [],
+                "error": str(e)
+            }
+
+    @app.post("/api/agent/suggestions/regenerate")
+    async def regenerate_agent_suggestions(current_user: UserInDB = Depends(get_current_user)):
+        """Regenerate question suggestions using Gemini API based on actual database data (requires authentication)."""
+        # Use the same endpoint logic with regenerate=True
+        try:
+            from services.file_service import get_user_files
+            from database import get_database
+            
+            db = get_database()
+            text_queries = []
+            graph_queries = []
+            
+            # Skip QA bank and go straight to Gemini generation
+            logger.info("Regenerating suggestions using Gemini API")
+            
+            # Get files and generate with Gemini
+            files = await get_user_files(current_user, deduplicate=True)
+            
+            if not files:
+                return {
+                    "success": True,
+                    "text_queries": [],
+                    "graph_queries": [],
+                    "message": "No files uploaded yet. Upload files to get suggestions.",
+                    "source": "generated"
+                }
+            
+            # Collect detailed schema information from all files
+            all_files_info = []
+            tables_collection = db["tables"]
+            
+            for file_info in files:
+                file_id = file_info.get("file_id")
+                filename = file_info.get("filename", "Unknown")
+                
+                # Get actual data schema from MongoDB
+                try:
+                    sample_query = {
+                        "user_id": current_user.id,
+                        "file_id": file_id,
+                        "table_name": "Sheet1"
+                    }
+                    
+                    sample_rows = await tables_collection.find(sample_query).limit(5).to_list(length=5)
+                    
+                    if sample_rows:
+                        first_row = sample_rows[0].get("row", {})
+                        columns_info = {}
+                        numeric_cols = []
+                        date_cols = []
+                        text_cols = []
+                        
+                        for col_name, col_value in first_row.items():
+                            if col_value is None:
+                                continue
+                            
+                            col_type = type(col_value).__name__
+                            columns_info[col_name] = {
+                                "type": col_type,
+                                "sample_value": str(col_value)[:50] if col_value else None
+                            }
+                            
+                            if col_type in ["int", "float", "Decimal"] or isinstance(col_value, (int, float)):
+                                numeric_cols.append(col_name)
+                            elif col_type in ["datetime", "date"] or "date" in col_name.lower() or "time" in col_name.lower():
+                                date_cols.append(col_name)
+                            else:
+                                text_cols.append(col_name)
+                        
+                        row_count = await tables_collection.count_documents(sample_query)
+                        
+                        all_files_info.append({
+                            "filename": filename,
+                            "file_id": file_id,
+                            "table_name": "Sheet1",
+                            "columns": columns_info,
+                            "numeric_columns": numeric_cols,
+                            "date_columns": date_cols,
+                            "text_columns": text_cols,
+                            "row_count": row_count,
+                            "sample_rows": [r.get("row", {}) for r in sample_rows[:3]]
+                        })
+                except Exception as e:
+                    logger.warning(f"Error getting schema for file {file_id}: {str(e)}")
+                    continue
+            
+            # Use Gemini API to generate questions
+            from agent.mongodb_agent import get_llm_instance
+            gemini_llm = get_llm_instance(provider="gemini", temperature=0.7)
+            
+            # Build context for Gemini
+            schema_context = "Available data files and their schemas:\n\n"
+            for file_info in all_files_info:
+                schema_context += f"File: {file_info['filename']} (file_id: {file_info['file_id']}, {file_info['row_count']} rows)\n"
+                schema_context += f"Table: {file_info['table_name']}\n"
+                schema_context += f"Columns:\n"
+                for col_name, col_info in file_info['columns'].items():
+                    schema_context += f"  - {col_name} ({col_info['type']}): sample = {col_info.get('sample_value', 'N/A')}\n"
+                schema_context += f"\nNumeric columns: {', '.join(file_info['numeric_columns'])}\n"
+                schema_context += f"Date columns: {', '.join(file_info['date_columns'])}\n"
+                schema_context += f"Text columns: {', '.join(file_info['text_columns'])}\n\n"
+            
+            # Generate text queries
+            text_prompt = f"""Based on the following database schema, generate 15 natural language questions that users might ask to get text-based answers (aggregations, calculations, comparisons).
+
+{schema_context}
+
+Generate questions that:
+1. Ask for aggregations (total, average, mean, sum, count, min, max)
+2. Ask for comparisons between entities
+3. Ask for specific values or calculations
+4. Use actual column names from the schema
+5. Are natural and conversational
+6. Don't ask for charts/visualizations (those will be separate)
+
+Return ONLY a JSON array of question strings, no explanations. Example format:
+["What is the total opening stock in Kg?", "What is the average downtime in hours?", ...]
+
+Generate 15 questions:"""
+            
+            text_response = gemini_llm.invoke(text_prompt)
+            text_response_text = text_response.content if hasattr(text_response, 'content') else str(text_response)
+            
+            try:
+                json_match = re.search(r'\[.*?\]', text_response_text, re.DOTALL)
+                if json_match:
+                    text_queries_generated = json.loads(json_match.group())
+                    text_queries.extend(text_queries_generated)
+                else:
+                    lines = [l.strip().strip('"').strip("'") for l in text_response_text.split('\n') if l.strip() and not l.strip().startswith('#')]
+                    text_queries.extend([l for l in lines if l and len(l) > 10][:15])
+            except Exception as e:
+                logger.warning(f"Error parsing text queries from Gemini: {str(e)}")
+            
+            # Generate graph queries
+            graph_prompt = f"""Based on the following database schema, generate 15 natural language questions that users might ask to visualize data (charts, graphs, trends).
+
+{schema_context}
+
+Generate questions that:
+1. Ask for charts/graphs/visualizations (bar chart, line chart, pie chart, etc.)
+2. Ask for trends over time
+3. Ask for comparisons that need visual representation
+4. Ask "which", "who", "top N", "bottom N" questions
+5. Use actual column names from the schema
+6. Are natural and conversational
+7. Explicitly mention chart types when appropriate
+
+Return ONLY a JSON array of question strings, no explanations. Example format:
+["Show opening stock by supplier as a bar chart", "Which operator has the highest number of entries?", ...]
+
+Generate 15 questions:"""
+            
+            graph_response = gemini_llm.invoke(graph_prompt)
+            graph_response_text = graph_response.content if hasattr(graph_response, 'content') else str(graph_response)
+            
+            try:
+                json_match = re.search(r'\[.*?\]', graph_response_text, re.DOTALL)
+                if json_match:
+                    graph_queries_generated = json.loads(json_match.group())
+                    graph_queries.extend(graph_queries_generated)
+                else:
+                    lines = [l.strip().strip('"').strip("'") for l in graph_response_text.split('\n') if l.strip() and not l.strip().startswith('#')]
+                    graph_queries.extend([l for l in lines if l and len(l) > 10][:15])
+            except Exception as e:
+                logger.warning(f"Error parsing graph queries from Gemini: {str(e)}")
+            
+            # Remove duplicates and limit
+            text_queries = list(dict.fromkeys(text_queries))[:20]
+            graph_queries = list(dict.fromkeys(graph_queries))[:20]
+            
+            return {
+                "success": True,
+                "text_queries": text_queries,
+                "graph_queries": graph_queries,
+                "total_files": len(files),
+                "source": "gemini_regenerated"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error regenerating suggestions: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {
+                "success": False,
+                "text_queries": [],
+                "graph_queries": [],
+                "error": str(e)
             }
 else:
     @app.get("/api/agent/status")

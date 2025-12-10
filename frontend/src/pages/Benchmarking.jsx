@@ -28,7 +28,12 @@ const Benchmarking = () => {
   const fetchVisualizations = async () => {
     setLoadingVisualizations(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/visualizations/benchmark/list`)
+      const response = await fetch(`${API_BASE_URL}/visualizations/benchmark/list?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         console.log("Benchmark visualizations:", data)
@@ -47,16 +52,32 @@ const Benchmarking = () => {
 
   const fetchResults = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/benchmark/results`)
+      // Add cache-busting query parameter
+      const response = await fetch(`${API_BASE_URL}/benchmark/results?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
+      console.log("Benchmark results data:", data)
+      // The API returns {status: "success", results: {results: [...], summary: {...}}}
+      // Check if results exists and has content
       if (data.results && Object.keys(data.results).length > 0) {
         setResults(data.results)
-      } else if (data.message) {
+      } else if (data.status === "not_found" || data.message) {
         // Results file doesn't exist yet
         setResults(null)
+      } else {
+        // Fallback: try to use data directly if it has results key
+        if (data.results && data.results.results) {
+          setResults(data.results)
+        } else {
+          setResults(null)
+        }
       }
     } catch (error) {
       console.error("Error fetching results:", error)
@@ -89,7 +110,12 @@ const Benchmarking = () => {
         setStatus("success")
         setMessage(data.message)
         setOutput(data.output || "")
-        setResults(data.results || null)
+        // The API returns results in data.results
+        if (data.results && Object.keys(data.results).length > 0) {
+          setResults(data.results)
+        } else {
+          setResults(null)
+        }
         fetchVisualizations() // Refresh visualizations after running
       } else {
         setStatus("error")

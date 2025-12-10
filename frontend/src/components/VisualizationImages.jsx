@@ -88,7 +88,10 @@ const VisualizationImages = ({ images, title = "Saved Visualizations", loading =
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {images.map((image, idx) => {
-            const imageUrl = getImageUrl(image.url || image.filename)
+            // API returns: {name, path, size, modified}
+            // Support both old format (url/filename) and new format (path/name)
+            const imageUrl = getImageUrl(image.path || image.url || image.filename)
+            const imageName = image.name || image.filename || `Visualization ${idx + 1}`
             const hasError = imageErrors[idx]
             
             return (
@@ -103,13 +106,14 @@ const VisualizationImages = ({ images, title = "Saved Visualizations", loading =
                       <div className="text-center">
                         <FiImage className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p className="text-xs">Failed to load</p>
+                        <p className="text-xs mt-1 text-gray-600">{imageUrl}</p>
                       </div>
                     </div>
                   ) : (
                     <>
                       <img
                         src={imageUrl}
-                        alt={image.name || image.filename || `Visualization ${idx + 1}`}
+                        alt={imageName}
                         className="w-full h-full object-contain"
                         loading="lazy"
                         onError={() => handleImageError(idx, imageUrl)}
@@ -122,8 +126,13 @@ const VisualizationImages = ({ images, title = "Saved Visualizations", loading =
                 </div>
                 <div className="p-3">
                   <p className="text-sm font-medium text-gray-300 truncate">
-                    {image.name || image.filename || `Visualization ${idx + 1}`}
+                    {imageName}
                   </p>
+                  {image.size && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {(image.size / 1024).toFixed(1)} KB
+                    </p>
+                  )}
                 </div>
               </div>
             )

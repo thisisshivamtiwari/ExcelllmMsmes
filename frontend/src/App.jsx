@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { AuthProvider, useAuth } from "@/contexts/AuthContext"
 import Header from "@/components/Header"
 import Sidebar from "@/components/Sidebar"
@@ -113,7 +113,7 @@ const AppContent = () => {
                 }`}
               >
                 <Header onMenuClick={handleMenuClick} />
-                <main className="flex-1 overflow-y-auto overscroll-contain">
+                <main className={`flex-1 overscroll-contain ${location.pathname === '/agent-chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/file-upload" element={<FileUpload />} />
